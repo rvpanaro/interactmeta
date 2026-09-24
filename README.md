@@ -3,8 +3,6 @@
 
 # interactmeta
 
-<img src="man/figures/logo.png" align="right" width="139" alt="interactmeta logo" />
-
 <!-- badges: start -->
 
 <!-- badges: end -->
