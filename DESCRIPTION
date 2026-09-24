@@ -1,5 +1,5 @@
 Package: interactmeta
-Title: Meta-Analysis of Treatment-by-Subgroup Interactions
+Title: Effect modification in meta-analysis
 Version: 0.0.1
 Authors@R: c(
     person(
