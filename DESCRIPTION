@@ -1,11 +1,62 @@
-Package: cama
-Title: What the Package Does (One Line, Title Case)
-Version: 0.0.0.9000
-Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"))
-Description: What the package does (one paragraph).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
+Package: interactmeta
+Title: Meta-Analysis of Treatment-by-Subgroup Interactions
+Version: 0.0.1
+Authors@R: c(
+    person(
+      given = c("Renato", "Valladares"),
+      family = "Panaro",
+      email = "rvpanaro@gmail.com",
+      role = c("aut", "cre"),
+      comment = c(ORCID = "0000-0002-1903-2091")
+    ),
+    person(
+      given = "Christian",
+      family = "R\u00f6ver",
+      role = "ths",
+      comment = c(ORCID = "0000-0002-6911-698X")
+    ),
+    person(
+      given = "Tim",
+      family = "Friede",
+      role = "ths",
+      comment = c(ORCID = "0000-0001-5347-7441")
+    ))
+Description: Contribution-adjusted meta-analysis (CAMS) for
+    treatment-by-subgroup interactions from subgroup-level aggregate data
+    (Panaro, Röver & Friede, 2025, arXiv:2512.18785). The package constructs
+    trial information fractions, rotates subgroup estimates into orthogonal
+    overall and interaction series, and reconstructs contribution-adjusted
+    interaction, subgroup, and combined-population effects. CAMS can be
+    fitted using Bayesian or frequentist inference. Bayesian CAMS uses
+    'bayesmeta' (DIRECT quadrature; binary subgroups); frequentist CAMS uses
+    'metafor' (REML/ML). Difference of Averages (DA) and Average Difference
+    (AD) are different constructions (Panaro, Röver & Friede, 2026); the
+    SWADA shared-weight principle is included as context, not as an
+    alternative CAMS model.
+URL: https://arxiv.org/abs/2512.18785
+License: MIT + file LICENSE
+Logo: man/figures/logo.png
 Encoding: UTF-8
+Depends: R (>= 4.1.0)
+LazyData: true
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 8.0.0
+Imports:
+    bayesmeta,
+    dplyr,
+    forestplot,
+    generics,
+    ggplot2,
+    metafor,
+    paletteer,
+    rlang,
+    scales,
+    tibble,
+    tidyr
+Suggests:
+    brms,
+    patchwork,
+    testthat,
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
+Config/roxygen2/version: 8.0.0

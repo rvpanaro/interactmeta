@@ -1,0 +1,126 @@
+---
+title: "Why CAMS: DA, AD, and SWADA as context"
+output:
+  rmarkdown::html_vignette:
+    css:
+      - !expr system.file("rmarkdown/templates/html_vignette/resources/vignette.css", package = "rmarkdown")
+      - vignette.css
+vignette: >
+  %\VignetteEncoding{UTF-8}
+  %\VignetteIndexEntry{Why CAMS: DA, AD, and SWADA as context}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 8,
+  fig.align = "center",
+  fig.retina = 2,
+  out.width = "100%"
+)
+```
+
+## The problem CAMS addresses
+
+A published subgroup table supplies $(y_{Aj},y_{Bj}, \sigma_{Aj},\sigma_{Bj})$ in each trial. There is more than one way to turn that table into an interaction, and the constructions are **not** the same estimand.
+
+**Difference of Averages** (DA) and **Average Difference** (AD) are **different constructions** (Panaro, Röver & Friede 2026). DA need not equal AD. **Same Weighting Across Different Analyses** (SWADA) is a weighting principle for making those two constructions share study contributions and estimand. **Contribution-adjusted meta-analysis** (CAMS) is a statistical model for contribution-adjusted subgroup and combined-population effects, not another weighting of DA or AD. The CAMS map itself is `vignette("cam")`.
+
+This vignette uses DA, AD, and SWADA only as context for that distinction. None of these is the van Houwelingen, Arends and Stijnen (2002) bivariate mixed model or the within-trial framework Godolphin et al 2023.
+
+The example is the RESPIRE age split (log hazard ratio), where every trial reports both subgroups.
+
+```{r load}
+library(interactmeta)
+```
+
+```{r data}
+head(respire_age[, c("trial", "subgroup", "hr", "yi", "vi")])
+```
+
+## What DA, AD, and SWADA are
+
+**DA** (`da()`) meta-analyses each subgroup series separately, then subtracts the two pooled means: $\gamma_{\mathrm{DA}}=\mu_B-\mu_A$. The two series generally have **different** inverse-variance weights, so the interaction is not the same linear combination of studies as either subgroup mean.
+
+**AD** (`ad()`) first forms $g_j=y_{Bj}-y_{Aj}$ and meta-analyses those contrasts. The weights are those of the interaction series. AD does not itself pool subgroup-specific treatment effects. DA and AD are therefore different constructions, not two routes to one pooled interaction.
+
+**SWADA** (`swada()`) is not a third likelihood. It takes one study-weight vector (by default the AD / interaction random-effects weights) and applies it to both subgroup series so that $\mu_B-\mu_A=\gamma$. Under that common vector the SWADA interaction **is** the AD interaction. What interactmeta implements is that shared-weight arithmetic, not a new random-effects model.
+
+`conventional()` is only a bundle of DA and AD with **analysis-specific** weights. It does not impose SWADA, and it is not CAMS.
+
+DA and AD may use a frequentist or a Bayesian inferential approach. A Bayesian posterior on DA or AD does not add information fractions (IFs) or CAMS estimands. That is a difference of statistical approaches, not of inferential framework. SWADA is currently frequentist only.
+
+## DA need not agree
+
+The CAMS fit uses restricted maximum likelihood (REML).
+
+```{r fit, cache = TRUE}
+fit_da <- da(respire_age, reference = "<65")
+fit_ad <- ad(respire_age, reference = "<65")
+fit_sw <- swada(respire_age, reference = "<65")
+fit_cams <- cam(respire_age, reference = "<65", method = "REML")
+```
+
+```{r compare-int}
+compare_interactions(
+  fit_da,
+  fit_ad,
+  fit_sw,
+  fit_cams,
+  exponentiate = TRUE
+)
+```
+
+DA is the construction that need not match the others. Under default interaction random-effects weights, SWADA equals AD. CAMS $\gamma$ is the same $g_j$ series as AD.
+
+The subgroup comparison is DA vs SWADA vs CAMS (AD has no subgroup pooled means of its own):
+
+```{r compare-sg}
+compare_subgroups(
+  fit_da,
+  fit_sw,
+  fit_cams,
+  exponentiate = TRUE
+)
+```
+
+CAMS numbers are $\mu_A(\widetilde{\pi})$ and $\mu_B(\widetilde{\pi})$ at the pooled information fraction. DA numbers are the two independent pooled means. SWADA reweights those series so the difference matches AD. The three columns are therefore not the same estimand.
+
+The weight table makes the SWADA principle visible. CAMS does not appear: its contribution adjustment is $\pi_j$, not a SWADA weight vector.
+
+```{r weights}
+compare_weights(fit_da, fit_ad, fit_sw)
+```
+
+## What CAMS adds
+
+Those contribution-adjusted curves are not available from DA, AD, or SWADA.
+
+```{r contribution, fig.height = 5}
+plot_contribution(fit_cams)
+```
+
+If the reporting information fraction is meant to represent the trials that identify the treatment-by-subgroup interaction, `ifrac = "interaction"` matches that block.
+
+## References
+
+Panaro RV, Röver C, Friede T (2026). Subgroup comparisons within and across studies in meta-analysis. *Research Synthesis Methods* (in press). arXiv:2508.15531.
+
+Fisher DJ, Carpenter JR, Morris TP, Freeman SC, Tierney JF (2017). Meta-analytical methods to identify who benefits most from treatments: daft, deluded, or deft approach? *BMJ*, 356, j573.
+
+Panaro RV, Röver C, Friede T (2025). Consistent Bayesian meta-analysis on subgroup specific effects and interactions. arXiv:2512.18785.
+
+Röver C, Friede T (2017). Discrete approximation of a mixture distribution via restricted divergence. *Journal of Computational and Graphical Statistics*, 26(1), 217--222.
+
+Röver C (2020). Bayesian random-effects meta-analysis using the bayesmeta R package. *Journal of Statistical Software*, 93(6), 1--51.
+
+De Soyza A, Aksamit T, Bandel T-J, et al. (2018). RESPIRE 1. *Eur Respir J*, 51(1), 1702052.
+
+Aksamit T, De Soyza A, Bandel T-J, et al. (2018). RESPIRE 2. *Eur Respir J*, 51(1), 1702053.
+
+WHO Rapid Evidence Appraisal for COVID-19 Therapies (REACT) Working Group, Sterne JAC, Murthy S, et al. (2020). Association between administration of systemic corticosteroids and mortality among critically ill patients with COVID-19: a meta-analysis. *JAMA*, 324(13), 1330--1341.

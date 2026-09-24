@@ -1,0 +1,30 @@
+#' Corticosteroid COVID-19 mortality data (REACT meta-analysis)
+#'
+#' Event counts by trial, ventilation subgroup, and treatment from the WHO REACT
+#' prospective meta-analysis of systemic corticosteroids in critically ill
+#' patients with COVID-19. Some trials report only one ventilation subgroup
+#' (`n = 0` in the other); drop those empty rows before [escalc()] and
+#' let [ifrac()] / [cam()] complete the missing cells. See
+#' `vignette("single-subgroup-trials")`.
+#'
+#' @format A data frame with 14 rows and 8 variables:
+#' \describe{
+#'   \item{trial}{Trial identifier.}
+#'   \item{subgroup}{Ventilation support category (\code{IV}, \code{NIV}, etc.).}
+#'   \item{treatment}{Treatment label (drug).}
+#'   \item{n}{Total patients (`treat.total` + `cont.total`).}
+#'   \item{treat.events}{Events in the treatment arm.}
+#'   \item{treat.total}{Total subjects in the treatment arm.}
+#'   \item{cont.events}{Events in the control arm.}
+#'   \item{cont.total}{Total subjects in the control arm.}
+#' }
+#' @source
+#' WHO Rapid Evidence Appraisal for COVID-19 Therapies (REACT) Working Group,
+#' Sterne JAC, Murthy S, et al. (2020). Association between administration of
+#' systemic corticosteroids and mortality among critically ill patients with
+#' COVID-19: a meta-analysis. \emph{JAMA}, 324(13), 1330--1341.
+#' \doi{10.1001/jama.2020.17023}
+#'
+#' \url{https://pubmed.ncbi.nlm.nih.gov/32876694/}
+#' @usage data(steroids)
+"steroids"

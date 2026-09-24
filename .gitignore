@@ -4,3 +4,11 @@
 .httr-oauth
 .DS_Store
 .quarto
+docs/
+cache/
+vignettes/*_cache/
+vignettes/*_files/
+vignettes/*.html
+tests/testthat/Rplots*.pdf
+README.html
+figure/
