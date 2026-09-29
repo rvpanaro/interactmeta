@@ -42,7 +42,16 @@ age_es <- escalc(measure = "IRR", yi = yi, vi = vi, data = age)
 ```
 
 ```{r fit, cache = TRUE}
-fit <- cam(age_es, reference = "Younger")
+# Article WIP scales (arXiv:2606.23968): HN(0.5) overall, HN(0.1) interaction.
+# Package defaults alone match bayesmeta (improper uniform / flat).
+tau_m <- function(tau) bayesmeta::dhalfnormal(tau, scale = 0.5)
+tau_g <- function(tau) bayesmeta::dhalfnormal(tau, scale = 0.1)
+fit <- cam(
+  age_es,
+  reference = "Younger",
+  tau.prior = tau_m,
+  tau.interaction.prior = tau_g
+)
 fit_reml <- cam(age_es, reference = "Younger", engine = "metafor")
 fit_ml <- cam(age_es, reference = "Younger", method = "ML")
 ```
@@ -55,35 +64,52 @@ and `fit_ml` are frequentist CAMS using restricted maximum likelihood
 
 ## Priors and wrappers
 
-`cam_prior()` is the shared prior specification. Character shorthands
-are accepted. Frequentist CAMS ignores Bayesian priors.
+Bayesian CAMS uses bayesmeta priors. **Heterogeneity defaults match
+bayesmeta**: improper `"uniform"` on $\tau_m$ and $\tau_g$. Fixed
+effects default to independent $N(0,10)$ (a proper companion for the
+`bmr` overall block). If only `tau.prior` is supplied, the interaction
+prior inherits it.
 
-```{r prior-spec}
-cam_prior("half-normal", scale = 0.5)
-```
+Empirical CDSR calibration indicates that interaction heterogeneity is
+often substantially smaller than overall treatment-effect heterogeneity
+(Panaro, Röver & Friede, arXiv:2606.23968). That paper motivates
+measure-specific half-normal scales (for example HN(0.5)-style WIP for
+overall log-ratio endpoints and tighter interaction scales such as
+HN(0.1) or HN(0.07) for log-ROR). The fits above set HN(0.5) /
+HN(0.1) **explicitly**; they are not package defaults.
+`"uniform"` and `"sqrt"` are the improper bayesmeta densities. A
+half-normal is a density function. Frequentist CAMS ignores Bayesian
+priors.
 
 ```{r prior-fit, cache = TRUE}
 fit_tau <- cam(
   respire_age,
   reference = "<65",
-  tau.prior = cam_prior("half-normal", scale = 1)
+  tau.prior = function(tau) bayesmeta::dhalfnormal(tau, scale = 1)
 )
 ```
 
-`bayescam()` is `cam(..., method = "bayes")`.
+`bayescams()` is `cams(..., method = "bayes")`. `bayescam()` is another name for the same function.
 
 ```{r bayescam, cache = TRUE}
-fit_bc <- bayescam(respire_age, reference = "<65")
+fit_bc <- bayescams(
+  respire_age,
+  reference = "<65",
+  tau.prior = tau_m,
+  tau.interaction.prior = tau_g
+)
 fit_bc$engine
 ```
 
-`ecological_slope = FALSE` (drop the composition slope) is documented
-for source-only reproducibility fits. It is not implemented for
-public `bayesmeta` or `metafor` approaches.
+`ecological_slope = FALSE` constrains the mean composition slope
+$\beta \equiv 0$ (so $\theta = \gamma$) on public `bayesmeta` and
+`metafor` engines. That does **not** remove across-trial structure:
+$\tau_m$, $\tau_g$, and trial-level reconstruction stay in the model;
+only the mean IF slope of the subgroup lines is switched off.
 
 ## Print and summary
 
-`print()` is already used in `vignette("cam")`. `summary()` is the
+`print()` is already used in `vignette("cams")`. `summary()` is the
 bayesmeta-style coefficient table.
 
 ```{r summary}
@@ -126,7 +152,7 @@ plot_heterogeneity(fit_reml)
 ## Forest variants
 
 Default `forestplot()` is the subgroup table
-(`vignette("cam")`). `type = "interaction"` and `type = "overall"`
+(`vignette("cams")`). `type = "interaction"` and `type = "overall"`
 are the CAMS blocks.
 
 ```{r forest-int, fig.height = 5.5}
@@ -228,11 +254,11 @@ dat$reference <- "Younger"
 head(add_ifrac_design(dat)[, c("trial", "subgroup", "precision", "ifrac_Older")])
 ```
 
-`predict_cam_by_if()` evaluates the fitted CAMS curves on an IF grid
-without refitting.
+`predict_cams_by_if()` evaluates the fitted CAMS curves on an IF grid
+without refitting. `predict_cam_by_if()` is another name for the same function.
 
 ```{r predict-if}
-head(predict_cam_by_if(fit, resolution = 5, exponentiate = TRUE))
+head(predict_cams_by_if(fit, resolution = 5, exponentiate = TRUE))
 ```
 
 ## Tidy summaries
@@ -286,35 +312,10 @@ ix <- compare_interactions(
 plot(ix)
 ```
 
-## Audit and provenance
-
-```{r audit}
-a <- audit(fit)
-a
-```
-
-```{r origin}
-interactmeta_origin(subgroups(fit))
-```
+## Capability matrix
 
 ```{r capabilities}
 interactmeta_capability_matrix()
-```
-
-`reproducibility()` compares a target trial to a **source-only** CAMS
-fit. Public `bayesmeta` / `metafor` CAMS needs at least two trials,
-so a one-trial source fit is not available. A joint fit that includes
-the target is rejected.
-
-```{r repro-error}
-try(
-  reproducibility(
-    fit,
-    target_data = subset(age_es, trial == "FREEDOMS"),
-    source = "DEFINE",
-    target = "FREEDOMS"
-  )
-)
 ```
 
 ## Hazard-ratio helpers
@@ -337,14 +338,13 @@ log_hr_from_ci(
 hr_ci_from_log(yi = r1$yi, sei = r1$sei, ci_level = r1$ci_level)
 ```
 
-## Aliases
+## Names
 
-`cams()`, `subgroupmeta()`, and `comparison()` call `cam()`.
-`bayescams()` calls `bayescam()`. `predict_cams_by_if()` calls
-`predict_cam_by_if()`. `cams_prior()` and `cams_trial_quantities()`
-match `cam_prior()` and `cam_trial_quantities()`.
-`subgroupmeta_palette()` and `subgroupmeta_theme_report()` match
-`interactmeta_palette()` and `interactmeta_theme_report()`.
+`cams()` is the fitter. `cam()` is another name for the same function.
+`bayescams()`, `predict_cams_by_if()`, and `cams_trial_quantities()` are the
+names to use. `bayescam()`, `predict_cam_by_if()`, and `cam_trial_quantities()`
+are other names for those functions.
+`overall()` and `modifiers()` call `combined()` and `subgroups()`.
 
 ## References
 
@@ -355,6 +355,10 @@ arXiv:2512.18785.
 Panaro RV, Röver C, Friede T (2026). Subgroup comparisons within and
 across studies in meta-analysis. *Research Synthesis Methods* (in
 press). arXiv:2508.15531.
+
+Panaro RV, Röver C, Friede T (2026). Empirical prior distributions for
+treatment-by-subgroup interaction heterogeneity in random-effects
+meta-analysis. arXiv:2606.23968.
 
 Röver C, Friede T (2017). Discrete approximation of a mixture
 distribution via restricted divergence. *Journal of Computational and

@@ -22,7 +22,7 @@ WHO Rapid Evidence Appraisal for COVID-19 Therapies (REACT) Working Group,
 Sterne JAC, Murthy S, et al. (2020). Association between administration of
 systemic corticosteroids and mortality among critically ill patients with
 COVID-19: a meta-analysis. \emph{JAMA}, 324(13), 1330--1341.
-\doi{10.1001/jama.2020.17023}
+\url{https://doi.org/10.1001/jama.2020.17023}
 
 \url{https://pubmed.ncbi.nlm.nih.gov/32876694/}
 }

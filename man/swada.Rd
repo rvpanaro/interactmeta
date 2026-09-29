@@ -61,14 +61,14 @@ The default (\code{weights = "interaction"}) is Interaction RE-weights SWADA
 \eqn{w_j \propto 1/(v_{g j}+\hat\tau_g^2)} and apply them to both
 subgroup series. Under that common vector the DA interaction is
 algebraically identical to AD: \eqn{\sum_j w_j(y_{Bj}-y_{Aj})=\sum_j w_j g_j}.
-The interaction estimate itself is the AD/\code{rma} of \(g_j\); SWADA does not
+The interaction estimate itself is the AD/\code{rma} of \eqn{g_j}; SWADA does not
 introduce a third interaction model.
 }
 \references{
 Panaro RV, Röver C, Friede T (2026).
 Subgroup comparisons within and across studies in meta-analysis.
 \emph{Research Synthesis Methods} (in press).
-arXiv:2508.15531. \doi{10.48550/arXiv.2508.15531}
+arXiv:2508.15531. \url{https://doi.org/10.48550/arXiv.2508.15531}
 }
 \seealso{
 \code{\link[=da]{da()}}, \code{\link[=ad]{ad()}}, \code{\link[=cam]{cam()}}, \code{\link[=conventional]{conventional()}}

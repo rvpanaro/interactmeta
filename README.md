@@ -21,10 +21,11 @@ subgroup.
 
 `bayesmeta` and `metafor` fit the two blocks. interactmeta adds the CAMS
 rotation, reconstruction, and contribution-adjusted estimands.
-`interactions()`, `subgroups()`, and `combined()` extract those estimands
-(`overall()` is an alias of `combined()`). `plot_contribution()` draws
+`cams()` fits the model. `interactions()`, `subgroups()`, and `combined()`
+extract those estimands (`overall()` is another name for `combined()`).
+`plot_contribution()` draws
 μ<sub>A</sub>(π), μ<sub>B</sub>(π), and M(π) across π.
-See `vignette("cam")`.
+See `vignette("cams")`.
 
 **DA** (`da()`, Difference of Averages) and **AD** (`ad()`, Average
 Difference) are **different constructions** (Panaro, Röver & Friede
@@ -45,8 +46,10 @@ alternative CAMS models. See
 CAMS can be fitted using Bayesian or frequentist inference. These are
 not two different scientific models. The approaches are bayesmeta /
 DIRECT quadrature (the default) and metafor (restricted maximum
-likelihood, REML, or maximum likelihood, ML). See
-`vignette("engine-comparison")`.
+likelihood, REML, or maximum likelihood, ML). Bayesian heterogeneity
+defaults match bayesmeta (improper uniform on $\tau$); fixed effects
+use $N(0,10)$. Vignettes set empirical half-normal scales from
+arXiv:2606.23968 explicitly. See `vignette("engine-comparison")`.
 
 ## Example
 
@@ -54,7 +57,12 @@ likelihood, REML, or maximum likelihood, ML). See
 library(interactmeta)
 
 es <- escalc(measure = "IRR", yi = age$yi, vi = age$vi, data = age)
-fit <- cam(es, reference = "Younger")
+fit <- cams(
+  es,
+  reference = "Younger",
+  tau.prior = function(tau) bayesmeta::dhalfnormal(tau, scale = 0.5),
+  tau.interaction.prior = function(tau) bayesmeta::dhalfnormal(tau, scale = 0.1)
+)
 interactions(fit, exponentiate = TRUE)
 subgroups(fit, exponentiate = TRUE)
 plot_contribution(fit)

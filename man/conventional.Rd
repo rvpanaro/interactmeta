@@ -43,8 +43,9 @@ when \code{engine} is omitted; \code{"frequentist"}, \code{"REML"}, or \code{"ML
 \code{engine = "metafor"}. \code{NULL} (default) follows \code{engine} / \code{method}.}
 
 \item{tau.prior, mu.prior}{Bayesian priors when \code{engine = "bayesmeta"}
-(defaults: half-normal 0.5 for \(\tau\); \(N(0,10)\) for \(\mu\)).
-Ignored by metafor.}
+(defaults: improper uniform on \eqn{\tau}, matching bayesmeta;
+\eqn{N(0,10)} on \eqn{\mu}. AD uses the same tau default as CAMS
+interaction). Ignored by metafor.}
 
 \item{...}{Computational options passed to \code{\link[metafor:rma]{metafor::rma()}} or
 \code{\link[bayesmeta:bayesmeta]{bayesmeta::bayesmeta()}} (including \code{engine_args}).}
@@ -73,7 +74,7 @@ together with a between-trial heterogeneity matrix \eqn{\Sigma}.
 Panaro RV, Röver C, Friede T (2026).
 Subgroup comparisons within and across studies in meta-analysis.
 \emph{Research Synthesis Methods} (in press).
-arXiv:2508.15531. \doi{10.48550/arXiv.2508.15531}
+arXiv:2508.15531. \url{https://doi.org/10.48550/arXiv.2508.15531}
 }
 \seealso{
 \code{\link[=da]{da()}}, \code{\link[=ad]{ad()}}, \code{\link[=swada]{swada()}}, \code{\link[=cam]{cam()}}

@@ -27,12 +27,12 @@ multiplicity adjustments in the publications:
 De Soyza A, Aksamit T, Bandel T-J, et al. (2018). RESPIRE 1: a phase III
 placebo-controlled randomised trial of ciprofloxacin dry powder for inhalation
 in non-cystic fibrosis bronchiectasis. \emph{Eur Respir J}, 51(1), 1702052.
-\doi{10.1183/13993003.02052-2017}
+\url{https://doi.org/10.1183/13993003.02052-2017}
 
 Aksamit T, De Soyza A, Bandel T-J, et al. (2018). RESPIRE 2: a phase III
 placebo-controlled randomised trial of ciprofloxacin dry powder for inhalation
 in non-cystic fibrosis bronchiectasis. \emph{Eur Respir J}, 51(1), 1702053.
-\doi{10.1183/13993003.02053-2017}
+\url{https://doi.org/10.1183/13993003.02053-2017}
 
 \url{https://www.accessdata.fda.gov/}
 }

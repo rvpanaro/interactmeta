@@ -1,4 +1,4 @@
-# Optional auditor script: Bayesian CAMS engine comparison on RESPIRE age.
+# Optional script: Bayesian CAMS engine comparison on RESPIRE age.
 # Not run during package checks or vignette building (brms MCMC is slow).
 #
 # From the package root, after installing interactmeta:

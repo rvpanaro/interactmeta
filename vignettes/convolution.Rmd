@@ -45,7 +45,13 @@ age_es <- escalc(measure = "IRR", yi = yi, vi = vi, data = age)
 ```
 
 ```{r fit, cache = TRUE}
-fit <- cam(age_es, reference = "Younger")
+# Article WIP scales (arXiv:2606.23968); package defaults are bayesmeta improper.
+fit <- cam(
+  age_es,
+  reference = "Younger",
+  tau.prior = function(tau) bayesmeta::dhalfnormal(tau, scale = 0.5),
+  tau.interaction.prior = function(tau) bayesmeta::dhalfnormal(tau, scale = 0.1)
+)
 ```
 
 ```{r forest-fp, include = FALSE}
@@ -280,7 +286,7 @@ plot_joint_xy <- function(grid, points, xlab, ylab,
 }
 ```
 
-The CAMS rotation and identities are `vignette("cam")` and Panaro,
+The CAMS rotation and identities are `vignette("cams")` and Panaro,
 Röver & Friede (2025). This page is only the grey diamond.
 
 ## 1. Start with the trial's subgroup estimates

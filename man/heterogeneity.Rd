@@ -36,7 +36,7 @@ with columns \code{parameter}, \code{type}, \code{value}) and, when requested, \
 \description{
 Summarizes between-trial standard deviations in the CAMS random-effects
 structure. For Bayesian CAMS this uses the DIRECT support for
-\(\tau_m\) and \(\tau_g\) (not IID MCMC draws). For frequentist CAMS
+\eqn{\tau_m} and \eqn{\tau_g} (not IID MCMC draws). For frequentist CAMS
 it uses the stored \code{rma} heterogeneity estimates.
 }
 \examples{

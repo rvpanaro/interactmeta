@@ -43,8 +43,9 @@ when \code{engine} is omitted; \code{"frequentist"}, \code{"REML"}, or \code{"ML
 \code{engine = "metafor"}. \code{NULL} (default) follows \code{engine} / \code{method}.}
 
 \item{tau.prior, mu.prior}{Bayesian priors when \code{engine = "bayesmeta"}
-(defaults: half-normal 0.5 for \(\tau\); \(N(0,10)\) for \(\mu\)).
-Ignored by metafor.}
+(defaults: improper uniform on \eqn{\tau}, matching bayesmeta;
+\eqn{N(0,10)} on \eqn{\mu}. AD uses the same tau default as CAMS
+interaction). Ignored by metafor.}
 
 \item{...}{Computational options passed to \code{\link[metafor:rma]{metafor::rma()}} or
 \code{\link[bayesmeta:bayesmeta]{bayesmeta::bayesmeta()}} (including \code{engine_args}).}
@@ -60,7 +61,7 @@ analyses, so DA need not equal \code{\link[=ad]{ad()}}. Panaro, Röver and Fried
 treat DA and AD as \strong{different constructions}.
 }
 \details{
-For binary subgroups with reference \(A\) and non-reference \(B\),
+For binary subgroups with reference \eqn{A} and non-reference \eqn{B},
 \eqn{\mu_A} and \eqn{\mu_B} are independent random-effects meta-analyses
 of the subgroup series, and
 \eqn{\gamma_{\mathrm{DA}} = \mu_B - \mu_A}.
@@ -68,7 +69,7 @@ of the subgroup series, and
 DA is an \strong{analysis construction}, not an inference framework. It may be
 fitted with frequentist inference (\code{engine = "metafor"}, REML/ML) or
 Bayesian inference (\code{engine = "bayesmeta"}). Bayesian DA fits two independent
-univariate \code{\link[bayesmeta:bayesmeta]{bayesmeta::bayesmeta()}} models and forms \(\mu_B - \mu_A\) by
+univariate \code{\link[bayesmeta:bayesmeta]{bayesmeta::bayesmeta()}} models and forms \eqn{\mu_B - \mu_A} by
 Cartesian-product Gaussian-mixture (and optional convolution). It does
 \strong{not} use quantile matching, and it does \strong{not} acquire CAMS
 information-fraction functionality merely because a posterior exists.
@@ -90,21 +91,21 @@ information-fraction construction.
 Panaro RV, Röver C, Friede T (2026).
 Subgroup comparisons within and across studies in meta-analysis.
 \emph{Research Synthesis Methods} (in press).
-arXiv:2508.15531. \doi{10.48550/arXiv.2508.15531}
+arXiv:2508.15531. \url{https://doi.org/10.48550/arXiv.2508.15531}
 
 Fisher DJ, Carpenter JR, Morris TP, Freeman SC, Tierney JF (2017).
 Meta-analytical methods to identify who benefits most from treatments:
 daft, deluded, or deft approach? \emph{BMJ}, 356, j573.
-\doi{10.1136/bmj.j573}
+\url{https://doi.org/10.1136/bmj.j573}
 
 van Houwelingen HC, Arends LR, Stijnen T (2002).
 Advanced methods in meta-analysis: multivariate approach and
 meta-regression. \emph{Statistics in Medicine}, 21(4), 589--624.
-\doi{10.1002/sim.1040}
+\url{https://doi.org/10.1002/sim.1040}
 
 van Houwelingen HC, Zwinderman KH, Stijnen T (1993).
 A bivariate approach to meta-analysis. \emph{Statistics in Medicine},
-12(24), 2273--2284. \doi{10.1002/sim.4780122405}
+12(24), 2273--2284. \url{https://doi.org/10.1002/sim.4780122405}
 }
 \seealso{
 \code{\link[=ad]{ad()}}, \code{\link[=swada]{swada()}}, \code{\link[=cam]{cam()}}, \code{\link[=conventional]{conventional()}}, \code{\link[=interactmeta_capability_matrix]{interactmeta_capability_matrix()}}

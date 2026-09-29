@@ -27,7 +27,8 @@ standardized_trial_effects(
 
 \item{prob}{Coverage probability for intervals when a summary is built.}
 
-\item{max_draws}{Optional cap on posterior draws.}
+\item{max_draws}{Optional cap on unweighted posterior rows. Rejected for
+Bayesian CAMS DIRECT supports; omit it.}
 
 \item{summary}{If \code{TRUE} (default), attach / build a summary when
 \code{format = "list"} or \code{"summary"}.}

@@ -39,3 +39,4 @@ An object of class \code{"bayesmeta"}.
 \description{
 Enough fields for \link[bayesmeta:forestplot.bayesmeta]{bayesmeta::forestplot.bayesmeta} (not a full fitted MA).
 }
+\keyword{internal}

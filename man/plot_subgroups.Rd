@@ -47,7 +47,7 @@ are already CAMS fits.}
 A ggplot object.
 }
 \description{
-\code{plot_modifiers()} is the name to use. \code{plot_subgroups()} remains an alias.
+\code{plot_subgroups()} is the name to use. \code{plot_modifiers()} is another name for the same function.
 Plots DA, SWADA, and CAMS pooled level-specific treatment effects on a
 common axis. Observed trial estimates (shared input) can be included using
 the original published intervals when those columns are present.

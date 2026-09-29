@@ -37,7 +37,7 @@ When provided, only these labels are used (overrides \code{contrast_sep} filteri
 }
 \value{
 The input data (subgroup rows only, unless \code{include_contrast_rows = TRUE})
-with columns \code{precision} and \verb{ifrac_<k>} for each non-reference subgroup \code{k}.
+with columns \code{precision} and \verb{ifrac_*} for each non-reference subgroup.
 }
 \description{
 Builds trial-level information fractions for non-reference subgroups. For
@@ -45,3 +45,4 @@ each trial, information is \code{1 / vi} on subgroup rows, and information
 fractions are \verb{IF_g = I_g / sum_h I_h}. For each non-reference subgroup \code{k},
 \code{ifrac_k = IF_k} (repeated on all rows in the trial).
 }
+\keyword{internal}

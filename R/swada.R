@@ -14,7 +14,7 @@
 #' \eqn{w_j \propto 1/(v_{g j}+\hat\tau_g^2)} and apply them to both
 #' subgroup series. Under that common vector the DA interaction is
 #' algebraically identical to AD: \eqn{\sum_j w_j(y_{Bj}-y_{Aj})=\sum_j w_j g_j}.
-#' The interaction estimate itself is the AD/`rma` of \(g_j\); SWADA does not
+#' The interaction estimate itself is the AD/`rma` of \eqn{g_j}; SWADA does not
 #' introduce a third interaction model.
 #'
 #' @param data A data frame with `trial`, `subgroup`, `yi`, and `vi`.
@@ -35,7 +35,7 @@
 #' Panaro RV, Röver C, Friede T (2026).
 #' Subgroup comparisons within and across studies in meta-analysis.
 #' \emph{Research Synthesis Methods} (in press).
-#' arXiv:2508.15531. \doi{10.48550/arXiv.2508.15531}
+#' arXiv:2508.15531. \url{https://doi.org/10.48550/arXiv.2508.15531}
 #' @seealso [da()], [ad()], [cam()], [conventional()]
 #' @export
 swada <- function(data,
@@ -227,9 +227,9 @@ interactmeta_as_ad <- function(x, from_conventional = NULL) {
 
 #' Side-by-side level-specific treatment effects from DA, SWADA, and CAMS
 #'
-#' `compare_modifiers()` is the name to use. `compare_subgroups()` remains
-#' an alias. Display labels are `DA` ([da()] or the DA part of [conventional()]),
-#' `SWADA` ([swada()]), and `CAMS` ([cam()]). These are not three equivalent
+#' `compare_subgroups()` is the name to use. `compare_modifiers()` is another
+#' name for the same function. Display labels are `DA` ([da()] or the DA part of [conventional()]),
+#' `SWADA` ([swada()]), and `CAMS` ([cams()]). These are not three equivalent
 #' statistical models: DA is separate subgroup pooling, SWADA applies one
 #' common weight vector, and CAMS is the contribution-adjusted model.
 #' Average Difference ([ad()]) does not itself pool subgroup-specific
@@ -570,15 +570,15 @@ compare_weights <- function(da, ad = NULL, swada = NULL) {
 
 #' Trial-level CAMS quantities \eqn{\pi_j}, \eqn{m_j}, \eqn{g_j}
 #'
-#' Reads the transformed trial blocks stored on a [cam()] fit
+#' Reads the transformed trial blocks stored on a [cams()] fit
 #' (`fit$transformed_data$trial_blocks`). For binary CAMS,
 #' \eqn{g_j = y_{B j} - y_{A j}} with `A` the reference subgroup.
 #'
 #' @param fit An `interactmeta` fit.
 #' @return A data frame with `trial`, `pi`, `m`, `v_m`, `g`, and `v_g`.
-#' @aliases cams_trial_quantities
+#' @name cams_trial_quantities
 #' @export
-cam_trial_quantities <- function(fit) {
+cams_trial_quantities <- function(fit) {
   stopifnot(inherits(fit, "interactmeta"))
   blocks <- fit$transformed_data$trial_blocks
   if (is.null(blocks)) {
@@ -604,13 +604,13 @@ cam_trial_quantities <- function(fit) {
   out
 }
 
-#' @rdname cam_trial_quantities
+#' @rdname cams_trial_quantities
 #' @export
-cams_trial_quantities <- cam_trial_quantities
+cam_trial_quantities <- cams_trial_quantities
 
 #' Comparable forest of level-specific treatment effects
 #'
-#' `plot_modifiers()` is the name to use. `plot_subgroups()` remains an alias.
+#' `plot_subgroups()` is the name to use. `plot_modifiers()` is another name for the same function.
 #' Plots DA, SWADA, and CAMS pooled level-specific treatment effects on a
 #' common axis. Observed trial estimates (shared input) can be included using
 #' the original published intervals when those columns are present.

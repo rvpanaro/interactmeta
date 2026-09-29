@@ -31,7 +31,7 @@ measures (incidence-rate ratios (IRRs), odds ratios (ORs), and hazard
 ratios (HRs)). This vignette is a visual tour of those tables through
 contribution-adjusted meta-analysis (CAMS): what was studied, who the
 subgroups are, how the numbers enter a fit, and the native forest plot
-of that fit. The CAMS model itself is `vignette("cam")`. Incomplete
+of that fit. The CAMS model itself is `vignette("cams")`. Incomplete
 subgroup tables (single-subgroup trials) are
 `vignette("single-subgroup-trials")`.
 
@@ -79,7 +79,15 @@ head(age_es)
 `measure = "IRR"` tags that scale for CAMS.
 
 ```{r age-fit, cache = TRUE}
-fit_age <- cam(age_es, reference = "Younger")
+# Article WIP scales (arXiv:2606.23968); package defaults are bayesmeta improper.
+tau_m <- function(tau) bayesmeta::dhalfnormal(tau, scale = 0.5)
+tau_g <- function(tau) bayesmeta::dhalfnormal(tau, scale = 0.1)
+fit_age <- cam(
+  age_es,
+  reference = "Younger",
+  tau.prior = tau_m,
+  tau.interaction.prior = tau_g
+)
 ```
 
 ```{r age-forest, fig.width = 8, fig.height = 6}
@@ -111,7 +119,12 @@ head(edss_es)
 ```
 
 ```{r edss-fit, cache = TRUE}
-fit_edss <- cam(edss_es, reference = "Lower")
+fit_edss <- cam(
+  edss_es,
+  reference = "Lower",
+  tau.prior = tau_m,
+  tau.interaction.prior = tau_g
+)
 ```
 
 ```{r edss-forest, fig.width = 8, fig.height = 6}
@@ -261,7 +274,12 @@ respire_age_es <- escalc(
 ```
 
 ```{r respire-age-fit, cache = TRUE}
-fit_respire_age <- cam(respire_age_es, reference = "<65")
+fit_respire_age <- cam(
+  respire_age_es,
+  reference = "<65",
+  tau.prior = tau_m,
+  tau.interaction.prior = tau_g
+)
 ```
 
 ```{r respire-age-forest, fig.width = 8, fig.height = 6}
@@ -291,7 +309,12 @@ respire_sex_es <- escalc(
 ```
 
 ```{r respire-sex-fit, cache = TRUE}
-fit_respire_sex <- cam(respire_sex_es, reference = "Male")
+fit_respire_sex <- cam(
+  respire_sex_es,
+  reference = "Male",
+  tau.prior = tau_m,
+  tau.interaction.prior = tau_g
+)
 ```
 
 ```{r respire-sex-forest, fig.width = 8, fig.height = 6}

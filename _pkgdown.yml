@@ -8,3 +8,97 @@ navbar:
   structure:
     left: [intro, reference, articles, news]
     right: [search]
+
+reference:
+- title: Main workflow
+  desc: >
+    Fit a CAMS model with cams(), extract the main effects,
+    and create the principal visualizations.
+  contents:
+  - cams
+  - ifrac
+  - interactions
+  - subgroups
+  - combined
+  - heterogeneity
+  - shrinkage
+  - forestplot
+  - plot_contribution
+
+- title: Alternative analyses
+  desc: >
+    Separate constructions, plus the Bayesian wrapper.
+  contents:
+  - da
+  - ad
+  - swada
+  - conventional
+  - bayescams
+
+- title: Comparison functions
+  contents:
+  - compare_interactions
+  - compare_subgroups
+  - compare_combined
+  - compare_heterogeneity
+  - compare_ifrac
+  - compare_weights
+
+- title: Diagnostics and inspection
+  contents:
+  - predict_cams_by_if
+  - observed_effects
+  - standardized_trial_effects
+  - cams_trial_quantities
+  - shrinkage_diagnostics
+
+- title: Additional plots
+  contents:
+  - plot_subgroups
+  - plot_heterogeneity
+  - forestplot_height
+
+- title: Data conversion
+  contents:
+  - log_hr_from_ci
+  - hr_ci_from_log
+
+- title: Styling and reporting
+  contents:
+  - interactmeta_palette
+  - interactmeta_theme_report
+  - interactmeta_capability_matrix
+
+- title: Interoperability
+  desc: >
+    Re-exported helpers from other packages, including escalc().
+  contents:
+  - tidy
+
+- title: Data
+  contents:
+  - age
+  - edss
+  - il6
+  - steroids
+  - respire_age
+  - respire_sex
+
+- title: Methods
+  contents:
+  - print.interactmeta
+  - summary.interactmeta
+  - fitted.interactmeta
+  - as.data.frame.interactmeta
+  - tidy.interactmeta_subgroup_effects
+  - tidy.interactmeta_interaction_effects
+  - tidy.interactmeta_overall_effect
+  - tidy.interactmeta_heterogeneity
+  - plot.interactmeta_compare
+  - traceplot.interactmeta
+  - print.interactmeta_overall_ifrac
+  - interactmeta-fit
+
+- title: About
+  contents:
+  - interactmeta-package

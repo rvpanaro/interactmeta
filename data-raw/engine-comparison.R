@@ -1,4 +1,4 @@
-# Optional auditor script: CAMS engine × method comparison on the bundled
+# Optional script: CAMS engine × method comparison on the bundled
 # `edss` data. The vignette `vignettes/engine-comparison.Rmd` fits the same
 # objects live when the backends are installed. This script is the
 # documented procedure for regenerating those fits outside a vignette

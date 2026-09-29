@@ -68,25 +68,16 @@ interactmeta_build_input <- function(data,
   )
 }
 
-#' Deprecated alias for [cam()]
-#'
-#' @inheritDotParams cam
-#' @export
-comparison <- function(...) {
-  .Deprecated("cam")
-  cam(...)
-}
-
 #' Bayesian CAMS fit
 #'
-#' Convenience wrapper for [cam()] with Bayesian inference
+#' Convenience wrapper for [cams()] with Bayesian inference
 #' (`method = "bayes"`), implemented using bayesmeta/DIRECT.
-#' Frequentist CAMS uses `cam(..., engine = "metafor")`.
+#' Frequentist CAMS uses `cams(..., engine = "metafor")`.
 #'
-#' @inheritParams cam
+#' @inheritParams cams
 #' @param engine Approach for Bayesian CAMS. The public implementation is
 #'   `"bayesmeta"`.
-#' @param ... Further arguments passed to [cam()] (e.g. `tau.prior`,
+#' @param ... Further arguments passed to [cams()] (e.g. `tau.prior`,
 #'   `engine_args`, `ecological_slope`, `silent`, `seed`).
 #'   `method` is forced to `"bayes"`.
 #' @return A fit of class `"interactmeta"`.
@@ -95,12 +86,13 @@ comparison <- function(...) {
 #' \dontrun{
 #' library(interactmeta)
 #' es <- escalc(measure = "IRR", yi = age$yi, vi = age$vi, data = age)
-#' fit <- bayescam(es, reference = "Younger")
+#' fit <- bayescams(es, reference = "Younger")
 #' }
 #'
-#' @seealso [cam()], [forestplot()]
+#' @seealso [cams()], [forestplot()]
+#' @name bayescams
 #' @export
-bayescam <- function(x,
+bayescams <- function(x,
                      reference = NULL,
                      modifier = NULL,
                      trial = NULL,
@@ -120,8 +112,8 @@ bayescam <- function(x,
   dots <- list(...)
   if ("method" %in% names(dots)) {
     warning(
-      "`method` is ignored by `bayescam()`; Bayesian CAMS is always used. ",
-      "For frequentist CAMS, call `cam(..., engine = \"metafor\")`.",
+      "`method` is ignored by `bayescams()`; Bayesian CAMS is always used. ",
+      "For frequentist CAMS, call `cams(..., engine = \"metafor\")`.",
       call. = FALSE
     )
     dots$method <- NULL
@@ -153,6 +145,6 @@ bayescam <- function(x,
   )
 }
 
-#' @rdname bayescam
+#' @rdname bayescams
 #' @export
-bayescams <- bayescam
+bayescam <- bayescams

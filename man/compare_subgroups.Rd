@@ -28,9 +28,9 @@ A tibble with one row per approach × subgroup and class
 \code{interactmeta_compare_subgroups} (plottable).
 }
 \description{
-\code{compare_modifiers()} is the name to use. \code{compare_subgroups()} remains
-an alias. Display labels are \code{DA} (\code{\link[=da]{da()}} or the DA part of \code{\link[=conventional]{conventional()}}),
-\code{SWADA} (\code{\link[=swada]{swada()}}), and \code{CAMS} (\code{\link[=cam]{cam()}}). These are not three equivalent
+\code{compare_subgroups()} is the name to use. \code{compare_modifiers()} is another
+name for the same function. Display labels are \code{DA} (\code{\link[=da]{da()}} or the DA part of \code{\link[=conventional]{conventional()}}),
+\code{SWADA} (\code{\link[=swada]{swada()}}), and \code{CAMS} (\code{\link[=cams]{cams()}}). These are not three equivalent
 statistical models: DA is separate subgroup pooling, SWADA applies one
 common weight vector, and CAMS is the contribution-adjusted model.
 Average Difference (\code{\link[=ad]{ad()}}) does not itself pool subgroup-specific

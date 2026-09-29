@@ -1,4 +1,4 @@
-#' Information fractions: design columns and pooled overall IF
+#' Information fraction within each trial and pooled across trials
 #'
 #' **Design** (default): computes information fractions within each trial from
 #' subgroup variances.
@@ -67,7 +67,7 @@
 #'   `subgroup = "Overall"`.
 #' @param include_interaction Logical. If `FALSE` (default), return subgroup rows
 #'   only while still using `contrast` to define the reference-centered
-#'   `ifrac_<k>` design columns. If `TRUE` and `contrast` is not
+#'   `ifrac_*` design columns. If `TRUE` and `contrast` is not
 #'   `NULL`, append interaction/contrast rows below subgroup rows.
 #'
 #' **Pooling** ( [`interactmeta`], or [ifrac()] data with `ifrac_*` columns):
@@ -75,13 +75,13 @@
 #' \deqn{\bar{\omega} = \sum_i \pi_i w_i / \sum_i w_i.}
 #' With `ifrac = "interaction"` (default),
 #' \eqn{w_i = 1/(\tau_\gamma^2 + \sigma_{Ai}^2 + \sigma_{Bi}^2)} using the
-#' interaction-block SD `\tau_\gamma`.
+#' interaction-block SD \eqn{\tau_\gamma}.
 #' With `ifrac = "overall"`, \eqn{w_i = 1/(\tau^2 + v_i)} using the
-#' overall-block intercept SD `\tau` and
-#' \(v_i=\mathrm{Var}(m_i)=(1-\pi_i)^2\sigma_{Ai}^2+\pi_i^2\sigma_{Bi}^2\).
-#' On Bayesian CAMS, `\tau` / `\tau_\gamma` are DIRECT posterior supports, so
+#' overall-block intercept SD \eqn{\tau} and
+#' \eqn{v_i=\mathrm{Var}(m_i)=(1-\pi_i)^2\sigma_{Ai}^2+\pi_i^2\sigma_{Bi}^2}.
+#' On Bayesian CAMS, \eqn{\tau} / \eqn{\tau_\gamma} are DIRECT posterior supports, so
 #' the pooled IF is a distribution. On frequentist CAMS (`engine = "metafor"`),
-#' pooling is a plug-in at the fitted `\tau` or `\tau_\gamma`.
+#' pooling is a plug-in at the fitted \eqn{\tau} or \eqn{\tau_\gamma}.
 #' See argument details below and examples.
 #'
 #' @param ifrac For pooling only: `"interaction"` (default) or `"overall"`.

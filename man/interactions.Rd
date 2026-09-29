@@ -21,12 +21,12 @@ interactions(
 \item{fit}{A \code{\link{interactmeta}} from \code{\link[=cam]{cam()}}.}
 
 \item{contribution, ifrac, prob, max_draws, summary, contrast_sep, exponentiate, shrinkage}{As in \code{\link[=subgroups]{subgroups()}}. \code{contribution} / \code{ifrac} are unused for the
-pooled interaction \(\gamma\); they are retained for API compatibility
+pooled interaction \eqn{\gamma}; they are retained for API compatibility
 and are used when \code{shrinkage = TRUE}.}
 
 \item{type}{One or both of \code{"Pooled"} and \code{"Prediction"} when \code{shrinkage = FALSE}.
-\code{"Pooled"} is the fixed interaction \(\gamma\). \code{"Prediction"} is
-the interaction in a \strong{new trial}: \(\gamma\) plus
+\code{"Pooled"} is the fixed interaction \eqn{\gamma}. \code{"Prediction"} is
+the interaction in a \strong{new trial}: \eqn{\gamma} plus
 trial-level slope heterogeneity \code{v * (ifrac2_nonref - ifrac2_ref)}
 (intercept trial RE cancels within a study).}
 }
@@ -35,9 +35,9 @@ A \code{interactmeta_interaction_effects} object analogous to \code{\link[=subgr
 with an \code{interaction} column instead of \code{subgroup}.
 }
 \description{
-Reports the CAMS treatment-by-subgroup interaction \(\gamma\).
-For binary CAMS, \(\mu_B(\pi)-\mu_A(\pi)=\gamma\) for every
-information fraction \(\pi\), so this quantity is \strong{not} evaluated
+Reports the CAMS treatment-by-subgroup interaction \eqn{\gamma}.
+For binary CAMS, \eqn{\mu_B(\pi)-\mu_A(\pi)=\gamma} for every
+information fraction \eqn{\pi}, so this quantity is \strong{not} evaluated
 at the overall IF. \code{"Prediction"} adds new-trial interaction
 heterogeneity. Named \code{interactions()} to match \code{\link[=subgroups]{subgroups()}} and so it
 does not mask \code{stats::interaction()}.

@@ -183,7 +183,7 @@ interactmeta_ad_from_pairs <- function(pairs, method, rma_args, call) {
 #' analyses, so DA need not equal [ad()]. Panaro, Röver and Friede (2026)
 #' treat DA and AD as **different constructions**.
 #'
-#' For binary subgroups with reference \(A\) and non-reference \(B\),
+#' For binary subgroups with reference \eqn{A} and non-reference \eqn{B},
 #' \eqn{\mu_A} and \eqn{\mu_B} are independent random-effects meta-analyses
 #' of the subgroup series, and
 #' \eqn{\gamma_{\mathrm{DA}} = \mu_B - \mu_A}.
@@ -191,7 +191,7 @@ interactmeta_ad_from_pairs <- function(pairs, method, rma_args, call) {
 #' DA is an **analysis construction**, not an inference framework. It may be
 #' fitted with frequentist inference (`engine = "metafor"`, REML/ML) or
 #' Bayesian inference (`engine = "bayesmeta"`). Bayesian DA fits two independent
-#' univariate [bayesmeta::bayesmeta()] models and forms \(\mu_B - \mu_A\) by
+#' univariate [bayesmeta::bayesmeta()] models and forms \eqn{\mu_B - \mu_A} by
 #' Cartesian-product Gaussian-mixture (and optional convolution). It does
 #' **not** use quantile matching, and it does **not** acquire CAMS
 #' information-fraction functionality merely because a posterior exists.
@@ -222,8 +222,9 @@ interactmeta_ad_from_pairs <- function(pairs, method, rma_args, call) {
 #'   and `"bayes"` for bayesmeta. metafor also accepts `"ML"`. If `engine` is
 #'   omitted, `"bayes"` uses bayesmeta and `"REML"` / `"ML"` use metafor.
 #' @param tau.prior,mu.prior Bayesian priors when `engine = "bayesmeta"`
-#'   (defaults: half-normal 0.5 for \(\tau\); \(N(0,10)\) for \(\mu\)).
-#'   Ignored by metafor.
+#'   (defaults: improper uniform on \eqn{\tau}, matching bayesmeta;
+#'   \eqn{N(0,10)} on \eqn{\mu}. AD uses the same tau default as CAMS
+#'   interaction). Ignored by metafor.
 #' @param ... Computational options passed to [metafor::rma()] or
 #'   [bayesmeta::bayesmeta()] (including `engine_args`).
 #' @return An object of class `"interactmeta_da"`.
@@ -231,21 +232,21 @@ interactmeta_ad_from_pairs <- function(pairs, method, rma_args, call) {
 #' Panaro RV, Röver C, Friede T (2026).
 #' Subgroup comparisons within and across studies in meta-analysis.
 #' \emph{Research Synthesis Methods} (in press).
-#' arXiv:2508.15531. \doi{10.48550/arXiv.2508.15531}
+#' arXiv:2508.15531. \url{https://doi.org/10.48550/arXiv.2508.15531}
 #'
 #' Fisher DJ, Carpenter JR, Morris TP, Freeman SC, Tierney JF (2017).
 #' Meta-analytical methods to identify who benefits most from treatments:
 #' daft, deluded, or deft approach? \emph{BMJ}, 356, j573.
-#' \doi{10.1136/bmj.j573}
+#' \url{https://doi.org/10.1136/bmj.j573}
 #'
 #' van Houwelingen HC, Arends LR, Stijnen T (2002).
 #' Advanced methods in meta-analysis: multivariate approach and
 #' meta-regression. \emph{Statistics in Medicine}, 21(4), 589--624.
-#' \doi{10.1002/sim.1040}
+#' \url{https://doi.org/10.1002/sim.1040}
 #'
 #' van Houwelingen HC, Zwinderman KH, Stijnen T (1993).
 #' A bivariate approach to meta-analysis. \emph{Statistics in Medicine},
-#' 12(24), 2273--2284. \doi{10.1002/sim.4780122405}
+#' 12(24), 2273--2284. \url{https://doi.org/10.1002/sim.4780122405}
 #' @param modifier Column of the two levels. Overrides `subgroup` when set.
 #'   The default column remains `"subgroup"`.
 #' @seealso [ad()], [swada()], [cam()], [conventional()], [interactmeta_capability_matrix()]
@@ -286,17 +287,17 @@ da <- function(data,
 #'
 #' **Average Difference (AD)** first forms the within-study
 #' treatment-by-subgroup difference and then meta-analyzes those
-#' differences. For binary subgroups with reference \(A\) and non-reference
-#' \(B\),
+#' differences. For binary subgroups with reference \eqn{A} and non-reference
+#' \eqn{B},
 #' \eqn{g_j = y_{Bj} - y_{Aj}} with
 #' \eqn{\sigma_{gj}^2 = \sigma_{Aj}^2 + \sigma_{Bj}^2} (within-trial subgroup
-#' covariance assumed zero), and \(\gamma_{\mathrm{AD}}\) is a random-effects
-#' meta-analysis of the \(g_j\).
+#' covariance assumed zero), and \eqn{\gamma_{\mathrm{AD}}} is a random-effects
+#' meta-analysis of the \eqn{g_j}.
 #'
 #' AD is a **different construction** from [da()] (Panaro, Röver & Friede
 #' 2026), not an inference framework. It may be fitted with
 #' `engine = "metafor"` (REML/ML) or `engine = "bayesmeta"` (Bayesian RE-MA
-#' of \(g_j\)). The CAMS manuscript’s BIM (Bayesian interaction
+#' of \eqn{g_j}). The CAMS manuscript’s BIM (Bayesian interaction
 #' meta-analysis) is the Bayesian analogue of this construction. A Bayesian
 #' AD fit is internally complete: it does not borrow uncertainty or
 #' heterogeneity from Bayesian DA or CAMS. It still does **not** use CAMS
@@ -314,16 +315,16 @@ da <- function(data,
 #' Panaro RV, Röver C, Friede T (2026).
 #' Subgroup comparisons within and across studies in meta-analysis.
 #' \emph{Research Synthesis Methods} (in press).
-#' arXiv:2508.15531. \doi{10.48550/arXiv.2508.15531}
+#' arXiv:2508.15531. \url{https://doi.org/10.48550/arXiv.2508.15531}
 #'
 #' Fisher DJ, Carpenter JR, Morris TP, Freeman SC, Tierney JF (2017).
 #' Meta-analytical methods to identify who benefits most from treatments:
 #' daft, deluded, or deft approach? \emph{BMJ}, 356, j573.
-#' \doi{10.1136/bmj.j573}
+#' \url{https://doi.org/10.1136/bmj.j573}
 #'
 #' Panaro RV, Röver C, Friede T (2025).
 #' Consistent Bayesian meta-analysis on subgroup specific effects and
-#' interactions. arXiv:2512.18785. \doi{10.48550/arXiv.2512.18785}
+#' interactions. arXiv:2512.18785. \url{https://doi.org/10.48550/arXiv.2512.18785}
 #' @param modifier Column of the two levels. Overrides `subgroup` when set.
 #'   The default column remains `"subgroup"`.
 #' @seealso [da()], [swada()], [cam()], [conventional()], [interactmeta_capability_matrix()]
@@ -499,7 +500,7 @@ interactmeta_fit_da_ad <- function(analysis,
 #' Panaro RV, Röver C, Friede T (2026).
 #' Subgroup comparisons within and across studies in meta-analysis.
 #' \emph{Research Synthesis Methods} (in press).
-#' arXiv:2508.15531. \doi{10.48550/arXiv.2508.15531}
+#' arXiv:2508.15531. \url{https://doi.org/10.48550/arXiv.2508.15531}
 #' @param modifier Column of the two levels. Overrides `subgroup` when set.
 #'   The default column remains `"subgroup"`.
 #' @seealso [da()], [ad()], [swada()], [cam()]
@@ -698,6 +699,7 @@ tidy.interactmeta_conventional <- function(x, exponentiate = FALSE, ...) {
   tibble::as_tibble(out)
 }
 
+#' @name ifrac
 #' @rdname ifrac
 #' @export
 ifrac.interactmeta_da <- function(x, ...) {

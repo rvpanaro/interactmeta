@@ -29,7 +29,7 @@ knitr::opts_chunk$set(
 
 A published subgroup table supplies $(y_{Aj},y_{Bj}, \sigma_{Aj},\sigma_{Bj})$ in each trial. There is more than one way to turn that table into an interaction, and the constructions are **not** the same estimand.
 
-**Difference of Averages** (DA) and **Average Difference** (AD) are **different constructions** (Panaro, Röver & Friede 2026). DA need not equal AD. **Same Weighting Across Different Analyses** (SWADA) is a weighting principle for making those two constructions share study contributions and estimand. **Contribution-adjusted meta-analysis** (CAMS) is a statistical model for contribution-adjusted subgroup and combined-population effects, not another weighting of DA or AD. The CAMS map itself is `vignette("cam")`.
+**Difference of Averages** (DA) and **Average Difference** (AD) are **different constructions** (Panaro, Röver & Friede 2026). DA need not equal AD. **Same Weighting Across Different Analyses** (SWADA) is a weighting principle for making those two constructions share study contributions and estimand. **Contribution-adjusted meta-analysis** (CAMS) is a statistical model for contribution-adjusted subgroup and combined-population effects, not another weighting of DA or AD. The CAMS map itself is `vignette("cams")`.
 
 This vignette uses DA, AD, and SWADA only as context for that distinction. None of these is the van Houwelingen, Arends and Stijnen (2002) bivariate mixed model or the within-trial framework Godolphin et al 2023.
 

@@ -28,3 +28,4 @@ Format heterogeneity summaries as a one-line character string
 \seealso{
 \code{\link[=heterogeneity]{heterogeneity()}}
 }
+\keyword{internal}

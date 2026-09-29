@@ -22,7 +22,7 @@
 #' Sterne JAC, Murthy S, et al. (2021). Association between administration of
 #' IL-6 antagonists and mortality among patients hospitalized for COVID-19:
 #' a meta-analysis. \emph{JAMA}, 326(6), 499--518.
-#' \doi{10.1001/jama.2021.11330}
+#' \url{https://doi.org/10.1001/jama.2021.11330}
 #'
 #' \url{https://pubmed.ncbi.nlm.nih.gov/34228774/}
 #' @usage data(il6)

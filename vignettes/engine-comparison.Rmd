@@ -25,7 +25,7 @@ knitr::opts_chunk$set(
 ## One CAMS model, two approaches
 
 Contribution-adjusted meta-analysis (CAMS) is one model. Bayesian and
-frequentist CAMS are the same map (`vignette("cam")`). What differs is
+frequentist CAMS are the same map (`vignette("cams")`). What differs is
 how heterogeneity uncertainty enters the reporting mix $\omega$, and
 therefore the default pooled diamonds.
 
@@ -89,7 +89,13 @@ age_es <- escalc(measure = "IRR", yi = yi, vi = vi, data = age)
 ```
 
 ```{r fit-bayes, cache = TRUE}
-fit_cams_bayes <- cam(age_es, reference = "Younger")
+# Article WIP scales (arXiv:2606.23968); package defaults are bayesmeta improper.
+fit_cams_bayes <- cam(
+  age_es,
+  reference = "Younger",
+  tau.prior = function(tau) bayesmeta::dhalfnormal(tau, scale = 0.5),
+  tau.interaction.prior = function(tau) bayesmeta::dhalfnormal(tau, scale = 0.1)
+)
 ```
 
 ```{r fit-freq, cache = TRUE}
@@ -193,7 +199,7 @@ compare_interactions(
 
 Default `type = "Pooled"` is the population interaction, not a
 prediction for a new trial. The two points need not coincide:
-bayesmeta integrates a half-normal prior on $\tau_\gamma$; metafor
+bayesmeta integrates over the prior on $\tau_\gamma$; metafor
 estimates it by REML.
 
 ## Heterogeneity
@@ -203,9 +209,11 @@ compare_heterogeneity(fit_cams_bayes, fit_cams_freq)
 ```
 
 `Overall` is $\tau$; `Interaction_Older` is $\tau_\gamma$. The
-Bayesian default on $\tau_\gamma$ is $\mathrm{Normal}^+(0,0.1)$, so
+Bayesian fit above uses the article WIP half-normal
+$\mathrm{Normal}^+(0,0.1)$ on $\tau_\gamma$ (arXiv:2606.23968), so
 DIRECT is pulled toward smaller values than REML. That is
 prior-plus-integration versus estimation, not a change of estimand.
+Package Bayesian defaults alone match bayesmeta's improper uniform.
 Frequentist print reports the fitted $\tau$ and a delta-method
 standard error (SE), not a profile interval, so the REML points have
 no interval here.

@@ -42,7 +42,7 @@ This vignette contrasts Difference of Averages (DA), Average Difference
 contribution-adjusted meta-analysis (CAMS) on that mixed table. DA, AD,
 and SWADA are **different constructions**, not alternative CAMS models
 (`vignette("consistent-interactions")`). The CAMS map itself is
-`vignette("cam")`. The fit here uses frequentist CAMS.
+`vignette("cams")`. The fit here uses frequentist CAMS.
 
 ```{r load}
 library(interactmeta)

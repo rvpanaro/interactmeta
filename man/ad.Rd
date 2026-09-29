@@ -43,8 +43,9 @@ when \code{engine} is omitted; \code{"frequentist"}, \code{"REML"}, or \code{"ML
 \code{engine = "metafor"}. \code{NULL} (default) follows \code{engine} / \code{method}.}
 
 \item{tau.prior, mu.prior}{Bayesian priors when \code{engine = "bayesmeta"}
-(defaults: half-normal 0.5 for \(\tau\); \(N(0,10)\) for \(\mu\)).
-Ignored by metafor.}
+(defaults: improper uniform on \eqn{\tau}, matching bayesmeta;
+\eqn{N(0,10)} on \eqn{\mu}. AD uses the same tau default as CAMS
+interaction). Ignored by metafor.}
 
 \item{...}{Computational options passed to \code{\link[metafor:rma]{metafor::rma()}} or
 \code{\link[bayesmeta:bayesmeta]{bayesmeta::bayesmeta()}} (including \code{engine_args}).}
@@ -55,18 +56,18 @@ An object of class \code{"interactmeta_ad"}.
 \description{
 \strong{Average Difference (AD)} first forms the within-study
 treatment-by-subgroup difference and then meta-analyzes those
-differences. For binary subgroups with reference \(A\) and non-reference
-\(B\),
+differences. For binary subgroups with reference \eqn{A} and non-reference
+\eqn{B},
 \eqn{g_j = y_{Bj} - y_{Aj}} with
 \eqn{\sigma_{gj}^2 = \sigma_{Aj}^2 + \sigma_{Bj}^2} (within-trial subgroup
-covariance assumed zero), and \(\gamma_{\mathrm{AD}}\) is a random-effects
-meta-analysis of the \(g_j\).
+covariance assumed zero), and \eqn{\gamma_{\mathrm{AD}}} is a random-effects
+meta-analysis of the \eqn{g_j}.
 }
 \details{
 AD is a \strong{different construction} from \code{\link[=da]{da()}} (Panaro, Röver & Friede
 2026), not an inference framework. It may be fitted with
 \code{engine = "metafor"} (REML/ML) or \code{engine = "bayesmeta"} (Bayesian RE-MA
-of \(g_j\)). The CAMS manuscript’s BIM (Bayesian interaction
+of \eqn{g_j}). The CAMS manuscript’s BIM (Bayesian interaction
 meta-analysis) is the Bayesian analogue of this construction. A Bayesian
 AD fit is internally complete: it does not borrow uncertainty or
 heterogeneity from Bayesian DA or CAMS. It still does \strong{not} use CAMS
@@ -82,16 +83,16 @@ different object: the CAMS statistical model.
 Panaro RV, Röver C, Friede T (2026).
 Subgroup comparisons within and across studies in meta-analysis.
 \emph{Research Synthesis Methods} (in press).
-arXiv:2508.15531. \doi{10.48550/arXiv.2508.15531}
+arXiv:2508.15531. \url{https://doi.org/10.48550/arXiv.2508.15531}
 
 Fisher DJ, Carpenter JR, Morris TP, Freeman SC, Tierney JF (2017).
 Meta-analytical methods to identify who benefits most from treatments:
 daft, deluded, or deft approach? \emph{BMJ}, 356, j573.
-\doi{10.1136/bmj.j573}
+\url{https://doi.org/10.1136/bmj.j573}
 
 Panaro RV, Röver C, Friede T (2025).
 Consistent Bayesian meta-analysis on subgroup specific effects and
-interactions. arXiv:2512.18785. \doi{10.48550/arXiv.2512.18785}
+interactions. arXiv:2512.18785. \url{https://doi.org/10.48550/arXiv.2512.18785}
 }
 \seealso{
 \code{\link[=da]{da()}}, \code{\link[=swada]{swada()}}, \code{\link[=cam]{cam()}}, \code{\link[=conventional]{conventional()}}, \code{\link[=interactmeta_capability_matrix]{interactmeta_capability_matrix()}}

@@ -16,15 +16,15 @@ Subgroup-specific effects are inputs and derived outputs. The target is
 not a separate meta-analysis within each subgroup.
 }
 \details{
-Preferred fitter: \code{\link[=cam]{cam()}}. \code{\link[=cams]{cams()}} and \code{\link[=subgroupmeta]{subgroupmeta()}} are aliases.
+Fitter: \code{\link[=cams]{cams()}}. \code{\link[=cam]{cam()}} is another name for the same function.
 CAMS can be fitted using Bayesian or frequentist inference. Bayesian CAMS
 is implemented using \strong{bayesmeta}/DIRECT quadrature on the two
 orthogonal blocks; frequentist CAMS is implemented using \strong{metafor}.
 Those packages fit random-effects series. interactmeta constructs the
-information fraction \(\pi_j\), rotates the observations, reconstructs
+information fraction \eqn{\pi_j}, rotates the observations, reconstructs
 contribution-adjusted estimands, and preserves
-\(\mu_B(\pi)-\mu_A(\pi)=\gamma\) and
-\(M(\pi)=(1-\pi)\mu_A(\pi)+\pi\mu_B(\pi)\).
+\eqn{\mu_B(\pi)-\mu_A(\pi)=\gamma} and
+\eqn{M(\pi)=(1-\pi)\mu_A(\pi)+\pi\mu_B(\pi)}.
 
 \code{\link[=da]{da()}} (Difference of Averages) and \code{\link[=ad]{ad()}} (Average Difference) are
 \strong{different constructions} (Panaro, Röver & Friede 2026), not two names
@@ -39,17 +39,17 @@ information-fraction estimands.
 
 \enumerate{
 \item \code{\link[=ifrac]{ifrac()}} builds trial information fractions
-\(\pi_j=\sigma_{Bj}^{-2}/(\sigma_{Aj}^{-2}+\sigma_{Bj}^{-2})\).
-\item The observations rotate to \(g_j=y_{Bj}-y_{Aj}\) and
-\(m_j=(1-\pi_j)y_{Aj}+\pi_j y_{Bj}\).
-\item The overall block is a meta-regression of \(m_j\) on \(\pi_j\); the
-interaction block is a random-effects analysis of \(g_j\).
+\eqn{\pi_j=\sigma_{Bj}^{-2}/(\sigma_{Aj}^{-2}+\sigma_{Bj}^{-2})}.
+\item The observations rotate to \eqn{g_j=y_{Bj}-y_{Aj}} and
+\eqn{m_j=(1-\pi_j)y_{Aj}+\pi_j y_{Bj}}.
+\item The overall block is a meta-regression of \eqn{m_j} on \eqn{\pi_j}; the
+interaction block is a random-effects analysis of \eqn{g_j}.
 \item Extractors return the interaction \code{\link[=interactions]{interactions()}}, subgroup effects
 \code{\link[=subgroups]{subgroups()}}, and combined-population effect \code{\link[=combined]{combined()}}
-(\code{\link[=overall]{overall()}} is an alias) at a reporting \(\pi\).
-\item \code{\link[=plot_contribution]{plot_contribution()}} / \code{\link[=predict_cam_by_if]{predict_cam_by_if()}} evaluate
-\(\mu_A(\pi)\), \(\mu_B(\pi)\), and \(M(\pi)\) across \(\pi\).
-Trial-level reconstruction \(\mu_{Aj}=m_j-\pi_j g_j\) is stored on
+(\code{\link[=overall]{overall()}} is an alias) at a reporting \eqn{\pi}.
+\item \code{\link[=plot_contribution]{plot_contribution()}} / \code{\link[=predict_cams_by_if]{predict_cams_by_if()}} evaluate
+\eqn{\mu_A(\pi)}, \eqn{\mu_B(\pi)}, and \eqn{M(\pi)} across \eqn{\pi}.
+Trial-level reconstruction \eqn{\mu_{Aj}=m_j-\pi_j g_j} is stored on
 \code{fit$latent} (see \code{vignette("convolution")}).
 }
 }
@@ -62,9 +62,14 @@ not two different scientific models. The approaches are \strong{bayesmeta}
 (DIRECT, the default) and \strong{metafor} (REML or ML). See
 \code{vignette("engine-comparison")}.
 
-Default Bayesian priors are \(\mathrm{Normal}(0,10)\) on the fixed
-effects, \(\mathrm{Normal}^+(0,0.5)\) on \(\tau_m\), and
-\(\mathrm{Normal}^+(0,0.1)\) on \(\tau_g\). See \code{\link[=cam_prior]{cam_prior()}}.
+Default Bayesian heterogeneity priors match \code{\link[bayesmeta:bayesmeta]{bayesmeta::bayesmeta()}}:
+improper uniform on \eqn{\tau_m} and \eqn{\tau_g}. Fixed effects use
+independent \eqn{\mathrm{Normal}(0,10)} on the overall-block means
+\eqn{(\alpha,\theta)} and on \eqn{\gamma}
+(\eqn{\theta=\beta+\gamma}; stored \code{b_ifrac} is \eqn{\beta=\theta-\gamma}).
+Empirical work indicates interaction heterogeneity is often smaller than
+overall heterogeneity (Panaro, Röver & Friede, arXiv:2606.23968); vignettes
+set half-normal scales from that literature explicitly. See \code{\link[=cams]{cams()}}.
 }
 
 \section{Reporting}{
@@ -75,9 +80,6 @@ effects, \(\mathrm{Normal}^+(0,0.5)\) on \(\tau_m\), and
 \code{include_shrinkage = TRUE} by default). Typography helpers
 (\code{\link[=interactmeta_theme_report]{interactmeta_theme_report()}}, \code{\link[=interactmeta_palette]{interactmeta_palette()}}) are documented
 on their help pages.
-
-Fitted objects store provenance for \code{\link[=audit]{audit()}}; see
-\link{interactmeta-auditability}.
 }
 
 \section{Reference}{
@@ -87,7 +89,7 @@ The package implements CAMS:
 Panaro RV, Röver C, Friede T (2025).
 \emph{Consistent Bayesian meta-analysis on subgroup specific effects and interactions.}
 arXiv:2512.18785.
-\doi{10.48550/arXiv.2512.18785}
+\url{https://doi.org/10.48550/arXiv.2512.18785}
 
 Related methods (not the CAMS model). Difference of Averages (DA) and
 Average Difference (AD) are different constructions:
@@ -95,26 +97,33 @@ Average Difference (AD) are different constructions:
 Panaro RV, Röver C, Friede T (2026).
 Subgroup comparisons within and across studies in meta-analysis.
 \emph{Research Synthesis Methods} (in press).
-arXiv:2508.15531. \doi{10.48550/arXiv.2508.15531}
+arXiv:2508.15531. \url{https://doi.org/10.48550/arXiv.2508.15531}
+
+Empirical heterogeneity priors (optional; not package defaults):
+
+Panaro RV, Röver C, Friede T (2026).
+Empirical prior distributions for treatment-by-subgroup interaction
+heterogeneity in random-effects meta-analysis.
+arXiv:2606.23968. \url{https://doi.org/10.48550/arXiv.2606.23968}
 
 Fisher DJ, Carpenter JR, Morris TP, Freeman SC, Tierney JF (2017).
 Meta-analytical methods to identify who benefits most from treatments:
 daft, deluded, or deft approach? \emph{BMJ}, 356, j573.
-\doi{10.1136/bmj.j573}
+\url{https://doi.org/10.1136/bmj.j573}
 
 van Houwelingen HC, Arends LR, Stijnen T (2002).
 Advanced methods in meta-analysis: multivariate approach and meta-regression.
-\emph{Statistics in Medicine}, 21(4), 589--624. \doi{10.1002/sim.1040}
+\emph{Statistics in Medicine}, 21(4), 589--624. \url{https://doi.org/10.1002/sim.1040}
 
 van Houwelingen HC, Zwinderman KH, Stijnen T (1993).
 A bivariate approach to meta-analysis. \emph{Statistics in Medicine},
-12(24), 2273--2284. \doi{10.1002/sim.4780122405}
+12(24), 2273--2284. \url{https://doi.org/10.1002/sim.4780122405}
 }
 
 \seealso{
-\code{\link[=cam]{cam()}}, \code{\link[=bayescam]{bayescam()}}, \code{\link[=ifrac]{ifrac()}}, \code{\link[=interactions]{interactions()}}, \code{\link[=subgroups]{subgroups()}},
-\code{\link[=combined]{combined()}}, \code{\link[=plot_contribution]{plot_contribution()}}, \code{\link[=predict_cam_by_if]{predict_cam_by_if()}}, \code{\link[=da]{da()}}, \code{\link[=ad]{ad()}},
-\code{\link[=swada]{swada()}}, \code{vignette("cam", package = "interactmeta")},
+\code{\link[=cams]{cams()}}, \code{\link[=bayescams]{bayescams()}}, \code{\link[=ifrac]{ifrac()}}, \code{\link[=interactions]{interactions()}}, \code{\link[=subgroups]{subgroups()}},
+\code{\link[=combined]{combined()}}, \code{\link[=plot_contribution]{plot_contribution()}}, \code{\link[=predict_cams_by_if]{predict_cams_by_if()}}, \code{\link[=da]{da()}}, \code{\link[=ad]{ad()}},
+\code{\link[=swada]{swada()}}, \code{vignette("cams", package = "interactmeta")},
 \code{vignette("consistent-interactions", package = "interactmeta")},
 \code{vignette("single-subgroup-trials", package = "interactmeta")},
 \code{vignette("further", package = "interactmeta")},

@@ -1,4 +1,4 @@
-test_that("cam() matches cams() and subgroupmeta() on the same data", {
+test_that("cam() matches cams() on the same data", {
   skip_if_not_installed("bayesmeta")
   dat <- data.frame(
     trial = rep(c("A", "B", "C"), each = 2),
@@ -18,32 +18,17 @@ test_that("cam() matches cams() and subgroupmeta() on the same data", {
     engine = "bayesmeta",
     silent = 2
   )
-  fit_old <- subgroupmeta(
-    dat,
-    reference = "Younger",
-    engine = "bayesmeta",
-    silent = 2
-  )
   expect_s3_class(fit, "interactmeta")
   expect_s3_class(fit, "cam")
   expect_s3_class(fit, "cams")
   expect_equal(fit$engine, "bayesmeta")
   expect_equal(fit$method, "bayes")
-  expect_equal(fit_old$engine, fit$engine)
   expect_equal(fit_alias$engine, fit$engine)
-  expect_equal(
-    as.numeric(fit_old$draws$.weight),
-    as.numeric(fit$draws$.weight),
-    tolerance = 1e-10
-  )
   expect_equal(
     as.numeric(fit_alias$draws$.weight),
     as.numeric(fit$draws$.weight),
     tolerance = 1e-10
   )
-  sg <- tidy(subgroups(fit, type = "Pooled", exponentiate = FALSE))
-  sg_old <- tidy(subgroups(fit_old, type = "Pooled", exponentiate = FALSE))
-  expect_equal(sg_old$estimate, sg$estimate, tolerance = 1e-10)
 })
 
 test_that("combined() is a numerical alias of overall()", {

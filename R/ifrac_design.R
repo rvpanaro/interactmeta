@@ -18,8 +18,9 @@
 #'   When provided, only these labels are used (overrides `contrast_sep` filtering).
 #'
 #' @return The input data (subgroup rows only, unless `include_contrast_rows = TRUE`)
-#'   with columns `precision` and `ifrac_<k>` for each non-reference subgroup `k`.
+#'   with columns `precision` and `ifrac_*` for each non-reference subgroup.
 #'
+#' @keywords internal
 #' @export
 add_ifrac_design <- function(dat,
                              trial_col = "trial",
