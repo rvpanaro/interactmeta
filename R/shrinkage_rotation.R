@@ -88,7 +88,7 @@ comparison_shrinkage_rotation_bundle <- function(fit,
     trials = trials
   )
 
-  # Observed (quoted) at each trial's own π_j — audit only
+  # Observed (quoted) at each trial's own π_j
   y_A_obs <- stats::setNames(rep(NA_real_, length(trials)), trials)
   y_B_obs <- y_A_obs
   v_A <- y_A_obs
@@ -764,9 +764,9 @@ comparison_rotation_matrix_to_long <- function(mat,
   interactmeta_decorate_effect_draws(dplyr::bind_rows(rows), post)
 }
 
-#' Public audit bundle attached to shrinkage objects
+#' Component bundle attached to shrinkage objects
 #' @noRd
-comparison_shrinkage_audit_list <- function(bundle) {
+comparison_shrinkage_components_list <- function(bundle) {
   list(
     pi = bundle$pi,
     omega = bundle$omega,

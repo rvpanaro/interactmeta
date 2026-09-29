@@ -1,4 +1,4 @@
-cams_audit_example_data <- function() {
+cams_block_example_data <- function() {
   data.frame(
     trial = rep(c("T1", "T2", "T3"), each = 2),
     subgroup = factor(rep(c("Younger", "Older"), 3), levels = c("Younger", "Older")),
@@ -7,9 +7,9 @@ cams_audit_example_data <- function() {
   )
 }
 
-test_that("fit stores call, model_spec, priors, computation, assumptions, transformed_data", {
+test_that("fit stores call, model_spec, priors, and trial blocks", {
   skip_if_not_installed("bayesmeta")
-  dat <- cams_audit_example_data()
+  dat <- cams_block_example_data()
   fit <- suppressWarnings(cam(
     dat,
     reference = "Younger",
@@ -27,52 +27,19 @@ test_that("fit stores call, model_spec, priors, computation, assumptions, transf
   expect_equal(fit$method, "bayes")
   expect_equal(fit$algorithm, "quadrature")
   expect_true(isTRUE(fit$computation$deterministic))
-  expect_false(isTRUE(fit$computation$stochastic))
-  expect_false(isTRUE(fit$computation$engine_args$convolve_derived))
-  expect_equal(fit$assumptions$subgroup_covariance, "assumed_zero")
-  expect_false(isTRUE(fit$assumptions$mu_includes_random_effects))
-  expect_equal(fit$draws_semantics$row_type, "quadrature_node")
-  expect_equal(fit$draws_semantics$weight_column, ".weight")
-  expect_true(!is.null(fit$provenance$packages$interactmeta))
+  expect_null(fit$assumptions)
+  expect_null(fit$draws_semantics)
+  expect_null(fit$provenance)
   expect_true(!is.null(fit$transformed_data$trial_blocks$overall))
   expect_true(!is.null(fit$priors$common))
   expect_true(!is.null(fit$priors$engine))
-  expect_equal(fit$priors$tau$scale, 0.5)
-})
-
-test_that("audit() returns a structured object a third party can print", {
-  skip_if_not_installed("bayesmeta")
-  dat <- cams_audit_example_data()
-  fit <- suppressWarnings(cam(
-    dat,
-    reference = "Younger",
-    engine = "bayesmeta",
-    silent = 2
-  ))
-  a <- audit(fit)
-  expect_s3_class(a, "interactmeta_audit")
-  expect_equal(a$engine$engine, "bayesmeta")
-  expect_equal(a$engine$algorithm, "quadrature")
-  expect_true(!is.null(a$model$information_fraction))
-  expect_true(!is.null(a$transformed_data$trial_blocks))
-  expect_true(length(a$warnings) >= 1L)
-  out <- paste(utils::capture.output(print(a)), collapse = "\n")
-  expect_match(out, "CAMS statistical audit", fixed = TRUE)
-  expect_match(out, "bayesmeta", fixed = TRUE)
-  expect_match(out, "Half-Normal", fixed = TRUE)
-  expect_match(out, "assumed_zero", fixed = TRUE)
-  expect_match(
-    out,
-    "independent overall-block and interaction-block trial effects",
-    fixed = TRUE
-  )
-  expect_false(grepl("||", out, fixed = TRUE))
-  expect_false(grepl("ifrac2_", out, fixed = TRUE))
+  expect_equal(fit$priors$tau$family, "uniform")
+  expect_true(interactmeta:::cam_prior_is_improper_uniform(fit$priors$tau))
 })
 
 test_that("stored trial blocks match an independent hand calculation", {
   skip_if_not_installed("bayesmeta")
-  dat <- cams_audit_example_data()
+  dat <- cams_block_example_data()
   fit <- suppressWarnings(cam(
     dat,
     reference = "Younger",
@@ -102,9 +69,9 @@ test_that("stored trial blocks match an independent hand calculation", {
   expect_equal(m + (1 - pi) * g, yB, tolerance = 1e-12)
 })
 
-test_that("metafor provenance records frequentist method and unused priors", {
+test_that("metafor fit records frequentist method and unused priors", {
   skip_if_not_installed("metafor")
-  dat <- cams_audit_example_data()
+  dat <- cams_block_example_data()
   fit <- suppressWarnings(cam(
     dat,
     reference = "Younger",
@@ -116,12 +83,6 @@ test_that("metafor provenance records frequentist method and unused priors", {
   expect_equal(fit$method, "REML")
   expect_equal(fit$algorithm, "optimization")
   expect_true(isTRUE(fit$computation$deterministic))
-  expect_equal(fit$draws_semantics$row_type, "point_estimate")
+  expect_null(fit$draws_semantics)
   expect_false(isTRUE(fit$priors$engine$applied))
-  a <- audit(fit)
-  expect_match(
-    paste(utils::capture.output(print(a)), collapse = "\n"),
-    "REML",
-    fixed = TRUE
-  )
 })

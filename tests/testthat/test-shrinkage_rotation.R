@@ -133,7 +133,7 @@ test_that("standardized and study-specific coincide when pi_j equals omega", {
   )
 
   cmp_shr <- shrinkage_components(fit, contribution = 0.5)
-  cmp_std <- interactmeta:::comparison_shrinkage_audit_list(
+  cmp_std <- interactmeta:::comparison_shrinkage_components_list(
     interactmeta:::comparison_shrinkage_rotation_bundle(
       fit, overall_ifrac = 0.5, evaluation = "overall"
     )

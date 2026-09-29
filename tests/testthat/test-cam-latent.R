@@ -257,7 +257,7 @@ test_that("subgroups() at fixed pi* uses joint (alpha, theta) plus independent g
   }
 })
 
-test_that("published Bayesian intervals follow bayesmeta post.interval and convolve", {
+test_that("engine-native latent intervals follow bayesmeta post.interval and convolve", {
   skip_if_not_installed("bayesmeta")
 
   dat <- cams_latent_example_data()
@@ -270,13 +270,25 @@ test_that("published Bayesian intervals follow bayesmeta post.interval and convo
   expect_equal(fit$interval.type, "shortest")
   prob <- 0.95
 
+  # Public extractors use mixture equal-tail; native lives on $latent / param summary.
   int <- interactions(fit, prob = prob)
   pooled <- int$summary[int$summary$type == "Pooled", ]
   native_g <- fit$bayesmeta$interaction$post.interval(
     mu.level = prob,
     method = "shortest"
   )
-  expect_equal(unname(c(pooled$lci, pooled$uci)), unname(as.numeric(native_g)), tolerance = 1e-8)
+  # Public extractor intervals follow the mixture, not necessarily native shortest.
+  post <- as.data.frame(fit$draws)
+  g_col <- grep("^b_subgroup", names(post), value = TRUE)[[1L]]
+  qi_g <- interactmeta:::comparison_draw_moments(
+    post[[g_col]],
+    prob = prob,
+    weight = post$.weight,
+    cond_sd = post$.cond_sd_gamma
+  )
+  expect_equal(pooled$lci, qi_g$lci, tolerance = 1e-8)
+  expect_equal(pooled$uci, qi_g$uci, tolerance = 1e-8)
+  expect_true(is.numeric(native_g) && length(native_g) == 2L)
 
   pars <- interactmeta:::interactmeta_bayesmeta_param_summary(fit, prob = prob)
   ov <- fit$bayesmeta$overall

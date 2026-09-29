@@ -53,3 +53,38 @@ test_that("overall() accepts explicit contribution from ifrac()", {
   me <- overall(fit, contribution = oi, type = "Pooled", summary = FALSE)
   expect_equal(me$overall_ifrac_source, "user")
 })
+
+test_that("max_draws cannot thin a weighted DIRECT support", {
+  skip_if_not_installed("bayesmeta")
+  dat <- data.frame(
+    trial = rep(c("A", "B", "C"), each = 2),
+    subgroup = factor(rep(c("Younger", "Older"), 3), levels = c("Younger", "Older")),
+    yi = c(0.1, 0.2, 0.15, 0.25, 0.05, 0.18),
+    vi = c(0.04, 0.05, 0.03, 0.04, 0.05, 0.06)
+  )
+  fit <- cams(dat, reference = "Younger", engine = "bayesmeta", silent = 2)
+  n <- nrow(fit$draws)
+  expect_gt(n, 5L)
+  expect_error(
+    subgroups(fit, max_draws = 5L),
+    "weighted DIRECT support"
+  )
+  expect_error(
+    predict_cams_by_if(fit, resolution = 3, max_draws = 5L),
+    "weighted DIRECT support"
+  )
+  set.seed(1L)
+  want <- sample.int(10L, 4L)
+  expect_identical(
+    interactmeta:::comparison_marginal_draw_index(10L, max_draws = 4L),
+    want
+  )
+  expect_error(
+    interactmeta:::comparison_marginal_draw_index(
+      n,
+      max_draws = 5L,
+      weight = fit$draws$.weight
+    ),
+    "weighted DIRECT support"
+  )
+})

@@ -39,31 +39,32 @@ cams_if_draw_effects <- function(fit, pi) {
   )
 }
 
-test_that("predict_cam_by_if() uses quantiles of the transformed draws", {
+test_that("predict_cams_by_if() uses mixture equal-tail intervals", {
   skip_if_not_installed("bayesmeta")
 
   fit <- predict_cam_example_fit()
   pi_star <- 0.35
-  pred <- predict_cam_by_if(fit, if_grid = pi_star, level = 0.95)
+  pred <- predict_cams_by_if(fit, if_grid = pi_star, level = 0.95)
   expect_s3_class(pred, "interactmeta_cam_if_pred")
+  expect_equal(attr(pred, "interval.rule"), "mixture_equal_tail")
   expect_equal(sort(unique(pred$subgroup)), c("Older", "Younger"))
   expect_true(all(c("ifrac", "estimate", "lower", "upper") %in% names(pred)))
   expect_true(all(c("overall_estimate", "overall_lower", "overall_upper") %in% names(pred)))
 
   d <- cams_if_draw_effects(fit, pi_star)
-  post <- d$post
-  w <- post$.weight
-  qi <- function(x, a_gamma) {
-    interactmeta:::comparison_draw_moments(
-      x,
-      prob = 0.95,
-      weight = w,
-      cond_sd = interactmeta:::interactmeta_lincomb_cond_sd(post, 1, pi_star, a_gamma)
-    )
-  }
-  qi_A <- qi(d$mu_A, -pi_star)
-  qi_B <- qi(d$mu_B, 1 - pi_star)
-  qi_M <- qi(d$M, 0)
+  w <- d$post$.weight
+  sd_M <- interactmeta:::interactmeta_lincomb_cond_sd(d$post, 1, pi_star, 0)
+  sd_A <- interactmeta:::interactmeta_lincomb_cond_sd(d$post, 1, pi_star, -pi_star)
+  sd_B <- interactmeta:::interactmeta_lincomb_cond_sd(d$post, 1, pi_star, 1 - pi_star)
+  qi_M <- interactmeta:::interactmeta_mixture_moments(
+    mean = d$M, weight = w, cond_sd = sd_M, prob = 0.95
+  )
+  qi_A <- interactmeta:::interactmeta_mixture_moments(
+    mean = d$mu_A, weight = w, cond_sd = sd_A, prob = 0.95
+  )
+  qi_B <- interactmeta:::interactmeta_mixture_moments(
+    mean = d$mu_B, weight = w, cond_sd = sd_B, prob = 0.95
+  )
   dA <- pred[pred$subgroup == "Younger", ]
   dB <- pred[pred$subgroup == "Older", ]
   expect_equal(dA$estimate, qi_A$estimate, tolerance = 1e-8)
@@ -156,13 +157,14 @@ test_that("bayesmeta pointwise IF intervals are mixture quantiles of the draws",
   qi_means <- interactmeta:::interactmeta_mixture_moments(
     mean = d$M, weight = w, cond_sd = rep(0, length(d$M)), prob = 0.95
   )
-  pred <- predict_cam_by_if(fit, if_grid = pi, level = 0.95)
-  row_A <- pred[pred$subgroup == "Younger", ]
   # Conditional variance still separates the mixture from a quantile of means.
   expect_gt(
     abs(qi_mix$lci - qi_means$lci) + abs(qi_mix$uci - qi_means$uci),
     1e-8
   )
+
+  pred <- predict_cams_by_if(fit, if_grid = pi, level = 0.95)
+  row_A <- pred[pred$subgroup == "Younger", ]
   expect_equal(row_A$overall_estimate, qi_mix$estimate, tolerance = 1e-8)
   expect_equal(row_A$overall_lower, qi_mix$lci, tolerance = 1e-8)
   expect_equal(row_A$overall_upper, qi_mix$uci, tolerance = 1e-8)
@@ -171,6 +173,12 @@ test_that("bayesmeta pointwise IF intervals are mixture quantiles of the draws",
   )
   expect_equal(row_A$lower, qi_A$lci, tolerance = 1e-8)
   expect_equal(row_A$upper, qi_A$uci, tolerance = 1e-8)
+  # Native / convolve remains available as a concept (population_location).
+  expect_true(is.list(
+    interactmeta:::interactmeta_bayesmeta_population_location(
+      fit, pi = pi, gamma_scale = -pi, predictive = FALSE, prob = 0.95
+    )
+  ))
 })
 
 test_that("plot_contribution() uses predict_cam_by_if()", {

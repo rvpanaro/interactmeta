@@ -15,7 +15,7 @@ shrinkage_diagnostics(fit, ...)
 A data frame with one row per trial.
 }
 \description{
-Per-trial audit of observed vs shrunk quantities, both at trial \eqn{\pi_j}.
+Per-trial table of observed vs shrunk quantities, both at trial \eqn{\pi_j}.
 Draw-level identity checked:
 \deqn{\widetilde y_{A,j}=\widetilde m_j-\pi_j\widetilde g_j.}
 }

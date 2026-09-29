@@ -33,10 +33,11 @@
 #'   - `"overall"`: \eqn{m_j}
 #' @param format Output representation:
 #'   - `"list"` (default): S3 object with long `$draws`, optional `$summary`,
-#'     and `$components` (audit bundle)
+#'     and `$components` (observed / shrunk matrices)
 #'   - `"summary"`: summary data frame only
 #' @param prob Coverage probability for intervals when a summary is built.
-#' @param max_draws Optional cap on posterior draws (subsampled with a fixed seed).
+#' @param max_draws Optional cap on unweighted posterior rows. Rejected for
+#'   Bayesian CAMS DIRECT supports; omit it.
 #' @param summary If `TRUE` (default), attach / build a summary when
 #'   `format = "list"` or `"summary"`.
 #' @param contrast_sep Passed to contrast resolution (default `"-"`).
@@ -110,6 +111,7 @@ shrinkage <- function(fit,
 #'   - `observed`: named vectors `y_A`, `y_B`, `m`, `g` and sampling variances
 #'   - `draws`: draws × trial matrices `y_A`, `y_B`, `m`, `g` at \eqn{\pi_j}
 #'   - `reference`, `nonref`, `trials`, `interaction_label`
+#' @keywords internal
 #' @export
 shrinkage_components <- function(fit, ..., contribution = NULL) {
   if (is.list(fit) && !is.null(fit$components)) {
@@ -120,10 +122,10 @@ shrinkage_components <- function(fit, ..., contribution = NULL) {
   if (!is.null(contribution) && is.null(dots$overall_ifrac)) {
     dots$overall_ifrac <- contribution
   }
-  # Always the study-specific (π_j) estimand for the public audit API
+  # Always the study-specific (π_j) estimand for shrinkage_components()
   dots$evaluation <- NULL
   args <- c(list(fit = fit, evaluation = "trial"), dots)
-  comparison_shrinkage_audit_list(do.call(comparison_shrinkage_rotation_bundle, args))
+  comparison_shrinkage_components_list(do.call(comparison_shrinkage_rotation_bundle, args))
 }
 
 #' Trial-specific effects standardized to the overall IF
@@ -139,7 +141,8 @@ shrinkage_components <- function(fit, ..., contribution = NULL) {
 #' @param type Which estimand: `"subgroups"`, `"interaction"`, or `"overall"`.
 #' @param format Output representation (same choices as [shrinkage()]).
 #' @param prob Coverage probability for intervals when a summary is built.
-#' @param max_draws Optional cap on posterior draws.
+#' @param max_draws Optional cap on unweighted posterior rows. Rejected for
+#'   Bayesian CAMS DIRECT supports; omit it.
 #' @param summary If `TRUE` (default), attach / build a summary when
 #'   `format = "list"` or `"summary"`.
 #' @param contrast_sep Passed to contrast resolution (default `"-"`).
@@ -242,7 +245,7 @@ comparison_shrinkage_resolve_type <- function(type = c("subgroups", "interaction
 
 #' Diagnostic table for study-specific CAMS shrinkage
 #'
-#' Per-trial audit of observed vs shrunk quantities, both at trial \eqn{\pi_j}.
+#' Per-trial table of observed vs shrunk quantities, both at trial \eqn{\pi_j}.
 #' Draw-level identity checked:
 #' \deqn{\widetilde y_{A,j}=\widetilde m_j-\pi_j\widetilde g_j.}
 #'

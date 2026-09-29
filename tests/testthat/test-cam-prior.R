@@ -10,7 +10,7 @@ test_that("character shorthands normalize to explicit CAMS priors", {
   expect_equal(s$family, "sqrt")
   expect_true(interactmeta:::cam_prior_is_improper(s))
 
-  p <- cam_prior("half-normal", scale = 0.5)
+  p <- interactmeta:::cam_prior("half-normal", scale = 0.5)
   expect_equal(format(p), "Half-Normal(0, 0.5)")
   expect_identical(interactmeta:::normalize_cam_prior(p, role = "tau"), p)
 
@@ -18,29 +18,29 @@ test_that("character shorthands normalize to explicit CAMS priors", {
     interactmeta:::normalize_cam_prior("half-normal", role = "tau"),
     "scale"
   )
-  expect_error(cam_prior("half-normal", scale = -1), "positive")
+  expect_error(interactmeta:::cam_prior("half-normal", scale = -1), "positive")
 })
 
 test_that("interaction prior inherits only when the user supplies tau.prior", {
   dflt <- interactmeta:::cam_priors_resolve()
-  expect_equal(dflt$tau$family, "half-normal")
-  expect_equal(dflt$tau$scale, 0.5)
-  expect_equal(dflt$tau_interaction$family, "half-normal")
-  expect_equal(dflt$tau_interaction$scale, 0.1)
+  expect_equal(dflt$tau$family, "uniform")
+  expect_true(interactmeta:::cam_prior_is_improper_uniform(dflt$tau))
+  expect_equal(dflt$tau_interaction$family, "uniform")
+  expect_true(interactmeta:::cam_prior_is_improper_uniform(dflt$tau_interaction))
   expect_equal(dflt$fixed$family, "normal")
   expect_equal(dflt$fixed$mean, 0)
   expect_equal(dflt$fixed$sd, 10)
 
   shared <- interactmeta:::cam_priors_resolve(
-    tau.prior = cam_prior("half-normal", scale = 0.5),
+    tau.prior = interactmeta:::cam_prior("half-normal", scale = 0.5),
     user_tau = TRUE
   )
   expect_equal(shared$tau$scale, 0.5)
   expect_equal(shared$tau_interaction$scale, 0.5)
 
   split <- interactmeta:::cam_priors_resolve(
-    tau.prior = cam_prior("half-normal", scale = 0.5),
-    tau.interaction.prior = cam_prior("half-normal", scale = 0.1),
+    tau.prior = interactmeta:::cam_prior("half-normal", scale = 0.5),
+    tau.interaction.prior = interactmeta:::cam_prior("half-normal", scale = 0.1),
     user_tau = TRUE
   )
   expect_equal(split$tau$scale, 0.5)
@@ -53,26 +53,26 @@ test_that("bayesmeta translations match the intended densities", {
   expect_identical(interactmeta:::prior_to_bayesmeta("sqrt"), "sqrt")
   expect_identical(interactmeta:::prior_to_bayesmeta("uniform"), "uniform")
 
-  p_hn <- cam_prior("half-normal", scale = 0.5)
+  p_hn <- interactmeta:::cam_prior("half-normal", scale = 0.5)
   f_hn <- interactmeta:::prior_to_bayesmeta(p_hn)
   x <- c(0, 0.25, 0.5, 1, 2)
   expect_equal(f_hn(x), bayesmeta::dhalfnormal(x, scale = 0.5), tolerance = 1e-12)
   expect_equal(f_hn(x), 2 * stats::dnorm(x, 0, 0.5), tolerance = 1e-12)
 
-  p_u <- cam_prior("uniform", lower = 0, upper = 2)
+  p_u <- interactmeta:::cam_prior("uniform", lower = 0, upper = 2)
   f_u <- interactmeta:::prior_to_bayesmeta(p_u)
   expect_equal(f_u(c(-0.1, 0, 1, 2, 2.1)), c(0, 0.5, 0.5, 0.5, 0), tolerance = 1e-12)
 
-  p_hc <- cam_prior("half-cauchy", scale = 1)
+  p_hc <- interactmeta:::cam_prior("half-cauchy", scale = 1)
   f_hc <- interactmeta:::prior_to_bayesmeta(p_hc)
   expect_equal(f_hc(x), bayesmeta::dhalfcauchy(x, scale = 1), tolerance = 1e-12)
 })
 
 test_that("brms translations match the same mathematical priors", {
   priors <- interactmeta:::cam_priors_resolve(
-    tau.prior = cam_prior("half-normal", scale = 0.5),
-    tau.interaction.prior = cam_prior("half-normal", scale = 0.1),
-    fixed.prior = cam_prior("normal", mean = 0, sd = 10)
+    tau.prior = interactmeta:::cam_prior("half-normal", scale = 0.5),
+    tau.interaction.prior = interactmeta:::cam_prior("half-normal", scale = 0.1),
+    fixed.prior = interactmeta:::cam_prior("normal", mean = 0, sd = 10)
   )
   rows <- interactmeta:::prior_to_brms_rows(priors, trial_var = "trial", ifrac2_vars = "ifrac2_1")
   expect_true(any(rows$class == "Intercept" & rows$prior == "normal(0, 10)"))
@@ -85,8 +85,9 @@ test_that("brms translations match the same mathematical priors", {
   expect_equal(hn_g$lb, 0)
 
   u_priors <- interactmeta:::cam_priors_resolve(
-    tau.prior = cam_prior("uniform", lower = 0, upper = 2),
-    tau.interaction.prior = cam_prior("uniform", lower = 0, upper = 2),
+    tau.prior = interactmeta:::cam_prior("uniform", lower = 0, upper = 2),
+    tau.interaction.prior = interactmeta:::cam_prior("uniform", lower = 0, upper = 2),
+    fixed.prior = interactmeta:::cam_prior("normal", mean = 0, sd = 10),
     user_tau = TRUE
   )
   u_rows <- interactmeta:::prior_to_brms_rows(u_priors)
@@ -106,14 +107,27 @@ test_that("improper uniform and sqrt are not silently bounded for brms", {
     "cannot be represented equivalently"
   )
   expect_error(
-    interactmeta:::prior_to_brms_one(cam_prior("uniform"), role = "tau"),
+    interactmeta:::prior_to_brms_one(interactmeta:::cam_prior("uniform"), role = "tau"),
     "improper density"
   )
 })
 
-test_that("prior_to_brms() builds a brmsprior with the translated densities", {
+test_that("prior_to_brms() needs proper priors (defaults are improper)", {
   skip_if_not_installed("brms")
-  priors <- interactmeta:::cam_priors_resolve()
+  expect_error(
+    interactmeta:::prior_to_brms(
+      interactmeta:::cam_priors_resolve(),
+      trial_var = "trial",
+      ifrac2_vars = "ifrac2_1"
+    ),
+    "improper"
+  )
+  priors <- interactmeta:::cam_priors_resolve(
+    tau.prior = interactmeta:::cam_prior("half-normal", scale = 0.5),
+    tau.interaction.prior = interactmeta:::cam_prior("half-normal", scale = 0.1),
+    fixed.prior = interactmeta:::cam_prior("normal", mean = 0, sd = 10),
+    user_tau = TRUE
+  )
   bp <- interactmeta:::prior_to_brms(priors, trial_var = "trial", ifrac2_vars = "ifrac2_1")
   expect_s3_class(bp, "brmsprior")
   expect_true(any(bp$class == "sd" & bp$coef == "Intercept" & grepl("normal\\(0, 0.5\\)", bp$prior)))

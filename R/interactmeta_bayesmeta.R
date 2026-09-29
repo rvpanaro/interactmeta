@@ -10,15 +10,15 @@
 #' \eqn{\beta = \theta - \gamma} where \eqn{\theta} is the IF slope of the
 #' overall meta-regression (\eqn{\alpha + \pi(\beta+\gamma)}).
 #'
-#' Published intervals use one rule (`interval.type`, default `"shortest"`).
-#' Margins on one stored fit come from that object's `$post.interval`.
-#' Sums of independent blocks (`beta = theta - gamma`, trial-level
-#' `mu_Aj` and `mu_Bj`) are `bayesmeta::convolve()` of his density and cdf.
-#' The Gaussian-mixture product is a check and does not supply a second
-#' published interval. `$draws` is the Cartesian product of DIRECT tau-nodes
-#' with `.weight = w_i * v_k` (conditional means; within-node variance is in
-#' `.cond_*` and `$latent`). `$mu` remains the **fixed-effect** linear
-#' predictor. No `rposterior()` calls.
+#' Published **engine-native** intervals on `$latent` use one rule
+#' (`interval.type`, default `"shortest"`): margins from `$post.interval`,
+#' independent-block sums from `bayesmeta::convolve()`. Public extractors and
+#' [predict_cams_by_if()] / [plot_contribution()] instead use **equal-tail**
+#' quantiles of the DIRECT-node mixture (fast). The mixture is not a second
+#' native interval on `$latent`. `$draws` is the Cartesian product of DIRECT
+#' tau-nodes with `.weight = w_i * v_k` (conditional means; within-node
+#' variance is in `.cond_*` and `$latent`). `$mu` remains the **fixed-effect**
+#' linear predictor. No `rposterior()` calls.
 #'
 #' @noRd
 .interactmeta_fit_bayesmeta <- function(data_fit,
@@ -37,12 +37,6 @@
     stop(
       "`engine = \"bayesmeta\"` currently supports binary subgroups only ",
       "(one non-reference `ifrac_*` column).",
-      call. = FALSE
-    )
-  }
-  if (!isTRUE(ecological)) {
-    stop(
-      "`ecological_slope = FALSE` is not implemented for `engine = \"bayesmeta\"`.",
       call. = FALSE
     )
   }
@@ -78,6 +72,22 @@
   tau_overall <- prior_to_bayesmeta(priors$tau)
   tau_int <- prior_to_bayesmeta(priors$tau_interaction)
   fe <- prior_to_bayesmeta_fixed(priors$fixed)
+
+  if (!isTRUE(ecological)) {
+    return(interactmeta_fit_bayesmeta_constrained(
+      data_fit = data_fit,
+      design = design,
+      blocks = blocks,
+      priors = priors,
+      fe = fe,
+      tau_overall = tau_overall,
+      tau_int = tau_int,
+      engine_args = engine_args,
+      interval.type = interval.type,
+      silent = silent
+    ))
+  }
+
   bmr_args <- engine_args
   bm_args <- engine_args
   if (!is.null(fe$beta.prior.mean)) {
@@ -152,14 +162,16 @@
       bayesmeta = list(
         overall = overall_fit,
         interaction = interaction_fit,
-        trial_blocks = blocks
+        trial_blocks = blocks,
+        ecological_slope = TRUE
       ),
       engine = "bayesmeta",
       interval.type = interval.type,
       prior = design$prior,
       priors = priors,
       algorithm = "quadrature",
-      method = "bayes"
+      method = "bayes",
+      ecological_slope = TRUE
     ),
     class = c("interactmeta", "cam", "cams", "list")
   )
@@ -324,21 +336,6 @@ interactmeta_bayesmeta_cond_moments <- function(overall_fit, interaction_fit, ov
   )
 }
 
-#' Marginal 1-D posteriors for derived CAMS quantities
-#'
-#' Cross-block independence is used. Within-block trial effects that share
-#' hyperparameters are **not** given a joint posterior here.
-#'
-#' `$mu_A[[j]]` / `$mu_B[[j]]` are **trial-specific** latent subgroup
-#' posteriors
-#' \eqn{\mu_{Aj}=m_j-\pi_j g_j}, \eqn{\mu_{Bj}=m_j+(1-\pi_j)g_j}
-#' at that trial's design information fraction \eqn{\pi_j}. They are
-#' **not** population subgroup effects at a reporting IF \eqn{\pi^\star}.
-#' Those are \eqn{\mu_A(\pi^\star)=\alpha+\pi^\star(\theta-\gamma)} and
-#' \eqn{\mu_B(\pi^\star)=\alpha+\pi^\star(\theta-\gamma)+\gamma}, returned
-#' by [subgroups()]. Do not form \eqn{M^\star=\alpha+\pi^\star\theta} by
-#' independently combining the `alpha` and `theta` mixture marginals.
-#' @noRd
 #' Grid settings stored on the fitted objects (not a second pair of literals).
 #' @noRd
 interactmeta_bayesmeta_grid <- function(overall_fit, interaction_fit) {
@@ -374,6 +371,21 @@ interactmeta_native_published <- function(object,
   )
 }
 
+#' Marginal 1-D posteriors for derived CAMS quantities
+#'
+#' Cross-block independence is used. Within-block trial effects that share
+#' hyperparameters are **not** given a joint posterior here.
+#'
+#' `$mu_A[[j]]` / `$mu_B[[j]]` are **trial-specific** latent subgroup
+#' posteriors
+#' \eqn{\mu_{Aj}=m_j-\pi_j g_j}, \eqn{\mu_{Bj}=m_j+(1-\pi_j)g_j}
+#' at that trial's design information fraction \eqn{\pi_j}. They are
+#' **not** population subgroup effects at a reporting IF \eqn{\pi^\star}.
+#' Those are \eqn{\mu_A(\pi^\star)=\alpha+\pi^\star(\theta-\gamma)} and
+#' \eqn{\mu_B(\pi^\star)=\alpha+\pi^\star(\theta-\gamma)+\gamma}, returned
+#' by [subgroups()]. Do not form \eqn{M^\star=\alpha+\pi^\star\theta} by
+#' independently combining the `alpha` and `theta` mixture marginals.
+#' @noRd
 interactmeta_bayesmeta_latent <- function(overall_fit,
                                           interaction_fit,
                                           blocks,
@@ -901,6 +913,19 @@ interactmeta_bayesmeta_population_location <- function(fit,
   re_scale <- as.numeric(re_scale)[[1L]]
   predictive <- isTRUE(predictive)
   prob <- as.numeric(prob)[[1L]]
+
+  if (isFALSE(fit$ecological_slope %||% fit$bayesmeta$ecological_slope)) {
+    return(interactmeta_constrained_population_location(
+      fit = fit,
+      pi = pi,
+      gamma_scale = gamma_scale,
+      re_scale = re_scale,
+      predictive = predictive,
+      prob = prob,
+      interval.type = interval.type
+    ))
+  }
+
   ov <- fit$bayesmeta$overall
   int <- fit$bayesmeta$interaction
   grid <- interactmeta_bayesmeta_grid(ov, int)
@@ -968,12 +993,14 @@ interactmeta_bayesmeta_population_location <- function(fit,
   out
 }
 
-#' Replace published effect bounds for a bayesmeta CAMS fit.
+#' Replace effect bounds with native bayesmeta / convolve intervals.
 #'
-#' Interaction uses the stored bayesmeta `$post.interval`. Combined `M*` uses
-#' `bmr$pred.interval` on the joint `(alpha, theta)` support. Subgroup
-#' effects convolve that linear predictor with the independent gamma block.
-#' Alpha and theta are not convolved with each other.
+#' Engine-native path kept for `$latent` / diagnostics. Public extractors use
+#' equal-tail mixture summaries instead (`interactmeta_summarize_effects`).
+#' Interaction uses `$post.interval`. Combined `M*` uses `bmr$pred.interval`
+#' on the joint `(alpha, theta)` support. Subgroup effects convolve that
+#' linear predictor with the independent gamma block. Alpha and theta are
+#' not convolved with each other.
 #' @noRd
 interactmeta_bayesmeta_fill_effect_summary <- function(fit,
                                                       summary,

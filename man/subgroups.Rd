@@ -49,7 +49,8 @@ posterior trial SDs at the combined-population IF (effect in a new \strong{study
 
 \item{prob}{Coverage probability for \code{lci} / \code{uci} when \code{summary = TRUE}.}
 
-\item{max_draws}{Optional cap on posterior draws (subsampled with a fixed seed).}
+\item{max_draws}{Optional cap on unweighted posterior rows. Rejected for
+Bayesian CAMS DIRECT supports (weighted quadrature nodes); omit it.}
 
 \item{summary}{If \code{TRUE} (default), include a summary data frame.}
 
@@ -69,9 +70,11 @@ A \code{interactmeta_subgroup_effects} object (list with \code{draws}, \code{sum
 \code{overall_ifrac}, \code{overall_ifrac_source} (\code{"fit"} or \code{"user"}), \code{reference},
 \code{prob}, \code{exponentiate}). Draws are indexed by \code{subgroup} and \code{type}.
 \code{summary} includes \code{estimate} (median), \code{mean}, \code{sd}, \code{lci}, and \code{uci}.
+For Bayesian CAMS, \code{lci}/\code{uci} are equal-tail mixture quantiles from the
+DIRECT-node table; native \verb{$post.interval} / \code{convolve()} stay on \verb{$latent}.
 }
 \description{
-\code{modifiers()} is the name to use. \code{subgroups()} remains an alias.
+\code{subgroups()} is the name to use. \code{modifiers()} is another name for the same extractor.
 The examples are subgroup analyses: each study contributes two estimates.
 The same extractor applies to any within-study contrast stored that way
 (dose, biomarker, time point). Level labels stay as stored. Display

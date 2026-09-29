@@ -327,11 +327,11 @@ overall_ifrac_weighted_pool <- function(pi, den, hetero_sd) {
 #' Trial-level IF coordinates and the two pooling denominators
 #'
 #' `pi` is the trial information fraction (same under both weighting schemes).
-#' Overall denominator is \(\mathrm{Var}(m_j)=1/\sum_g 1/\sigma_{gj}^2\),
+#' Overall denominator is \eqn{\mathrm{Var}(m_j)=1/\sum_g 1/\sigma_{gj}^2},
 #' the overall-block sampling variance
-#' \((1-\pi_j)^2\sigma_{Aj}^2+\pi_j^2\sigma_{Bj}^2\).
-#' Interaction denominator is \(\sigma_{Aj}^2+\sigma_{Bj}^2=\mathrm{Var}(g_j)\).
-#' Weights are \(w_j=1/(\tau^2+v_j)\) at a supplied heterogeneity SD.
+#' \eqn{(1-\pi_j)^2\sigma_{Aj}^2+\pi_j^2\sigma_{Bj}^2}.
+#' Interaction denominator is \eqn{\sigma_{Aj}^2+\sigma_{Bj}^2=\mathrm{Var}(g_j)}.
+#' Weights are \eqn{w_j=1/(\tau^2+v_j)} at a supplied heterogeneity SD.
 #' @noRd
 overall_ifrac_trial_components <- function(data,
                                            trial_var,

@@ -2,7 +2,7 @@
 #'
 #' Summarizes between-trial standard deviations in the CAMS random-effects
 #' structure. For Bayesian CAMS this uses the DIRECT support for
-#' \(\tau_m\) and \(\tau_g\) (not IID MCMC draws). For frequentist CAMS
+#' \eqn{\tau_m} and \eqn{\tau_g} (not IID MCMC draws). For frequentist CAMS
 #' it uses the stored `rma` heterogeneity estimates.
 #'
 #' @param fit A [`interactmeta`] from [cam()].
@@ -144,6 +144,7 @@ interactmeta_metafor_fill_heterogeneity <- function(fit, summary) {
 #' @return A single character string (components separated by `" · "`).
 #'
 #' @seealso [heterogeneity()]
+#' @keywords internal
 #' @export
 heterogeneity_footnote <- function(x, prob = NULL, digits = 2, include_ci = TRUE) {
   if (inherits(x, "interactmeta_heterogeneity")) {

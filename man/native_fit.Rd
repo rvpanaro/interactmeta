@@ -16,8 +16,8 @@ SWADA / conventional, the stored \verb{$fits} list. \code{NULL} if none is store
 }
 \description{
 For Bayesian CAMS (\code{engine = "bayesmeta"}), returns the list of stored
-univariate fits: \verb{$overall} (\code{\link[bayesmeta:bmr]{bayesmeta::bmr()}} of \(m_j\) on \(\pi_j\)),
-\verb{$interaction} (\code{\link[bayesmeta:bayesmeta]{bayesmeta::bayesmeta()}} of \(g_j\)), and \verb{$trial_blocks}.
+univariate fits: \verb{$overall} (\code{\link[bayesmeta:bmr]{bayesmeta::bmr()}} of \eqn{m_j} on \eqn{\pi_j}),
+\verb{$interaction} (\code{\link[bayesmeta:bayesmeta]{bayesmeta::bayesmeta()}} of \eqn{g_j}), and \verb{$trial_blocks}.
 Those objects are the \code{bayesmeta} / DIRECT backend, not CAMS estimands.
 Plot them with the native \code{bayesmeta} methods
 (\code{vignette("further")}). For frequentist CAMS the
@@ -26,3 +26,4 @@ analogue is \verb{$metafor}.
 \seealso{
 \code{\link[=traceplot.interactmeta]{traceplot.interactmeta()}}, \code{vignette("further")}
 }
+\keyword{internal}

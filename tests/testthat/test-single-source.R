@@ -23,7 +23,7 @@ fit_edss_engine <- function(engine, method = NULL, ...) {
 }
 
 expect_origin_engine <- function(obj, engine) {
-  org <- interactmeta_origin(obj)
+  org <- attr(obj, "interactmeta_origin", exact = TRUE)
   expect_false(is.null(org))
   expect_equal(org$fit_engine, engine)
 }

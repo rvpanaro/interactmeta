@@ -28,3 +28,4 @@ can be checked draw by draw on the model scale. Draws are evaluated at each
 trial's own \eqn{\pi_j} (same as \code{\link[=shrinkage]{shrinkage()}} and forest greys), not at
 overall \eqn{\omega}.
 }
+\keyword{internal}

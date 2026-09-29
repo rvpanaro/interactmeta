@@ -1,6 +1,6 @@
 #' Effects at each level of the modifier
 #'
-#' `modifiers()` is the name to use. `subgroups()` remains an alias.
+#' `subgroups()` is the name to use. `modifiers()` is another name for the same extractor.
 #' The examples are subgroup analyses: each study contributes two estimates.
 #' The same extractor applies to any within-study contrast stored that way
 #' (dose, biomarker, time point). Level labels stay as stored. Display
@@ -40,7 +40,8 @@
 #'   effects only; `"Prediction"` adds a new-trial random effect drawn from the
 #'   posterior trial SDs at the combined-population IF (effect in a new **study**).
 #' @param prob Coverage probability for `lci` / `uci` when `summary = TRUE`.
-#' @param max_draws Optional cap on posterior draws (subsampled with a fixed seed).
+#' @param max_draws Optional cap on unweighted posterior rows. Rejected for
+#'   Bayesian CAMS DIRECT supports (weighted quadrature nodes); omit it.
 #' @param summary If `TRUE` (default), include a summary data frame.
 #' @param contrast_sep Rows whose `subgroup` label contains this separator are
 #'   excluded when resolving subgroup levels (default `"-"`).
@@ -55,6 +56,8 @@
 #'   `overall_ifrac`, `overall_ifrac_source` (`"fit"` or `"user"`), `reference`,
 #'   `prob`, `exponentiate`). Draws are indexed by `subgroup` and `type`.
 #'   `summary` includes `estimate` (median), `mean`, `sd`, `lci`, and `uci`.
+#'   For Bayesian CAMS, `lci`/`uci` are equal-tail mixture quantiles from the
+#'   DIRECT-node table; native `$post.interval` / `convolve()` stay on `$latent`.
 #'
 #' @seealso [combined()], [interactions()], [shrinkage()], [ifrac()],
 #'   [forestplot.interactmeta()]
@@ -426,7 +429,7 @@ comparison_shrinkage_effect_from_bundle <- function(bundle,
       prob = prob,
       exponentiate = isTRUE(exponentiate),
       shrinkage = TRUE,
-      components = comparison_shrinkage_audit_list(bundle)
+      components = comparison_shrinkage_components_list(bundle)
     )
     out$summary <- interactmeta_bayesmeta_maybe_fill_shrinkage(
       bundle, fin$summary, type = "subgroups", prob = prob, exponentiate = exponentiate
@@ -459,7 +462,7 @@ comparison_shrinkage_effect_from_bundle <- function(bundle,
       prob = prob,
       exponentiate = isTRUE(exponentiate),
       shrinkage = TRUE,
-      components = comparison_shrinkage_audit_list(bundle)
+      components = comparison_shrinkage_components_list(bundle)
     )
     out$summary <- interactmeta_bayesmeta_maybe_fill_shrinkage(
       bundle, fin$summary, type = "interaction", prob = prob, exponentiate = exponentiate
@@ -491,7 +494,7 @@ comparison_shrinkage_effect_from_bundle <- function(bundle,
     prob = prob,
     exponentiate = isTRUE(exponentiate),
     shrinkage = TRUE,
-    components = comparison_shrinkage_audit_list(bundle)
+    components = comparison_shrinkage_components_list(bundle)
   )
   out$summary <- interactmeta_bayesmeta_maybe_fill_shrinkage(
     bundle, fin$summary, type = "overall", prob = prob, exponentiate = exponentiate
@@ -500,24 +503,15 @@ comparison_shrinkage_effect_from_bundle <- function(bundle,
   out
 }
 
-#' Replace trial-level shrinkage intervals when the bundle is a bayesmeta fit.
+#' Public shrinkage summaries keep the DIRECT-mixture equal-tail intervals.
+#' Native `$latent` convolve / shrink intervals stay available on the fit.
 #' @noRd
 interactmeta_bayesmeta_maybe_fill_shrinkage <- function(bundle,
                                                        summary,
                                                        type,
                                                        prob,
                                                        exponentiate) {
-  fit <- bundle$fit
-  if (is.null(fit) || !identical(bundle$evaluation, "trial")) {
-    return(summary)
-  }
-  interactmeta_bayesmeta_fill_shrinkage_summary(
-    fit = fit,
-    summary = summary,
-    type = type,
-    prob = prob,
-    exponentiate = exponentiate
-  )
+  summary
 }
 
 #' Summarize shrinkage draws; exponentiate only after reconstruction
@@ -743,20 +737,41 @@ comparison_resolve_marginal_omega <- function(fit,
 
   post_full <- comparison_posterior_df(fit)
   n_post <- nrow(post_full)
+  w_post <- if (".weight" %in% names(post_full)) post_full$.weight else NULL
 
   if (length(omega) == 1L) {
-    idx <- comparison_marginal_draw_index(n_post, max_draws = max_draws)
+    idx <- comparison_marginal_draw_index(
+      n_post,
+      max_draws = max_draws,
+      weight = w_post
+    )
     post <- post_full[idx, , drop = FALSE]
     omega <- rep(omega, nrow(post))
   } else if (length(omega) == n_post) {
-    idx <- comparison_marginal_draw_index(n_post, max_draws = max_draws)
+    idx <- comparison_marginal_draw_index(
+      n_post,
+      max_draws = max_draws,
+      weight = w_post
+    )
     omega <- omega[idx]
     post <- post_full[idx, , drop = FALSE]
   } else {
-    idx <- comparison_marginal_draw_index(length(omega), max_draws = max_draws)
+    idx <- comparison_marginal_draw_index(
+      length(omega),
+      max_draws = max_draws,
+      weight = NULL
+    )
     if (length(idx) > n_post) {
       stop(
         "`contribution` has more values than posterior draws in `fit`.",
+        call. = FALSE
+      )
+    }
+    if (!is.null(w_post) && length(idx) < n_post &&
+          interactmeta_has_direct_weights(w_post, n_post)) {
+      stop(
+        "`max_draws` cannot thin a weighted DIRECT support. ",
+        "Bayesian CAMS summaries use the full quadrature grid; omit `max_draws`.",
         call. = FALSE
       )
     }
@@ -872,13 +887,44 @@ comparison_posterior_draw_ids <- function(post) {
   )
 }
 
+#' Index rows of a draws table, optionally capped by `max_draws`
+#'
+#' Weighted DIRECT supports (Bayesian CAMS) must not be thinned uniformly:
+#' that over-represents low-weight quadrature nodes. Omit `max_draws` for
+#' those fits.
+#'
+#' @param n Number of rows.
+#' @param max_draws Optional maximum number of rows. Ignored when `NULL` or
+#'   at least `n`.
+#' @param weight Optional DIRECT node weights aligned with the `n` rows.
 #' @noRd
-comparison_marginal_draw_index <- function(n, max_draws = NULL) {
+comparison_marginal_draw_index <- function(n, max_draws = NULL, weight = NULL) {
+  n <- as.integer(n)[[1L]]
+  if (!is.finite(n) || n < 0L) {
+    stop("`n` must be a non-negative integer.", call. = FALSE)
+  }
   if (is.null(max_draws) || !is.finite(max_draws) || max_draws >= n) {
     return(seq_len(n))
   }
+  if (interactmeta_has_direct_weights(weight, n)) {
+    stop(
+      "`max_draws` cannot thin a weighted DIRECT support. ",
+      "Bayesian CAMS summaries use the full quadrature grid; omit `max_draws`.",
+      call. = FALSE
+    )
+  }
   set.seed(1L)
   sample.int(n, as.integer(max_draws))
+}
+
+#' TRUE when `weight` is a usable DIRECT-node weight vector of length `n`
+#' @noRd
+interactmeta_has_direct_weights <- function(weight, n) {
+  if (is.null(weight) || length(weight) != as.integer(n)[[1L]]) {
+    return(FALSE)
+  }
+  w <- as.numeric(weight)
+  any(is.finite(w) & w > 0)
 }
 
 #' Overall-block IF slope \eqn{\theta = \beta_{\mathrm{pkg}} + \gamma}
@@ -998,9 +1044,9 @@ comparison_effect_linpred_draws <- function(post,
 
 #' Posterior draws of the marginalized effect (linear predictor at overall IF)
 #'
-#' Thin wrapper around [comparison_effect_linpred_draws()] for Pooled / Prediction /
+#' Thin wrapper around `comparison_effect_linpred_draws()` for Pooled / Prediction /
 #' Standardized (ω + stored RE). Study-specific shrinkage uses
-#' [comparison_shrinkage_rotation_bundle()] with `evaluation = "trial"` instead.
+#' `comparison_shrinkage_rotation_bundle()` with `evaluation = "trial"` instead.
 #' @noRd
 comparison_marginal_effect_draws <- function(post,
                                        omega,
@@ -1255,9 +1301,9 @@ comparison_effects_summary <- function(draws, group_cols, prob = 0.95,
 
 #' Subgroup-difference (interaction) effects
 #'
-#' Reports the CAMS treatment-by-subgroup interaction \(\gamma\).
-#' For binary CAMS, \(\mu_B(\pi)-\mu_A(\pi)=\gamma\) for every
-#' information fraction \(\pi\), so this quantity is **not** evaluated
+#' Reports the CAMS treatment-by-subgroup interaction \eqn{\gamma}.
+#' For binary CAMS, \eqn{\mu_B(\pi)-\mu_A(\pi)=\gamma} for every
+#' information fraction \eqn{\pi}, so this quantity is **not** evaluated
 #' at the overall IF. `"Prediction"` adds new-trial interaction
 #' heterogeneity. Named `interactions()` to match [subgroups()] and so it
 #' does not mask `stats::interaction()`.
@@ -1265,11 +1311,11 @@ comparison_effects_summary <- function(draws, group_cols, prob = 0.95,
 #' @param fit A [`interactmeta`] from [cam()].
 #' @param contribution,ifrac,prob,max_draws,summary,contrast_sep,exponentiate,shrinkage
 #'   As in [subgroups()]. `contribution` / `ifrac` are unused for the
-#'   pooled interaction \(\gamma\); they are retained for API compatibility
+#'   pooled interaction \eqn{\gamma}; they are retained for API compatibility
 #'   and are used when `shrinkage = TRUE`.
 #' @param type One or both of `"Pooled"` and `"Prediction"` when `shrinkage = FALSE`.
-#'   `"Pooled"` is the fixed interaction \(\gamma\). `"Prediction"` is
-#'   the interaction in a **new trial**: \(\gamma\) plus
+#'   `"Pooled"` is the fixed interaction \eqn{\gamma}. `"Prediction"` is
+#'   the interaction in a **new trial**: \eqn{\gamma} plus
 #'   trial-level slope heterogeneity `v * (ifrac2_nonref - ifrac2_ref)`
 #'   (intercept trial RE cancels within a study).
 #'
@@ -1576,7 +1622,7 @@ comparison_ifrac2_contrast_delta <- function(fit,
 
 #' Posterior draws of trial slope RE (ifrac2) for prediction
 #'
-#' Uses a fixed seed (see [comparison_prediction_seed()]) for reproducibility.
+#' Uses a fixed seed (see `comparison_prediction_seed()`) for reproducibility.
 #' @noRd
 comparison_new_trial_slope_re_draws <- function(fit, post = NULL) {
   st <- attr(fit, "interactmeta", exact = TRUE)
@@ -1699,7 +1745,7 @@ interactmeta_interaction_effects_shrinkage <- function(fit,
 #' Pooled / Prediction diamonds use the **mean** of posterior draws as `yi`
 #' and `sd^2` as `vi` (bayesmeta-compatible). Shrinkage greys use the
 #' **median and equal-tail QI** of the reconstructed draws via
-#' [interactmeta_effects_merge_yivi()] (`use_posterior_qi = TRUE`).
+#' `interactmeta_effects_merge_yivi()` (`use_posterior_qi = TRUE`).
 #' @noRd
 interactmeta_effects_summary_to_yivi <- function(summary, type = NULL) {
   s <- summary

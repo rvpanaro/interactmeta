@@ -10,9 +10,9 @@ test_that("bayesmeta and brms posteriors agree under identical CAMS priors", {
     yi = c(0.10, 0.25, 0.12, 0.28, 0.08, 0.22, 0.15, 0.30),
     vi = c(0.04, 0.02, 0.05, 0.03, 0.03, 0.04, 0.02, 0.025)
   )
-  p_tau <- cam_prior("half-normal", scale = 0.5)
-  p_int <- cam_prior("half-normal", scale = 0.1)
-  p_fe <- cam_prior("normal", mean = 0, sd = 10)
+  p_tau <- interactmeta:::cam_prior("half-normal", scale = 0.5)
+  p_int <- interactmeta:::cam_prior("half-normal", scale = 0.1)
+  p_fe <- interactmeta:::cam_prior("normal", mean = 0, sd = 10)
 
   fit_bm <- suppressWarnings(cam(
     dat,

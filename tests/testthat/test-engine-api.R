@@ -115,16 +115,16 @@ test_that("engine / method / algorithm metadata are stored on the fit", {
   expect_equal(attr(fit, "interactmeta")$method, "bayes")
   expect_equal(attr(fit, "interactmeta")$algorithm, "quadrature")
   expect_s3_class(fit$priors, "cam_priors")
-  expect_equal(fit$priors$tau$family, "half-normal")
-  expect_equal(fit$priors$tau$scale, 0.5)
-  expect_equal(fit$priors$tau_interaction$scale, 0.1)
-  expect_match(paste(utils::capture.output(print(fit)), collapse = "\n"), "Half-Normal")
+  expect_equal(fit$priors$tau$family, "uniform")
+  expect_true(interactmeta:::cam_prior_is_improper_uniform(fit$priors$tau))
+  expect_true(interactmeta:::cam_prior_is_improper_uniform(fit$priors$tau_interaction))
+  expect_match(paste(utils::capture.output(print(fit)), collapse = "\n"), "improper uniform")
 })
 
 test_that("shared cam_prior objects are stored identically for bayesmeta", {
   skip_if_not_installed("bayesmeta")
   dat <- cams_engine_example_data()
-  p <- cam_prior("half-normal", scale = 0.5)
+  p <- interactmeta:::cam_prior("half-normal", scale = 0.5)
   fit <- suppressWarnings(cam(
     dat,
     reference = "Younger",
@@ -178,7 +178,7 @@ test_that("engine = metafor is frequentist and warns on explicit Bayesian priors
       dat,
       reference = "Younger",
       engine = "metafor",
-      tau.prior = cam_prior("half-normal", scale = 0.5),
+      tau.prior = interactmeta:::cam_prior("half-normal", scale = 0.5),
       silent = 2
     ),
     "frequentist"

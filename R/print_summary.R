@@ -856,7 +856,8 @@ comparison_fit_print_priors <- function(fit, meta) {
   if (inherits(fit$priors, "cam_priors")) {
     cat("\n")
     print(fit$priors)
-    if (identical(meta$engine, "bayesmeta")) {
+    if (identical(meta$engine, "bayesmeta") &&
+          identical(fit$priors$fixed$family, "normal")) {
       cat(
         "bayesmeta: independent Normal prior on (alpha, theta) with beta.prior.cov = diag(sd^2); ",
         "mu.prior for gamma separately. ",
@@ -875,15 +876,15 @@ comparison_fit_print_priors <- function(fit, meta) {
     cat("  Intercept, b_subgroup ~ normal(0, 10)\n")
     cat("  b_ifrac omitted (ecological_slope = FALSE; identically 0)\n")
   } else {
-    cat("  Intercept, b_ifrac, b_subgroup ~ normal(0, 10)\n")
+    cat("  (alpha, theta) and gamma ~ independent normal(0, 10); ")
+    cat("stored b_ifrac = theta - gamma\n")
   }
   if (!is.null(pr) && nrow(pr)) {
     for (i in seq_len(nrow(pr))) {
       cat(paste0("  ", pr$class[[i]], " ~ ", pr$prior[[i]], "\n"))
     }
   } else {
-    cat("  sd_trial[1] ~ normal(0, 0.5)\n")
-    cat("  sd_trial[k+1] ~ normal(0, 0.1)\n")
+    cat("  sd_trial[*] ~ improper uniform (bayesmeta default)\n")
   }
   invisible(NULL)
 }

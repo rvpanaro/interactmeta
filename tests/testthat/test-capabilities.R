@@ -38,8 +38,8 @@ test_that("frequentist DA and AD use only their selected metafor fits", {
   expect_equal(int_ad$engine, "metafor")
   expect_equal(int_da$summary$estimate, da_fit$interaction$estimate, tolerance = 1e-12)
   expect_equal(int_ad$summary$estimate, ad_fit$interaction$estimate, tolerance = 1e-12)
-  expect_equal(interactmeta_origin(int_da)$fit_engine, "metafor")
-  expect_equal(interactmeta_origin(int_ad)$fit_engine, "metafor")
+  expect_equal(attr(int_da, "interactmeta_origin")$fit_engine, "metafor")
+  expect_equal(attr(int_ad, "interactmeta_origin")$fit_engine, "metafor")
 
   het_da <- heterogeneity(da_fit)
   het_ad <- heterogeneity(ad_fit)
@@ -154,10 +154,6 @@ test_that("downstream DA/AD accessors do not silently invoke CAMS or the other c
       stop("must not call CAMS from DA/AD accessors")
     },
     cams = function(...) {
-      cam_calls <<- cam_calls + 1L
-      stop("must not call CAMS from DA/AD accessors")
-    },
-    subgroupmeta = function(...) {
       cam_calls <<- cam_calls + 1L
       stop("must not call CAMS from DA/AD accessors")
     },

@@ -38,10 +38,10 @@ plot_contribution(
 )
 }
 \arguments{
-\item{fit}{A \code{\link{interactmeta}} / \code{interactmeta} from \code{\link[=cam]{cam()}}.}
+\item{fit}{A \code{\link{interactmeta}} / \code{interactmeta} from \code{\link[=cams]{cams()}}.}
 
 \item{ifrac_var, prob, type, max_draws, contrast_sep}{Passed to
-\code{\link[=predict_cam_by_if]{predict_cam_by_if()}} and \code{\link[=ifrac]{ifrac()}}.}
+\code{\link[=predict_cams_by_if]{predict_cams_by_if()}} and \code{\link[=ifrac]{ifrac()}}.}
 
 \item{exponentiate}{If \code{TRUE}, draw the CAMS curves, study points, and
 intervals on the exponential (ratio) scale. Observed \code{yi} are exponentiated
@@ -80,7 +80,7 @@ A \strong{ggplot2} object, invisibly.
 \description{
 Core contribution-adjusted display: population subgroup curves
 \eqn{\mu_A(\pi)} / \eqn{\mu_B(\pi)} with pointwise credible ribbons from
-\code{\link[=predict_cam_by_if]{predict_cam_by_if()}}, the overall CAMS line
+\code{\link[=predict_cams_by_if]{predict_cams_by_if()}}, the overall CAMS line
 \eqn{M(\pi)=\alpha+\theta\pi}, and observed study effects at each trial's
 own \eqn{\pi_j}. This is the plot of the CAMS identities
 \eqn{\mu_B(\pi)-\mu_A(\pi)=\gamma} and
@@ -92,5 +92,5 @@ plot_contribution(fit)
 }
 }
 \seealso{
-\code{\link[=predict_cam_by_if]{predict_cam_by_if()}}, \code{\link[=ifrac]{ifrac()}}
+\code{\link[=predict_cams_by_if]{predict_cams_by_if()}}, \code{\link[=ifrac]{ifrac()}}
 }

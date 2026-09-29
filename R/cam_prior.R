@@ -18,11 +18,7 @@
 #' @param lower,upper Support for a uniform prior. `upper = Inf` (default)
 #'   is the improper uniform on \eqn{[lower, \infty)}.
 #' @return An object of class `"cam_prior"`.
-#' @export
-#' @examples
-#' cam_prior("half-normal", scale = 0.5)
-#' cam_prior("uniform", lower = 0, upper = 2)
-#' @aliases cams_prior
+#' @noRd
 cam_prior <- function(family,
                        scale = NULL,
                        mean = 0,
@@ -42,17 +38,17 @@ cam_prior <- function(family,
   cam_prior_validate(out)
 }
 
-#' @rdname cam_prior
-#' @export
 cams_prior <- cam_prior
 
 #' @export
+#' @noRd
 print.cam_prior <- function(x, ...) {
   cat(format(x), "\n", sep = "")
   invisible(x)
 }
 
 #' @export
+#' @noRd
 format.cam_prior <- function(x, ...) {
   switch(
     x$family,
@@ -61,7 +57,10 @@ format.cam_prior <- function(x, ...) {
     "normal" = sprintf("Normal(%s, %s)", format(x$mean, digits = 6), format(x$sd, digits = 6)),
     "sqrt" = "sqrt (p(tau) proportional to tau^(-1/2), tau >= 0)",
     "uniform" = if (cam_prior_is_improper_uniform(x)) {
-      sprintf("improper uniform (p(tau) proportional to 1, tau >= %s)", format(x$lower, digits = 6))
+      sprintf(
+        "improper uniform (p proportional to 1 on [%s, Inf); bayesmeta default)",
+        format(x$lower, digits = 6)
+      )
     } else {
       sprintf("Uniform(%s, %s)", format(x$lower, digits = 6), format(x$upper, digits = 6))
     },
@@ -71,20 +70,29 @@ format.cam_prior <- function(x, ...) {
 }
 
 #' @export
+#' @noRd
 print.cams_prior <- print.cam_prior
 
 #' @export
+#' @noRd
 format.cams_prior <- format.cam_prior
 
 #' Documented CAMS Bayesian defaults
+#'
+#' Heterogeneity: bayesmeta's improper `"uniform"` on overall and
+#' interaction tau when both are omitted. Fixed effects: independent
+#' Normal(0, 10) — bayesmeta's improper flat mu is not a reliable default
+#' for the overall `bmr` block together with improper tau. Empirical /
+#' WIP half-normal scales are documented and used in vignettes
+#' (arXiv:2606.23968).
 #' @noRd
 cam_default_tau_prior <- function() {
-  cam_prior("half-normal", scale = 0.5)
+  cam_prior("uniform")
 }
 
 #' @noRd
 cam_default_tau_interaction_prior <- function() {
-  cam_prior("half-normal", scale = 0.1)
+  cam_prior("uniform")
 }
 
 #' @noRd
@@ -107,26 +115,38 @@ normalize_cam_prior <- function(x, role = c("tau", "fixed")) {
     class(out) <- "cam_prior"
     return(out)
   }
+  if (is.numeric(x) && length(x) == 2L && !is.null(names(x))) {
+    if (!all(c("mean", "sd") %in% names(x))) {
+      stop(
+        "A numeric prior needs names `mean` and `sd`, as in `c(mean = 0, sd = 10)`.",
+        call. = FALSE
+      )
+    }
+    return(cam_prior_validate(
+      cam_prior("normal", mean = x[["mean"]], sd = x[["sd"]]),
+      role = role
+    ))
+  }
   if (is.character(x) && length(x) == 1L) {
     fam <- cam_prior_canonical_family(x)
     if (identical(fam, "half-normal")) {
       stop(
-        "Character shorthand `\"half-normal\"` needs a scale; use ",
-        "`cam_prior(\"half-normal\", scale = ...)`.",
+        "Character shorthand `\"half-normal\"` needs a scale. Pass a bayesmeta density, ",
+        "for example `function(tau) bayesmeta::dhalfnormal(tau, scale = 0.5)`.",
         call. = FALSE
       )
     }
     if (identical(fam, "half-cauchy")) {
       stop(
-        "Character shorthand `\"half-cauchy\"` needs a scale; use ",
-        "`cam_prior(\"half-cauchy\", scale = ...)`.",
+        "Character shorthand `\"half-cauchy\"` needs a scale. Pass a bayesmeta density, ",
+        "for example `function(tau) bayesmeta::dhalfcauchy(tau, scale = 1)`.",
         call. = FALSE
       )
     }
     if (identical(fam, "normal")) {
       stop(
-        "Character shorthand `\"normal\"` needs `mean` and `sd`; use ",
-        "`cam_prior(\"normal\", mean = ..., sd = ...)`.",
+        "Character shorthand `\"normal\"` needs a mean and an sd. ",
+        "Pass `fixed.prior = c(mean = 0, sd = 10)`.",
         call. = FALSE
       )
     }
@@ -135,7 +155,7 @@ normalize_cam_prior <- function(x, role = c("tau", "fixed")) {
   stop(
     "Cannot interpret prior of class `",
     paste(class(x), collapse = "/"),
-    "`. Use a character shorthand or `cam_prior()`.",
+    "`. Use `\"uniform\"`, `\"sqrt\"`, a bayesmeta density, or `c(mean = , sd = )`.",
     call. = FALSE
   )
 }
@@ -180,6 +200,7 @@ cam_priors_check_engine <- function(priors, engine) {
 }
 
 #' @export
+#' @noRd
 print.cam_priors <- function(x, ...) {
   cat("CAMS priors:\n")
   cat("  tau (overall)     : ", format(x$tau), "\n", sep = "")
@@ -189,6 +210,7 @@ print.cam_priors <- function(x, ...) {
 }
 
 #' @export
+#' @noRd
 print.cams_priors <- print.cam_priors
 
 cam_prior_canonical_family <- function(family) {
@@ -416,8 +438,7 @@ prior_to_brms_one <- function(prior, role = c("tau", "fixed")) {
     stop(
       "`tau.prior = \"uniform\"` is the improper density p(tau) proportional to 1 ",
       "for tau >= 0 (bayesmeta). brms/Stan cannot use that prior. ",
-      "Supply an explicit bound, e.g. cam_prior(\"uniform\", lower = 0, upper = 2), ",
-      "or use a half-normal.",
+      "Supply an explicit bound or use a half-normal.",
       call. = FALSE
     )
   }

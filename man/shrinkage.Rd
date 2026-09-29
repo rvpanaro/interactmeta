@@ -31,13 +31,14 @@ shrinkage(
 \item{format}{Output representation:
 \itemize{
 \item \code{"list"} (default): S3 object with long \verb{$draws}, optional \verb{$summary},
-and \verb{$components} (audit bundle)
+and \verb{$components} (observed / shrunk matrices)
 \item \code{"summary"}: summary data frame only
 }}
 
 \item{prob}{Coverage probability for intervals when a summary is built.}
 
-\item{max_draws}{Optional cap on posterior draws (subsampled with a fixed seed).}
+\item{max_draws}{Optional cap on unweighted posterior rows. Rejected for
+Bayesian CAMS DIRECT supports; omit it.}
 
 \item{summary}{If \code{TRUE} (default), attach / build a summary when
 \code{format = "list"} or \code{"summary"}.}

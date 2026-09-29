@@ -6,27 +6,45 @@
 #' derived outputs; the methodological target is not a separate meta-analysis
 #' within each subgroup.
 #'
-#' [cam()] is the preferred name for this fitter. [cams()] and
-#' [subgroupmeta()] are aliases of the same function.
+#' [cams()] is the fitter. [cam()] is another name for the same function.
 #'
 #' By default, [ifrac()] is run inside the fitter on the input (e.g. a
 #' [`metafor::escalc`] object). You can also pass an existing [ifrac()] tibble.
 #'
 #' The model for binary subgroups is the orthogonal CAMS factorization
 #' (Panaro, Röver & Friede 2025, §3.4): an overall information-fraction
-#' meta-regression of \(m_j\) plus an interaction random-effects meta-analysis
-#' of \(g_j\). Bayesian CAMS is implemented using DIRECT quadrature via
+#' meta-regression of \eqn{m_j} plus an interaction random-effects meta-analysis
+#' of \eqn{g_j}. Bayesian CAMS is implemented using DIRECT quadrature via
 #' **bayesmeta**. Frequentist CAMS is implemented using **metafor**. Markov
 #' chain Monte Carlo (MCMC) is not required for CAMS inference.
+#'
+#' @section Sampling assumption (within-trial covariance):
+#' Trial blocks use
+#' \eqn{g_j=y_{Bj}-y_{Aj}} with \eqn{\mathrm{Var}(g_j)=v_{Aj}+v_{Bj}} and
+#' information fraction
+#' \eqn{\pi_j=(1/v_{Bj})/(1/v_{Aj}+1/v_{Bj})} (IV weight of the non-reference
+#' subgroup). That choice makes \eqn{\mathrm{Cov}(m_j,g_j)=0} when
+#' \eqn{\mathrm{Cov}(y_{Aj},y_{Bj})=0}. This package currently assumes that
+#' within-trial subgroup sampling covariance is zero. Separate overall and
+#' interaction fits (`bmr`/`bayesmeta` or two `rma`s) rely on that
+#' orthogonality. If subgroup estimates share a control arm or other
+#' within-trial dependence, both \eqn{\mathrm{Var}(g_j)} and block
+#' independence are misspecified unless \eqn{\pi_j} and the variances are
+#' redefined with the covariance (not implemented here).
 #'
 #' @section Model variants:
 #' One call; switch with `ecological_slope`:
 #' * `ecological_slope = TRUE` (default) — **comparison** model with free
 #'   ecological / composition slope \eqn{\beta}
-#' * `ecological_slope = FALSE` — **subgroup-specific** model with \eqn{\beta}
-#'   omitted (identically 0); preferred for source-only fits under
-#'   [reproducibility()] same-IF. Currently implemented for internal Stan
-#'   backends only, not for public Bayesian or frequentist CAMS.
+#' * `ecological_slope = FALSE` — **subgroup-specific** model with
+#'   \eqn{\beta \equiv 0} (hence \eqn{\theta = \gamma}). Public
+#'   `bayesmeta` / `metafor` engines implement this as a **constrained**
+#'   joint model for \eqn{(\alpha,\gamma)} with free across-trial
+#'   heterogeneity \eqn{\tau_m} and \eqn{\tau_g}. Switching the composition
+#'   slope off does **not** turn off across-trial patterns: trial-level
+#'   random effects and both heterogeneity SDs remain part of the inference.
+#'   Population lines become \eqn{\mu_A=\alpha}, \eqn{\mu_B=\alpha+\gamma},
+#'   \eqn{M(\pi)=\alpha+\pi\gamma}.
 #'
 #' @section Inference:
 #' CAMS can be fitted using Bayesian or frequentist inference. These are not
@@ -56,21 +74,28 @@
 #' @section Method:
 #' `method` is the inferential method (`"bayes"`, `"REML"` / `"ML"`), not the
 #' approach name (`bayesmeta` vs `metafor`). Prefer
-#' [bayescam()] for Bayesian CAMS and `cam(..., engine = "metafor")` for
+#' [bayescams()] for Bayesian CAMS and `cams(..., engine = "metafor")` for
 #' frequentist CAMS. The fit stores `fit$inference`, `fit$engine`, `fit$method`,
 #' and `fit$algorithm` (`"quadrature"` or `"optimization"`).
 #'
 #' @section Priors:
-#' Bayesian CAMS uses one CAMS-level prior specification (see [cam_prior()]),
-#' stored on `fit$priors`. Defaults are:
+#' Bayesian CAMS passes priors through to bayesmeta. They are stored on
+#' `fit$priors`. **Heterogeneity defaults match [bayesmeta::bayesmeta()]**:
 #' \describe{
-#'   \item{fixed effects}{\eqn{\mathrm{Normal}(0, 10)} on intercept, IF slope
-#'     \eqn{\beta}, and subgroup offset \eqn{\gamma}}
-#'   \item{`tau.prior`}{\eqn{\mathrm{Normal}^+(0, 0.5)} on overall
-#'     heterogeneity \eqn{\tau_m}}
-#'   \item{`tau.interaction.prior`}{\eqn{\mathrm{Normal}^+(0, 0.1)} on
-#'     interaction heterogeneity \eqn{\tau_g}; if `NULL` and the user supplied
-#'     `tau.prior`, the overall prior is inherited}
+#'   \item{fixed effects}{independent \eqn{\mathrm{Normal}(0, 10)} on the
+#'     overall-block means \eqn{(\alpha,\theta)} and on the interaction mean
+#'     \eqn{\gamma}, with \eqn{\theta=\beta+\gamma}. Stored `b_ifrac` is the
+#'     reconstructed ecological slope \eqn{\beta=\theta-\gamma}; that prior is
+#'     **not** an independent \eqn{N(0,10)} on \eqn{\beta}. (bayesmeta's
+#'     improper flat \eqn{\mu} is not the CAMS default: the overall block is
+#'     fit with `bmr`, where a proper normal is the reliable companion to
+#'     improper tau)}
+#'   \item{`tau.prior`}{improper uniform \eqn{p(\tau_m)\propto 1}
+#'     (\eqn{\tau_m \ge 0}), bayesmeta's `tau.prior = "uniform"`}
+#'   \item{`tau.interaction.prior`}{the same improper uniform on
+#'     \eqn{\tau_g} when both heterogeneity priors are omitted. If
+#'     `tau.interaction.prior` is `NULL` and the user supplied
+#'     `tau.prior`, the interaction prior **inherits** that density}
 #' }
 #' Character shorthands `"uniform"` and `"sqrt"` are the **improper** bayesmeta
 #' densities \eqn{p(\tau)\propto 1} and \eqn{p(\tau)\propto \tau^{-1/2}}
@@ -78,12 +103,37 @@
 #' `engine = "metafor"` ignores Bayesian priors (warning if the user supplied
 #' them).
 #'
-#' **Fixed-effect caveat:** bayesmeta/bmr place independent \eqn{N(0, 10)}
-#' on \eqn{(\alpha,\theta)} with \eqn{\theta = \beta + \gamma} and on
-#' \eqn{\gamma}. Stored `b_ifrac` is \eqn{\beta=\theta-\gamma}.
+#' **Empirical heterogeneity (not the package default).** CDSR calibration
+#' suggests interaction heterogeneity is often substantially smaller than
+#' overall treatment-effect heterogeneity, so a common weakly informative
+#' half-normal on both blocks can be too diffuse for \eqn{\tau_g}
+#' (Panaro, Röver & Friede, arXiv:2606.23968). That paper reports
+#' measure-specific empirical scales (e.g. \eqn{\mathrm{HN}(0.5)}-style WIP
+#' for overall log-ratio / SMD-type endpoints in Röver et al., 2021;
+#' tighter interaction scales such as \eqn{\mathrm{HN}(0.1)} in sensitivity
+#' analyses and \eqn{\mathrm{HN}(0.07)} empirically for log-ROR). Vignettes
+#' set those half-normal densities **explicitly**; they are not silently
+#' applied by [cams()].
+#'
+#' **Fixed-effect parameterization:** bayesmeta/bmr receive independent
+#' \eqn{N(0, 10)} on \eqn{(\alpha,\theta)} (`beta.prior.cov = diag(sd^2)`) and
+#' `mu.prior` on \eqn{\gamma}. That prior factors across the two orthogonal
+#' blocks. Independent normals on \eqn{(\alpha,\beta,\gamma)} would couple
+#' \eqn{\theta} and \eqn{\gamma} a priori and are not what this engine uses.
+#'
+#' @section Intervals:
+#' For Bayesian CAMS, public extractors ([subgroups()], [interactions()],
+#' [combined()], [predict_cams_by_if()], [shrinkage()], [plot_contribution()])
+#' report **equal-tail** credible intervals from the DIRECT-node Gaussian
+#' mixture (`.weight` and within-node `.cond_*` moments). That is the fast
+#' manuscript-facing rule. Native bayesmeta/`bmr` `$post.interval` and
+#' `bayesmeta::convolve()` (with `interval.type` `"shortest"` or `"central"`)
+#' remain on `$latent` as the engine-native concept and are not recomputed
+#' for every extractor or IF-grid point. Alpha and theta are never convolved
+#' with each other.
 #'
 #' @param x A [`metafor::escalc`] object, a data frame with `yi` / `vi`, or output
-#'   from [ifrac()] (must include `ifrac_<k>` design columns). Also accepts a
+#'   from [ifrac()] (must include `ifrac_*` design columns). Also accepts a
 #'   data frame built from study-level columns (`trial`, `subgroup`, `yi`, `vi`).
 #' @param reference Subgroup label used as reference in [ifrac()] and in the
 #'   model. Required when `x` is not already an [ifrac()] result.
@@ -106,24 +156,34 @@
 #'   are both specified and incompatible.
 #' @param ecological_slope Logical; if `TRUE` (default), include the ecological /
 #'   composition slope \eqn{\beta} (`b_ifrac`) — the **comparison** model. If
-#'   `FALSE`, omit \eqn{\beta} — the **subgroup-specific** model (\eqn{\beta}
-#'   identically 0). Useful as a source-only fit for [reproducibility()] under
-#'   the same-information-fraction assumption.
+#'   `FALSE`, constrain \eqn{\beta \equiv 0} (\eqn{\theta=\gamma}) — the
+#'   **subgroup-specific** model. Across-trial heterogeneity
+#'   (\eqn{\tau_m}, \eqn{\tau_g}) and trial-level reconstruction remain;
+#'   only the mean composition slope is switched off.
 #' @param approach Inferential approach. `"bayes"` selects Bayesian CAMS
 #'   (`engine = "bayesmeta"` when `engine` is omitted). `"frequentist"`,
 #'   `"REML"`, or `"ML"` select frequentist CAMS (`engine = "metafor"`).
 #'   `NULL` (default) follows `engine` / `method`.
 #' @param engine Approach used to fit CAMS: `"bayesmeta"` (Bayesian, default)
 #'   or `"metafor"` (frequentist). Changing `engine` should not silently change
-#'   the Bayesian model; use [cam_prior()] for shared priors. `"bayes"` is
+#'   the Bayesian model. `"bayes"` is
 #'   accepted as a synonym of `"bayesmeta"`. Omit `engine` when `method` or
 #'   `approach` already identifies the fit.
 #' @param tau.prior,tau.interaction.prior Heterogeneity priors for \eqn{\tau_m}
-#'   (overall) and \eqn{\tau_g} (interaction). Character shorthands or
-#'   [cam_prior()] objects. If `tau.interaction.prior = NULL` and the user
-#'   supplied `tau.prior`, the interaction prior inherits `tau.prior`.
-#' @param fixed.prior Shared normal (or improper-uniform) prior for fixed
-#'   effects. See [cam_prior()].
+#'   (overall) and \eqn{\tau_g} (interaction), passed to bayesmeta.
+#'   Defaults when both are omitted match bayesmeta: improper
+#'   `"uniform"` on both blocks (see **Priors**). `"uniform"` and `"sqrt"`
+#'   are the improper bayesmeta densities. A half-normal or half-Cauchy is a
+#'   density, for example
+#'   `function(tau) bayesmeta::dhalfnormal(tau, scale = 0.5)`.
+#'   If `tau.interaction.prior = NULL` and the user supplied `tau.prior`,
+#'   the interaction prior inherits `tau.prior`.
+#' @param fixed.prior Normal prior for the bayesmeta fixed effects, as
+#'   `c(mean = 0, sd = 10)`. `NULL` uses that default (needed for a stable
+#'   `bmr` overall block with improper tau; not bayesmeta's improper flat
+#'   \eqn{\mu}). Applied as independent normals on \eqn{(\alpha,\theta)} and
+#'   on \eqn{\gamma}, not as an independent normal on the reconstructed
+#'   \eqn{\beta=\theta-\gamma}. `"uniform"` is the improper flat prior.
 #' @param engine_args List of **computational** options for the selected backend
 #'   (e.g. quadrature `delta` / `epsilon`, metafor `test`). Model choices such
 #'   as priors do not belong here.
@@ -141,8 +201,8 @@
 #' library(interactmeta)
 #'
 #' es <- escalc(measure = "IRR", yi = age$yi, vi = age$vi, data = age)
-#' fit <- bayescam(es, reference = "Younger")
-#' fit_reml <- cam(es, reference = "Younger", engine = "metafor")
+#' fit <- bayescams(es, reference = "Younger")
+#' fit_reml <- cams(es, reference = "Younger", engine = "metafor")
 #' forestplot(fit)
 #' plot_contribution(fit)
 #' plot(fit)
@@ -151,16 +211,27 @@
 #' @references
 #' Panaro RV, Röver C, Friede T (2025).
 #' Consistent Bayesian meta-analysis on subgroup specific effects and
-#' interactions. arXiv:2512.18785. \doi{10.48550/arXiv.2512.18785}
+#' interactions. arXiv:2512.18785. \url{https://doi.org/10.48550/arXiv.2512.18785}
 #'
 #' Panaro RV, Röver C, Friede T (2026).
 #' Subgroup comparisons within and across studies in meta-analysis.
 #' \emph{Research Synthesis Methods} (in press).
-#' arXiv:2508.15531. \doi{10.48550/arXiv.2508.15531}
-#' @seealso [bayescam()], [cam()], [conventional()], [da()], [ad()], [swada()], [forestplot()], [reproducibility()], [audit()]
-#' @aliases cams subgroupmeta
+#' arXiv:2508.15531. \url{https://doi.org/10.48550/arXiv.2508.15531}
+#'
+#' Panaro RV, Röver C, Friede T (2026).
+#' Empirical prior distributions for treatment-by-subgroup interaction
+#' heterogeneity in random-effects meta-analysis.
+#' arXiv:2606.23968. \url{https://doi.org/10.48550/arXiv.2606.23968}
+#'
+#' Röver C, Bender R, Dias S, Schmid CH, Schmidli H, Sturtz S, Weber S,
+#' Friede T (2021). On weakly informative prior distributions for the
+#' heterogeneity parameter in Bayesian random-effects meta-analysis.
+#' \emph{Research Synthesis Methods}, 12(4), 448--474.
+#' \url{https://doi.org/10.1002/jrsm.1475}
+#' @seealso [bayescams()], [conventional()], [da()], [ad()], [swada()], [forestplot()]
+#' @name cams
 #' @export
-cam <- function(x,
+cams <- function(x,
                  reference = NULL,
                  modifier = NULL,
                  trial = NULL,
@@ -394,7 +465,7 @@ cam <- function(x,
 
   fit <- comparison_restore_interactmeta_coef_names(fit, data, design, contrast_sep = contrast_sep)
 
-  fit <- interactmeta_attach_audit_metadata(
+  fit <- interactmeta_finalize_fit(
     fit = fit,
     call = mc,
     design = design,
@@ -437,13 +508,9 @@ cam <- function(x,
   fit
 }
 
-#' @rdname cam
+#' @rdname cams
 #' @export
-cams <- cam
-
-#' @rdname cam
-#' @export
-subgroupmeta <- cam
+cam <- cams
 
 resolve_comparison_design <- function(data,
                                 reference,
@@ -551,7 +618,11 @@ resolve_comparison_design <- function(data,
   )
 }
 
-#' Documented CAMS priors (brms / mixed-model representation)
+#' Proper prior table for brms / mixed-model scaffolding (not bayesmeta defaults)
+#'
+#' Package Bayesian defaults are bayesmeta's improper uniforms, which cannot
+#' be represented in Stan. This helper keeps the article WIP half-normal
+#' scales (arXiv:2606.23968) for code paths that need a proper prior table.
 #' @noRd
 default_comparison_prior <- function(ifrac2_coef, group = "trial") {
   group <- as.character(group)[[1]]

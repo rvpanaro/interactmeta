@@ -1,4 +1,4 @@
-#' Single-fit provenance and engine-integrity helpers
+#' Engine tagging and derived-effect helpers for one CAMS fit
 #'
 #' CAMS downstream quantities are transformations of one selected engine's
 #' fit. SWADA / DA / AD are not CAMS fits and must not borrow IF quantities.
@@ -28,8 +28,8 @@ interactmeta_abort_non_cams <- function(object, feature) {
 #' Native backend object stored on a fit (no refit)
 #'
 #' For Bayesian CAMS (`engine = "bayesmeta"`), returns the list of stored
-#' univariate fits: `$overall` ([bayesmeta::bmr()] of \(m_j\) on \(\pi_j\)),
-#' `$interaction` ([bayesmeta::bayesmeta()] of \(g_j\)), and `$trial_blocks`.
+#' univariate fits: `$overall` ([bayesmeta::bmr()] of \eqn{m_j} on \eqn{\pi_j}),
+#' `$interaction` ([bayesmeta::bayesmeta()] of \eqn{g_j}), and `$trial_blocks`.
 #' Those objects are the `bayesmeta` / DIRECT backend, not CAMS estimands.
 #' Plot them with the native `bayesmeta` methods
 #' (`vignette("further")`). For frequentist CAMS the
@@ -40,6 +40,7 @@ interactmeta_abort_non_cams <- function(object, feature) {
 #'   `$trial_blocks`. For frequentist CAMS, `fit$metafor`. For DA / AD /
 #'   SWADA / conventional, the stored `$fits` list. `NULL` if none is stored.
 #' @seealso [traceplot.interactmeta()], `vignette("further")`
+#' @keywords internal
 #' @export
 native_fit <- function(fit) {
   analysis <- interactmeta_fit_analysis(fit)
@@ -60,12 +61,8 @@ native_fit <- function(fit) {
   NULL
 }
 
-#' Provenance metadata for a derived CAMS quantity
-#'
-#' @param x A derived object (effects, heterogeneity, IF, …).
-#' @return A list with `fit_engine`, `fit_method`, `fit_algorithm`,
-#'   `quantity`, `fitted_or_derived`, `uncertainty`, and `call`, or `NULL`.
-#' @export
+#' Engine / quantity tag on a derived CAMS object
+#' @noRd
 interactmeta_origin <- function(x) {
   attr(x, "interactmeta_origin", exact = TRUE)
 }
@@ -141,8 +138,9 @@ interactmeta_ifrac_is_plugin <- function(x) {
 interactmeta_default_uncertainty <- function(engine, method) {
   if (identical(engine, "bayesmeta")) {
     return(paste(
-      "shortest or central interval from the selected bayesmeta/bmr",
-      "$post.interval, or from bayesmeta::convolve() for an independent-block sum"
+      "equal-tail interval from the DIRECT-node Gaussian mixture",
+      "(.weight and within-node .cond_*); native post.interval / convolve",
+      "remain on $latent"
     ))
   }
   if (identical(engine, "metafor")) {
@@ -262,9 +260,9 @@ interactmeta_mixture_moments <- function(mean,
 #' marginals.
 #' Coefficients \eqn{(a_\alpha,a_\theta,a_\gamma)} apply to
 #' \eqn{(\alpha,\theta,\gamma)}, **not** \eqn{(\alpha, b_{\mathrm{ifrac}}, \gamma)}.
-#' Stored `.cond_var_theta` is \(\operatorname{Var}(\theta)\) from the overall
-#' `bmr` block. Use `(1, \pi, 0)` for \(M=\alpha+\pi\theta\),
-#' `(1, \pi, -\pi)` for \(\mu_A\), and `(1, \pi, 1-\pi)` for \(\mu_B\).
+#' Stored `.cond_var_theta` is \eqn{\mathrm{Var}(\theta)} from the overall
+#' `bmr` block. Use \eqn{(1, \pi, 0)} for \eqn{M=\alpha+\pi\theta},
+#' \eqn{(1, \pi, -\pi)} for \eqn{\mu_A}, and \eqn{(1, \pi, 1-\pi)} for \eqn{\mu_B}.
 #' @noRd
 interactmeta_lincomb_cond_sd <- function(post,
                                          a_alpha,
@@ -372,12 +370,25 @@ interactmeta_metafor_lincomb <- function(fit,
   if (length(b_ov) != length(L_ov)) {
     return(NULL)
   }
-  est <- sum(L_ov * b_ov) + L_int * b_int
-  vb_ov <- as.matrix(ov$vb)
-  vb_int <- as.matrix(int$vb)
-  var <- as.numeric(t(L_ov) %*% vb_ov %*% L_ov) +
-    (L_int^2) * as.numeric(vb_int[[1L]]) +
-    as.numeric(pred_var)[[1L]]
+
+  if (isFALSE(fit$ecological_slope %||% fit$metafor$ecological_slope)) {
+    # theta = gamma: fold the interaction loading onto the shared gamma.
+    L_alpha <- L_ov[[1L]]
+    L_gamma <- L_ov[[2L]] + L_int
+    est <- L_alpha * b_ov[[1L]] + L_gamma * b_ov[[2L]]
+    vb <- as.matrix(ov$vb)
+    var <- L_alpha^2 * vb[1L, 1L] +
+      L_gamma^2 * vb[2L, 2L] +
+      2 * L_alpha * L_gamma * vb[1L, 2L] +
+      as.numeric(pred_var)[[1L]]
+  } else {
+    est <- sum(L_ov * b_ov) + L_int * b_int
+    vb_ov <- as.matrix(ov$vb)
+    vb_int <- as.matrix(int$vb)
+    var <- as.numeric(t(L_ov) %*% vb_ov %*% L_ov) +
+      (L_int^2) * as.numeric(vb_int[[1L]]) +
+      as.numeric(pred_var)[[1L]]
+  }
   se <- sqrt(max(var, 0))
   z <- stats::qnorm(1 - (1 - prob) / 2)
   lo <- est - z * se
@@ -521,24 +532,9 @@ interactmeta_summarize_effects <- function(draws,
                                            omega,
                                            delta_ifrac2 = 1) {
   mix <- is.data.frame(draws) && ".cond_sd" %in% names(draws)
-  bayes_native <- identical(fit$engine, "bayesmeta") && !is.null(fit$bayesmeta$overall)
-  if (mix && bayes_native) {
-    summ <- interactmeta_node_moment_grouped(
-      draws,
-      group_cols = group_cols,
-      prob = prob,
-      exponentiate = exponentiate
-    )
-    summ <- interactmeta_bayesmeta_fill_effect_summary(
-      fit = fit,
-      summary = summ,
-      quantity = quantity,
-      prob = prob,
-      exponentiate = exponentiate,
-      omega = omega
-    )
-    draws <- comparison_transform_effect_draws(draws, exponentiate)
-  } else if (mix) {
+  if (mix) {
+    # Public Bayesian intervals: equal-tail mixture on DIRECT nodes (fast).
+    # Native post.interval / convolve stay on $latent only.
     summ <- comparison_effects_summary(
       draws,
       group_cols = group_cols,

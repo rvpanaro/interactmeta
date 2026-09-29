@@ -10,19 +10,24 @@
 #' Stored `b_Intercept` is \eqn{\alpha}, stored `b_ifrac` is
 #' \eqn{\beta=\theta-\gamma}, and stored `b_subgroup*` is \eqn{\gamma}, so
 #' \eqn{\theta=\beta+\gamma}. Subgroup lines are parallel with vertical
-#' gap \eqn{\gamma}. Pointwise `estimate` is the posterior median; `lower` /
-#' `upper` are equal-tail quantiles of the **transformed draws** (mixture
-#' weights and conditional SDs are used when the engine stores them). Do
-#' not form these intervals by adding marginal credible-interval endpoints,
-#' and do not convolve the `alpha` and `theta` mixture marginals.
+#' gap \eqn{\gamma}.
 #'
-#' @param fit A [`interactmeta`] from [cam()] / [cam()].
+#' Pointwise `estimate` / `lower` / `upper` are **equal-tail** quantiles of the
+#' DIRECT-node Gaussian mixture (weights `.weight`, within-node SDs
+#' `.cond_*`). That is the fast public rule for [plot_contribution()] and
+#' extractors. Native bayesmeta `$post.interval` / `bayesmeta::convolve()`
+#' intervals remain on `$latent` as the engine-native concept; they are not
+#' recomputed on the IF grid. Alpha and theta stay on the joint overall-block
+#' support (never convolved with each other).
+#'
+#' @param fit A [`interactmeta`] from [cams()].
 #' @param if_grid Numeric information-fraction grid. If `NULL`, spans the
 #'   observed study IF range with a small margin (see [plot_contribution()]).
 #' @param level Coverage probability for `lower` / `upper` (default `0.95`).
 #' @param ifrac_var `ifrac_*` column used to build the default grid.
 #' @param resolution Grid length when `if_grid` is `NULL`.
-#' @param max_draws Optional cap on posterior rows.
+#' @param max_draws Optional cap on unweighted posterior rows. Rejected for
+#'   Bayesian CAMS DIRECT supports; omit it.
 #' @param exponentiate If `TRUE`, summarize on the exponential scale.
 #'
 #' @return A data frame with one row per grid point and subgroup:
@@ -31,9 +36,9 @@
 #'   \eqn{M(\pi)=\alpha+\theta\pi} at that grid point.
 #'
 #' @seealso [subgroups()], [combined()], [plot_contribution()]
-#' @aliases predict_cams_by_if
+#' @name predict_cams_by_if
 #' @export
-predict_cam_by_if <- function(fit,
+predict_cams_by_if <- function(fit,
                                if_grid = NULL,
                                level = 0.95,
                                ifrac_var = NULL,
@@ -42,7 +47,7 @@ predict_cam_by_if <- function(fit,
                                exponentiate = FALSE) {
   check_comparison_fit(fit)
   if (!inherits(fit, "interactmeta")) {
-    stop("`fit` must be an `interactmeta` from `cam()`.", call. = FALSE)
+    stop("`fit` must be an `interactmeta` from `cams()`.", call. = FALSE)
   }
   level <- as.numeric(level)[[1L]]
   if (!is.finite(level) || level <= 0 || level >= 1) {
@@ -67,7 +72,11 @@ predict_cam_by_if <- function(fit,
 
   design <- comparison_marginal_design(fit)
   post <- comparison_posterior_df(fit)
-  idx <- comparison_marginal_draw_index(nrow(post), max_draws = max_draws)
+  idx <- comparison_marginal_draw_index(
+    nrow(post),
+    max_draws = max_draws,
+    weight = if (".weight" %in% names(post)) post$.weight else NULL
+  )
   post <- post[idx, , drop = FALSE]
   sg_coef <- comparison_subgroup_coef_terms(fit, design)
   ref <- as.character(design$reference)[[1L]]
@@ -127,20 +136,22 @@ predict_cam_by_if <- function(fit,
   attr(out, "level") <- level
   attr(out, "reference") <- ref
   attr(out, "ifrac_var") <- ifrac_var
+  if (identical(fit$engine, "bayesmeta")) {
+    attr(out, "interval.rule") <- "mixture_equal_tail"
+  }
   class(out) <- c("interactmeta_cam_if_pred", "interactmeta_cams_if_pred", "data.frame")
   out
 }
 
-#' @rdname predict_cam_by_if
+#' @rdname predict_cams_by_if
 #' @export
-predict_cams_by_if <- predict_cam_by_if
+predict_cam_by_if <- predict_cams_by_if
 
 #' Pointwise CAMS interval at one information fraction.
 #'
-#' Bayesian ribbons are equal-tail quantiles of the transformed draws,
-#' including mixture weights and conditional standard deviations.
-#' `bayesmeta::convolve()` is the explanation of a level-effect posterior,
-#' not the calculation on this grid. Alpha and theta are not convolved.
+#' Public rule: equal-tail quantiles of the DIRECT-node mixture (weights and
+#' within-node SDs). Native `$post.interval` / `convolve()` live on `$latent`
+#' and are not used here. Alpha and theta stay jointly paired.
 #' @noRd
 predict_cam_if_qi <- function(x, post, a_alpha, a_theta, a_gamma, level, exponentiate,
                                fit = NULL) {
@@ -175,15 +186,15 @@ predict_cam_if_qi <- function(x, post, a_alpha, a_theta, a_gamma, level, exponen
 #'
 #' Core contribution-adjusted display: population subgroup curves
 #' \eqn{\mu_A(\pi)} / \eqn{\mu_B(\pi)} with pointwise credible ribbons from
-#' [predict_cam_by_if()], the overall CAMS line
+#' [predict_cams_by_if()], the overall CAMS line
 #' \eqn{M(\pi)=\alpha+\theta\pi}, and observed study effects at each trial's
 #' own \eqn{\pi_j}. This is the plot of the CAMS identities
 #' \eqn{\mu_B(\pi)-\mu_A(\pi)=\gamma} and
 #' \eqn{M(\pi)=(1-\pi)\mu_A(\pi)+\pi\mu_B(\pi)}.
 #'
-#' @param fit A [`interactmeta`] / `interactmeta` from [cam()].
+#' @param fit A [`interactmeta`] / `interactmeta` from [cams()].
 #' @param ifrac_var,prob,type,max_draws,contrast_sep Passed to
-#'   [predict_cam_by_if()] and [ifrac()].
+#'   [predict_cams_by_if()] and [ifrac()].
 #' @param exponentiate If `TRUE`, draw the CAMS curves, study points, and
 #'   intervals on the exponential (ratio) scale. Observed `yi` are exponentiated
 #'   after the log-scale Wald interval is formed.
@@ -205,7 +216,7 @@ predict_cam_if_qi <- function(x, post, a_alpha, a_theta, a_gamma, level, exponen
 #'
 #' @return A **ggplot2** object, invisibly.
 #'
-#' @seealso [predict_cam_by_if()], [ifrac()]
+#' @seealso [predict_cams_by_if()], [ifrac()]
 #' @examples
 #' \dontrun{
 #' plot_contribution(fit)

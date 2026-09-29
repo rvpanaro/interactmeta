@@ -22,12 +22,6 @@
       call. = FALSE
     )
   }
-  if (!isTRUE(ecological)) {
-    stop(
-      "`ecological_slope = FALSE` is not implemented for `engine = \"metafor\"`.",
-      call. = FALSE
-    )
-  }
   if (isTRUE(priors_user_supplied)) {
     warning(
       "`engine = \"metafor\"` is frequentist; Bayesian prior arguments are ignored.",
@@ -50,6 +44,101 @@
   )
   ov <- blocks$overall
   int <- blocks$interaction
+  sg_nonref <- design$coef_map$subgroup_fit[[2L]]
+  ifrac2_std <- design$coef_map$ifrac2_std[[1L]]
+
+  if (!isTRUE(ecological)) {
+    const <- interactmeta_metafor_fit_constrained(
+      blocks = blocks,
+      method = method,
+      engine_args = engine_args
+    )
+    alpha <- const$alpha
+    gamma <- const$gamma
+    beta <- 0
+    theta <- gamma
+    tau_m <- sqrt(const$tau2_m)
+    tau_g <- sqrt(const$tau2_g)
+    # Compatibility shells for print / heterogeneity (beta fixed at 0).
+    vb_ov <- matrix(
+      c(const$se_alpha^2, 0, 0, const$se_gamma^2),
+      nrow = 2L,
+      dimnames = list(c("intercept", "ifrac"), c("intercept", "ifrac"))
+    )
+    if (!is.null(const$joint)) {
+      vb_j <- as.matrix(stats::vcov(const$joint))
+      vb_ov <- matrix(
+        c(
+          vb_j["X_alpha", "X_alpha"], vb_j["X_alpha", "X_gamma"],
+          vb_j["X_alpha", "X_gamma"], vb_j["X_gamma", "X_gamma"]
+        ),
+        nrow = 2L,
+        dimnames = list(c("intercept", "ifrac"), c("intercept", "ifrac"))
+      )
+    }
+    overall_fit <- list(
+      beta = c(alpha, theta),
+      se = c(const$se_alpha, const$se_gamma),
+      ci.lb = c(alpha - 1.96 * const$se_alpha, theta - 1.96 * const$se_gamma),
+      ci.ub = c(alpha + 1.96 * const$se_alpha, theta + 1.96 * const$se_gamma),
+      tau2 = const$tau2_m,
+      se.tau2 = NA_real_,
+      vb = vb_ov,
+      method = method
+    )
+    interaction_fit <- list(
+      beta = gamma,
+      se = const$se_gamma,
+      ci.lb = gamma - 1.96 * const$se_gamma,
+      ci.ub = gamma + 1.96 * const$se_gamma,
+      tau2 = const$tau2_g,
+      se.tau2 = NA_real_,
+      vb = matrix(const$se_gamma^2, 1L, 1L),
+      method = method
+    )
+    draws <- data.frame(
+      .chain = 1L,
+      .iteration = 1L,
+      .draw = 1L,
+      b_Intercept = alpha,
+      b_ifrac_1 = beta,
+      sd_trial__Intercept = tau_m,
+      check.names = FALSE,
+      stringsAsFactors = FALSE
+    )
+    draws[[paste0("b_subgroup", sg_nonref)]] <- gamma
+    draws[[paste0("sd_trial__", ifrac2_std)]] <- tau_g
+    mu <- interactmeta_bayesmeta_mu_matrix(draws, data_fit, design)
+    if (!isTRUE(as.integer(silent)[[1L]] >= 2L)) {
+      message(
+        "interactmeta metafor approach: constrained CAMS ",
+        "(ecological_slope = FALSE; beta = 0, theta = gamma) via rma.mv; ",
+        "method = ", method, "."
+      )
+    }
+    return(structure(
+      list(
+        draws = draws,
+        mu = mu,
+        data = data_fit,
+        formula = stats::as.formula(design$formula),
+        metafor = list(
+          overall = overall_fit,
+          interaction = interaction_fit,
+          joint = const$joint,
+          trial_blocks = blocks,
+          ecological_slope = FALSE
+        ),
+        engine = "metafor",
+        prior = NULL,
+        priors = priors,
+        algorithm = "optimization",
+        method = method,
+        ecological_slope = FALSE
+      ),
+      class = c("interactmeta", "cam", "cams", "list")
+    ))
+  }
 
   overall_fit <- interactmeta_rma(
     yi = ov$yi,
@@ -75,8 +164,6 @@
   tau_m <- sqrt(max(as.numeric(overall_fit$tau2), 0))
   tau_g <- sqrt(max(as.numeric(interaction_fit$tau2), 0))
 
-  sg_nonref <- design$coef_map$subgroup_fit[[2L]]
-  ifrac2_std <- design$coef_map$ifrac2_std[[1L]]
   draws <- data.frame(
     .chain = 1L,
     .iteration = 1L,
@@ -110,13 +197,15 @@
       metafor = list(
         overall = overall_fit,
         interaction = interaction_fit,
-        trial_blocks = blocks
+        trial_blocks = blocks,
+        ecological_slope = TRUE
       ),
       engine = "metafor",
       prior = NULL,
       priors = priors,
       algorithm = "optimization",
-      method = method
+      method = method,
+      ecological_slope = TRUE
     ),
     class = c("interactmeta", "cam", "cams", "list")
   )
@@ -124,9 +213,9 @@
 
 #' Call `metafor::rma`, pinning `tau2 = 0` when that variance is not identified.
 #'
-#' REML/ML count residual \(\tau^2\) as a free parameter. The overall CAMS
+#' REML/ML count residual \eqn{\tau^2} as a free parameter. The overall CAMS
 #' block is intercept + slope, so two trials saturate the mean model and
-#' `rma()` refuses to estimate \(\tau_m^2\). The same point estimates are
+#' `rma()` refuses to estimate \eqn{\tau_m^2}. The same point estimates are
 #' available with residual heterogeneity fixed at 0.
 #' @noRd
 interactmeta_rma <- function(yi,
