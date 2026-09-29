@@ -4,10 +4,10 @@
 #' @param default Fallback when `override` is `NULL` and no option is set.
 #' @details
 #' ggplot2 figures (contribution plots, overall-IF density) use
-#' `base_size` via [interactmeta_theme_report()] / [interactmeta_ggplot_theme()]. Set a session
+#' `base_size` via [interactmeta_theme_report()] / `interactmeta_ggplot_theme()`. Set a session
 #' default with `options(interactmeta.base_size = 11)`.
 #'
-#' Forest plots use a separate default from [interactmeta_forest_base_size()];
+#' Forest plots use a separate default from `interactmeta_forest_base_size()`;
 #' see the *Plot typography* section in [interactmeta-package].
 #' @noRd
 interactmeta_base_size <- function(override = NULL, default = 11L) {
@@ -32,7 +32,7 @@ interactmeta_base_family <- function(override = NULL) {
 #' @param default Fallback when `override` is `NULL` and no option is set.
 #' @details
 #' Default `base_size` for forest plots. Also drives CI / diamond
-#' line width via [forestplot_base_line_size()]. Set a session default with
+#' line width via `forestplot_base_line_size()`. Set a session default with
 #' `options(interactmeta.forest_base_size = 9)`.
 #' @noRd
 interactmeta_forest_base_size <- function(override = NULL, default = 9L) {
@@ -157,7 +157,7 @@ interactmeta_approach_colours <- function(palette = NULL, approaches = NULL) {
 #'
 #' Consistent sans-serif typography, muted greys, light horizontal gridlines
 #' only, and a right-hand legend with comfortable padding. Use this (or
-#' [interactmeta_ggplot_theme()]) so contribution plots share
+#' `interactmeta_ggplot_theme()`) so contribution plots share
 #' one look across a report.
 #'
 #' Set session defaults with `options(interactmeta.base_size = 11)` and

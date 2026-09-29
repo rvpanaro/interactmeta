@@ -434,7 +434,7 @@ forestplot_prefix_left_columns <- function(y_lab, panel, left_names) {
 #' Marker / null-line colours (default forest chrome)
 #'
 #' Summary diamonds use blue via
-#' [forestplot_summary_diamond_colour()] (same for every block role and for
+#' `forestplot_summary_diamond_colour()` (same for every block role and for
 #' `group = "subgroup"` / `group = "trial"`). `summary` here is only a fallback.
 #' @noRd
 forestplot_style_colours <- function(...) {
@@ -500,7 +500,7 @@ forestplot_summary_diamond_colour <- function(heading,
   forestplot_default_summary_colour()
 }
 
-#' Vectorised [forestplot_summary_diamond_colour()] over headings
+#' Vectorised `forestplot_summary_diamond_colour()` over headings
 #' @noRd
 forestplot_summary_diamond_colours <- function(headings,
                                                reference = NULL,

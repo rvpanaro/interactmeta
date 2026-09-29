@@ -1,6 +1,6 @@
 #' Forest-plot renderer via bayesmeta / forestplot
 #'
-#' Specs packaging for [forestplot_bayesmeta_draw()]. Drawing uses
+#' Specs packaging for `forestplot_bayesmeta_draw()`. Drawing uses
 #' [bayesmeta::forestplot.bayesmeta] (single block) or [forestplot::forestplot]
 #' with the same conventions (multi-block CAMS forests).
 #'
@@ -801,7 +801,7 @@ forestplot_metafor_draw_axis_annotations <- function(lines,
 #' Draw multi-line annotation footer under a metafor forest panel
 #'
 #' Legacy in-plot footer (kept for tests / callers). New forests use
-#' [forestplot_metafor_draw_axis_annotations()].
+#' `forestplot_metafor_draw_axis_annotations()`.
 #' @noRd
 forestplot_metafor_draw_annotations <- function(lines, xlim, ylim_lo, cex = 1) {
   lines <- as.character(lines)

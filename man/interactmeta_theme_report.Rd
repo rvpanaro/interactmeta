@@ -33,7 +33,7 @@ A \strong{ggplot2} theme object.
 \description{
 Consistent sans-serif typography, muted greys, light horizontal gridlines
 only, and a right-hand legend with comfortable padding. Use this (or
-\code{\link[=interactmeta_ggplot_theme]{interactmeta_ggplot_theme()}}) so contribution plots share
+\code{interactmeta_ggplot_theme()}) so contribution plots share
 one look across a report.
 }
 \details{

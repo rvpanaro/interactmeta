@@ -366,7 +366,7 @@ forestplot_trial_group_summary_label <- function(label,
 #'
 #' Uses [forestplot::fp_set_favors()] when available so forestplot reserves
 #' axis space for the favours band. Drawing itself is handled by
-#' [forestplot_interactmeta_plot_graph_favors()] (wider arrow gap, non-overlapping
+#' `forestplot_interactmeta_plot_graph_favors()` (wider arrow gap, non-overlapping
 #' labels). Falls back to embedding in `xlab` only if `fp_set_favors` is missing.
 #' @noRd
 forestplot_bayesmeta_apply_favours <- function(fp, favours) {
@@ -399,7 +399,7 @@ forestplot_bayesmeta_apply_favours <- function(fp, favours) {
 
 #' Favours band with a center gap and equal-sized labels
 #'
-#' Drop-in replacement for [forestplot:::plotGraphFavors()]: arrows leave a
+#' Drop-in replacement for `forestplot:::plotGraphFavors()`: arrows leave a
 #' clear gap at the null. Left / right labels share one cex (the larger of the
 #' two per-side fits) so Control / Experimental stay the same size.
 #' @noRd
@@ -643,6 +643,7 @@ forestplot_bayesmeta_draw_footnotes_only <- function(foot_lines) {
 #'   heterogeneity footnote.
 #'
 #' @return An object of class `"bayesmeta"`.
+#' @keywords internal
 #' @export
 as_bayesmeta <- function(y,
                          sigma,
@@ -1015,7 +1016,7 @@ forestplot_bayesmeta_blocks <- function(panel, row_labels, estimate_col = "yi") 
   })
 }
 
-#' Whether a block looks like a plain bayesmeta forest (studies + mean [+ pred])
+#' Whether a block looks like a plain bayesmeta forest (studies, mean, optional prediction)
 #'
 #' Used by [as_bayesmeta()] helpers. CAMS drawing always goes through
 #' [forestplot::forestplot()] so aesthetics match across `type` values.

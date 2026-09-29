@@ -2,12 +2,17 @@
 % Please edit documentation in R/forestplot_layout.R
 \name{forestplot_draw}
 \alias{forestplot_draw}
+\alias{print.interactmeta_forestplot}
 \title{Draw a forest plot on the active graphics device}
 \usage{
 forestplot_draw(x)
+
+\method{print}{interactmeta_forestplot}(x, ...)
 }
 \arguments{
 \item{x}{A \code{forestplot()} result.}
+
+\item{...}{Ignored.}
 }
 \value{
 \code{x}, invisibly.
@@ -20,3 +25,4 @@ device has changed.
 \seealso{
 \code{\link[=forestplot_height]{forestplot_height()}}, \code{\link[=forestplot]{forestplot()}}
 }
+\keyword{internal}

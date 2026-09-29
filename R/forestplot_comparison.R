@@ -221,7 +221,7 @@ comparison_forestplot_from_fit <- function(fit,
 comparison_forest_effect_bundle <- function(fit,
                                       ifrac = c("interaction", "overall"),
                                       prob = 0.95,
-                                      max_draws = 4000L,
+                                      max_draws = NULL,
                                       contrast_sep = "-",
                                       include_shrinkage = TRUE,
                                       include_pooled = TRUE,
@@ -866,10 +866,10 @@ comparison_forest_build_fit_panels <- function(fit,
 
 #' Diamond styling for Pooled / Prediction / Overall
 #'
-#' Summary diamonds use blue ([forestplot_default_summary_colour()]) for
+#' Summary diamonds use blue (`forestplot_default_summary_colour()`) for
 #' every block — the same whether `group` is `"subgroup"` or `"trial"`.
 #' Shrinkage rows are styled separately via
-#' [comparison_forest_apply_shrinkage_colours()] (`gray45`). `marker` is only a
+#' `comparison_forest_apply_shrinkage_colours()` (`gray45`). `marker` is only a
 #' fallback when a heading is empty.
 #' @noRd
 comparison_forest_apply_effect_styles <- function(resultsA,
@@ -1126,7 +1126,7 @@ comparison_forest_summary_blocks <- function(fit,
                                        model_names,
                                        prob,
                                        ifrac = c("interaction", "overall"),
-                                       max_draws = 4000L,
+                                       max_draws = NULL,
                                        contrast_sep = "-",
                                        include_pooled = TRUE,
                                        include_prediction = TRUE,

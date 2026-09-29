@@ -65,6 +65,7 @@ forestplot_height <- function(x, width = 9.5) {
 #' @return `x`, invisibly.
 #'
 #' @seealso [forestplot_height()], [forestplot()]
+#' @keywords internal
 #' @export
 forestplot_draw <- function(x) {
   if (forestplot_is_metafor_engine(x)) {
@@ -107,6 +108,8 @@ forestplot_draw <- function(x) {
   invisible(x)
 }
 
+#' @param ... Ignored.
+#' @rdname forestplot_draw
 #' @export
 print.interactmeta_forestplot <- function(x, ...) {
   forestplot_maybe_print(x)

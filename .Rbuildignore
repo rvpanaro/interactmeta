@@ -5,3 +5,5 @@
 ^data-raw$
 ^_pkgdown\\.yml$
 ^docs$
+^vignettes/.*_cache
+^vignettes/.*_files
