@@ -10,9 +10,9 @@ test_that("bayesmeta and brms posteriors agree under identical CAMS priors", {
     yi = c(0.10, 0.25, 0.12, 0.28, 0.08, 0.22, 0.15, 0.30),
     vi = c(0.04, 0.02, 0.05, 0.03, 0.03, 0.04, 0.02, 0.025)
   )
-  p_tau <- interactmeta:::cam_prior("half-normal", scale = 0.5)
-  p_int <- interactmeta:::cam_prior("half-normal", scale = 0.1)
-  p_fe <- interactmeta:::cam_prior("normal", mean = 0, sd = 10)
+  p_tau <- interact:::cam_prior("half-normal", scale = 0.5)
+  p_int <- interact:::cam_prior("half-normal", scale = 0.1)
+  p_fe <- interact:::cam_prior("normal", mean = 0, sd = 10)
 
   fit_bm <- suppressWarnings(cam(
     dat,
@@ -71,43 +71,43 @@ test_that("bayesmeta and brms posteriors agree under identical CAMS priors", {
   # brms/Stan use independent N(0,10) on (alpha, beta, gamma); blocks use
   # independent N(0,10) on (alpha, theta) and gamma.
   compare_latent(
-    interactmeta:::interactmeta_posterior_1d_summary(fit_bm$latent$alpha),
+    interact:::interactmeta_posterior_1d_summary(fit_bm$latent$alpha),
     fit_br$draws$b_Intercept,
     tol_mean = 0.05,
     tol_sd = 0.08,
     "alpha"
   )
   compare_latent(
-    interactmeta:::interactmeta_posterior_1d_summary(fit_bm$latent$gamma),
+    interact:::interactmeta_posterior_1d_summary(fit_bm$latent$gamma),
     fit_br$draws[[gamma_col]],
     tol_mean = 0.05,
     tol_sd = 0.08,
     "gamma"
   )
   compare_latent(
-    interactmeta:::interactmeta_posterior_1d_summary(fit_bm$latent$beta),
+    interact:::interactmeta_posterior_1d_summary(fit_bm$latent$beta),
     fit_br$draws[[beta_col]],
     tol_mean = 0.08,
     tol_sd = 0.12,
     "beta"
   )
   compare_latent(
-    interactmeta:::interactmeta_discrete_summary(fit_bm$latent$tau_m),
+    interact:::interactmeta_discrete_summary(fit_bm$latent$tau_m),
     fit_br$draws$sd_trial__Intercept,
     tol_mean = 0.05,
     tol_sd = 0.05,
     "tau_m"
   )
   compare_latent(
-    interactmeta:::interactmeta_discrete_summary(fit_bm$latent$tau_g),
+    interact:::interactmeta_discrete_summary(fit_bm$latent$tau_g),
     fit_br$draws[[tau_g_col]],
     tol_mean = 0.04,
     tol_sd = 0.04,
     "tau_g"
   )
 
-  sm_a <- interactmeta:::interactmeta_posterior_1d_summary(fit_bm$latent$alpha)
-  sm_g <- interactmeta:::interactmeta_posterior_1d_summary(fit_bm$latent$gamma)
+  sm_a <- interact:::interactmeta_posterior_1d_summary(fit_bm$latent$alpha)
+  sm_g <- interact:::interactmeta_posterior_1d_summary(fit_bm$latent$gamma)
   sg_nonref_br <- fit_br$draws$b_Intercept + fit_br$draws[[gamma_col]]
   expect_equal(sm_a$mean + sm_g$mean, mean(sg_nonref_br), tolerance = 0.08)
 })

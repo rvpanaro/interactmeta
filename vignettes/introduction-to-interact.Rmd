@@ -1,0 +1,767 @@
+---
+title: "Introduction to interact package"
+output:
+  rmarkdown::html_vignette:
+    css:
+      - !expr system.file("rmarkdown/templates/html_vignette/resources/vignette.css", package = "rmarkdown")
+      - vignette.css
+vignette: >
+  %\VignetteIndexEntry{Introduction to interact}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 8,
+  fig.align = "center",
+  fig.retina = 2,
+  out.width = "100%"
+)
+```
+
+## 1. The statistical problem: subgroup treatment effects and interactions
+
+Consider a meta-analysis in which clinical trials report treatment
+effects separately for two patient subgroups, such as patients with
+lower or higher baseline disability. We may be interested both in the
+average treatment effect within each subgroup and in whether the
+treatment effect differs between subgroups, commonly referred to as a
+treatment-by-subgroup interaction.
+
+Several approaches are available for estimating these quantities from
+subgroup-level aggregate data. Two commonly used approaches are the
+difference of averages (DA) and the average difference (AD). Although
+both use the same reported subgroup estimates, they need not yield the
+same interaction estimate.
+
+The running example is `edss`, from a systematic review of
+immunotherapies for relapsing-remitting multiple sclerosis (Heesen,
+Röver, Salem et al. 2024). The outcome is the effect on the relapse
+rate. An incidence-rate ratio below 1 means a lower relapse rate on
+treatment than on control. The subgroups are lower and higher baseline
+EDSS (Expanded Disability Status Scale). The dataset records those two
+labels and does not store the numeric EDSS cut. The active treatment
+differs across comparisons. The analysis follows the published review
+and combines the reported effects.
+
+CONFIRM contributes two active treatments, BG-12 and copaxone, that
+share a control group. The code gives those rows separate comparison
+labels, CONFIRM-B and CONFIRM-C, so that later calls, which group by
+`trial` and `subgroup`, do not pool them. The comparisons are then
+treated as separate analysis units. Dependence from the shared control
+is not modeled.
+
+```{r edss-define}
+library(interact)
+
+edss_ex <- edss
+edss_ex$trial <- as.character(edss_ex$trial)
+confirm <- edss_ex$trial == "CONFIRM"
+edss_ex$trial[confirm & edss_ex$treatment == "BG-12"] <- "CONFIRM-B"
+edss_ex$trial[confirm & edss_ex$treatment == "copaxone"] <- "CONFIRM-C"
+
+edss_ex[edss_ex$trial == "DEFINE", c("trial", "subgroup", "n", "treatment", "yi", "vi")]
+```
+
+The prepared data are in long format: each row contains one
+subgroup-specific treatment-effect estimate and its sampling variance,
+so a comparison reporting both EDSS subgroups contributes two rows.
+DEFINE shows the layout: `n` is the sample size, `yi` the log
+incidence-rate ratio, and `vi` its sampling variance.
+
+**Difference of averages.** Pool the lower-EDSS estimates, pool the
+higher-EDSS estimates, and subtract. On the log scale
+
+$$
+\gamma_{\mathrm{DA}} = \mu_{\mathrm{Higher}} - \mu_{\mathrm{Lower}}.
+$$
+
+Exponentiating gives the ratio of the two pooled incidence-rate
+ratios. The lower-EDSS subgroup is the reference, so the interaction
+compares the higher-EDSS subgroup with the lower-EDSS subgroup.
+
+**Average difference.** Within each comparison, form
+
+$$
+g_j = y_{\mathrm{Higher},j} - y_{\mathrm{Lower},j}
+$$
+
+and meta-analyse the contrasts $g_j$. The pooled contrast is the
+interaction. AD does not return a treatment effect for either EDSS
+subgroup on its own. That pooled contrast and the DA interaction do
+not in general agree, because the two subgroup meta-analyses need not
+use the same weights. When the aim is the treatment-by-subgroup
+interaction, an analysis based on the within-comparison contrasts,
+such as AD, is preferable to relying on DA alone.
+
+**Shared weights.** Same weighting across different analyses (SWADA)
+applies a common set of study weights when pooling the treatment
+effects in the lower- and higher-EDSS subgroups (Panaro, Röver & Friede
+2026a). With the default weights taken from AD, the difference between
+these two pooled subgroup effects equals the pooled within-comparison
+interaction. SWADA therefore provides two subgroup effect estimates
+and an interaction estimate that agree by construction. When one
+subgroup contributes nearly all the precision, the common weights can
+be dominated by that subgroup. That agreement does not guarantee that
+both subgroup effects are well informed. In `interact`, SWADA is
+currently implemented for frequentist inference only; its
+common-weighting construction is an estimation procedure rather than a
+separately specified Bayesian model.
+
+`interact` fits these calculations by restricted maximum likelihood.
+`reference = "Lower"` sets the direction of the interaction. The
+table reports each interaction as an incidence-rate ratio with its
+95% confidence interval.
+
+```{r interactions}
+fit_da <- da(edss_ex, reference = "Lower", engine = "metafor")
+fit_ad <- ad(edss_ex, reference = "Lower", engine = "metafor")
+fit_sw <- swada(edss_ex, reference = "Lower", engine = "metafor")
+ix <- t(sapply(list(DA = fit_da, AD = fit_ad, SWADA = fit_sw), function(fit) {
+  s <- tidy(interactions(fit, exponentiate = TRUE))
+  c(estimate = s$estimate, conf.low = s$conf.low, conf.high = s$conf.high)
+}))
+knitr::kable(ix, digits = 2)
+```
+
+In this example the three point estimates agree and the intervals do
+not. The DA interval includes 1. The AD and SWADA intervals exclude 1.
+DA pools each subgroup separately, so the two meta-analyses can use
+different weights and each has its own heterogeneity. AD
+meta-analyses the within-comparison contrasts and uses the
+heterogeneity of those contrasts. Unequal weights, or those separate
+variance calculations, can move the estimate or the interval.
+Reporting both subgroups in every comparison does not by itself make
+the results agree. `compare_weights()` tabulates the study shares.
+SWADA uses the AD weights, which is why those two interactions agree.
+
+SWADA aligns the interaction with AD by imposing those shared weights.
+Contribution-adjusted meta-analysis (CAMS) takes a further step: it
+specifies a statistical model that links the subgroup treatment
+effects and their interaction through the information fractions.
+Related models include the bivariate mixed model of van Houwelingen,
+Arends and Stijnen (2002) and the within-trial framework of Godolphin
+et al. (2023).
+
+## 2. Information fractions and the CAMS model
+
+Within a comparison, the lower- and higher-EDSS estimates are not
+equally precise. The precision of an estimate is the reciprocal of its
+sampling variance. CAMS records the higher-EDSS subgroup's share of
+that precision, and uses the share to link the subgroup treatment
+effects with their interaction. With the lower-EDSS subgroup as the
+reference, this information fraction is the higher-EDSS subgroup's
+share. It is not the proportion of patients in the higher-EDSS group:
+for an incidence-rate ratio, the sampling variance depends on the
+number of events as well as on the sample size.
+
+For comparison $j$, let $\sigma_{Aj}^2$ and $\sigma_{Bj}^2$ denote the
+sampling variances of the lower- and higher-EDSS estimates. These are
+the reported values `vi`, treated as known. The higher-EDSS subgroup's
+information fraction is
+
+$$
+\pi_j =
+\frac{1/\sigma_{Bj}^2}{1/\sigma_{Aj}^2 + 1/\sigma_{Bj}^2}.
+$$
+
+The numerator is the higher-EDSS subgroup's precision and the
+denominator is the total, so $0 < \pi_j < 1$. `ifrac()` calculates
+these shares from the reported sampling variances. In DEFINE the
+patient share and the information fraction are close. In AFFIRM the
+higher-EDSS subgroup is a smaller share of the patients than of the
+precision.
+
+```{r edss-ifrac, echo = FALSE}
+edss_if <- ifrac(edss_ex, reference = "Lower")
+higher <- edss_if[edss_if$subgroup == "Higher", c("trial", "n", "ifrac_Higher")]
+lower_n <- edss_if[edss_if$subgroup == "Lower", c("trial", "n")]
+pair <- merge(lower_n, higher, by = "trial", suffixes = c("_lower", "_higher"))
+shown <- pair[match(c("DEFINE", "AFFIRM"), pair$trial), ]
+shown$patient_share <- shown$n_higher / (shown$n_lower + shown$n_higher)
+knitr::kable(
+  shown[, c("trial", "patient_share", "ifrac_Higher")],
+  digits = 3
+)
+```
+
+Across comparisons the higher-EDSS fractions run from about
+`r format(round(min(pair$ifrac_Higher), 2), nsmall = 2)` to about
+`r format(round(max(pair$ifrac_Higher), 2), nsmall = 2)`.
+
+The within-comparison contrast is the higher-EDSS estimate minus the
+lower-EDSS estimate,
+
+$$
+g_j = y_{Bj} - y_{Aj},
+$$
+
+the treatment-by-subgroup contrast on the log scale. The combined
+estimate weights each subgroup by its precision,
+
+$$
+m_j = (1 - \pi_j)\, y_{Aj} + \pi_j\, y_{Bj}.
+$$
+
+The more precise subgroup receives the greater weight. The contrast
+variance is the sum of the two subgroup variances, and the combined
+estimate has the smaller variance. At this information fraction the
+sampling covariance of $g_j$ and $m_j$ is zero.
+
+### The model
+
+CAMS is a random-effects model for $g_j$ and $m_j$ (Panaro, Röver &
+Friede 2025). Separating the likelihood uses three assumptions.
+
+First, the sampling errors of the two subgroup estimates are
+independent conditional on the underlying comparison-specific treatment
+effects $\mu_{Aj}$ and $\mu_{Bj}$. The sampling distributions are
+normal, and the current implementation assumes that the conditional
+sampling covariance is zero:
+
+$$
+y_{Aj} \mid \mu_{Aj} \sim \mathrm{Normal}(\mu_{Aj}, \sigma_{Aj}^2), \qquad
+y_{Bj} \mid \mu_{Bj} \sim \mathrm{Normal}(\mu_{Bj}, \sigma_{Bj}^2).
+$$
+
+Then
+
+$$
+\mathrm{Var}(g_j) = \sigma_{Aj}^2 + \sigma_{Bj}^2, \qquad
+\mathrm{Var}(m_j) = \left(\frac{1}{\sigma_{Aj}^2} +
+\frac{1}{\sigma_{Bj}^2}\right)^{-1},
+$$
+
+and $\mathrm{Cov}(g_j, m_j) = 0$, so the sampling distribution of
+$(g_j, m_j)$ factors into two univariate distributions. This concerns
+the two estimates inside one comparison. It does not make the observed
+subgroup estimates marginally independent once the random effects are
+integrated out, and dependence between comparisons, including
+CONFIRM-B and CONFIRM-C, remains unmodeled. Each $\pi_j$ is computed
+from the variances before fitting and is a known covariate.
+
+Second, the random effect in the combined-effect model and the random
+effect in the interaction model are independent. This is a separate
+assumption. Zero sampling covariance does not imply it, and zero
+sampling covariance alone does not factor the hierarchical likelihood.
+
+Under these assumptions, the likelihood separates into an interaction
+meta-analysis and a combined-effect meta-regression. The contrasts
+follow
+
+$$
+g_j = \gamma + \delta_j + e_j, \qquad
+\delta_j \sim \mathrm{Normal}(0, \tau_g^2),
+$$
+
+where $e_j$ is the sampling error of $g_j$. The parameter $\gamma$ is
+the mean interaction, and $\tau_g$ is its heterogeneity. The combined
+estimates follow
+
+$$
+m_j = \alpha + \theta \pi_j + u_j + \varepsilon_j, \qquad
+u_j \sim \mathrm{Normal}(0, \tau_m^2),
+$$
+
+where $\varepsilon_j$ is the sampling error of $m_j$, and the $u_j$ are
+independent of the $\delta_j$. The fitted combined mean at information
+fraction $\pi$ is $M(\pi) = \alpha + \theta \pi$. The intercept $\alpha$
+is the mean combined effect at $\pi = 0$, and $\theta$ is its change as
+the higher-EDSS subgroup's share of the precision increases.
+$\tau_m$ is the heterogeneity about that line. Here $m_j$ is the
+observed combined effect for comparison $j$; $M(\pi)$ is the
+population-level mean.
+
+The subgroup means follow from $M(\pi)$ and the common interaction:
+
+$$
+\mu_A(\pi) = M(\pi) - \pi \gamma, \qquad
+\mu_B(\pi) = M(\pi) + (1 - \pi)\, \gamma.
+$$
+
+Their difference remains $\gamma$ at every information fraction. Both
+subgroup means have slope $\theta - \gamma$, while $M(\pi)$ has slope
+$\theta$. The combined mean is the precision-weighted average of the
+subgroup means at the same $\pi$,
+
+$$
+M(\pi) = (1 - \pi)\, \mu_A(\pi) + \pi\, \mu_B(\pi),
+$$
+
+not the effect in a population of which a fraction $\pi$ has higher
+baseline EDSS. By allowing the mean subgroup effects to depend on the
+information fraction while keeping their difference constant, CAMS
+models an ecological association with that precision share that could
+otherwise be mistaken for a difference in treatment response.
+
+Overall subgroup effects are quoted at a reporting information
+fraction, a weighted average of the trial-specific values $\pi_j$.
+`cams()` can fit this model by Bayesian or frequentist methods. The
+fit that follows is Bayesian.
+
+## 3. A first analysis using interact
+
+`cams()` estimates these parameters from the prepared `edss`
+comparisons. It computes the information fractions internally from the
+subgroup sampling variances, so those values do not need to be passed
+separately. The call below is Bayesian. The priors on the heterogeneity
+standard deviations are set explicitly: a half-normal distribution with
+scale 0.5 for $\tau_m$, the combined-effect heterogeneity, and scale
+0.1 for $\tau_g$, the interaction heterogeneity.
+
+```{r fit-edss}
+fit_edss <- cams(
+  edss_ex,
+  reference = "Lower",
+  tau.prior = function(tau) bayesmeta::dhalfnormal(tau, scale = 0.5),
+  tau.interaction.prior = function(tau) bayesmeta::dhalfnormal(tau, scale = 0.1)
+)
+```
+
+These are not the package defaults. The half-normal scales follow
+Panaro, Röver & Friede (2026b). A half-normal prior is supported
+only on non-negative values, and a larger scale gives more prior
+weight to large heterogeneity. The scale 0.1 on $\tau_g$ is tighter
+than the scale 0.5 on $\tau_m$. By default, `cams()` uses improper
+uniform priors for the two heterogeneity standard deviations. The
+coefficients $\alpha$ and $\theta$ in the combined-effect model and the
+interaction parameter $\gamma$ have independent normal priors with mean
+0 and standard deviation 10.
+
+`reference = "Lower"` keeps the direction used above, so $\gamma$
+compares the higher-EDSS subgroup with the lower-EDSS subgroup. The
+fit is on the log incidence-rate-ratio scale. `exponentiate = TRUE`
+reports incidence-rate ratios. A ratio below 1 means a lower relapse
+rate on treatment than on control.
+
+The table gives the interaction $\gamma$, the subgroup means
+$\mu_A(\pi)$ and $\mu_B(\pi)$, and the combined mean $M(\pi)$. The
+subgroup and combined means are evaluated at one reporting information
+fraction, the default interaction-weighted average of the
+trial-specific values $\pi_j$, rather than at each comparison's own
+$\pi_j$. `Overall` is the mean effect, with a credible interval.
+`Prediction` is the underlying effect in a new comparison that is
+exchangeable with the comparisons under the fitted random-effects
+model. It includes heterogeneity, so it is wider, and it does not
+account for dependence or other structure that the model leaves out.
+
+```{r edss-results, echo = FALSE}
+ix <- tidy(interactions(fit_edss, exponentiate = TRUE))
+sg <- tidy(subgroups(fit_edss, exponentiate = TRUE))
+cb <- tidy(combined(fit_edss, exponentiate = TRUE))
+part <- function(quantity, d) {
+  data.frame(
+    quantity = quantity,
+    type = d$type,
+    estimate = d$estimate,
+    conf.low = d$conf.low,
+    conf.high = d$conf.high
+  )
+}
+knitr::kable(
+  rbind(
+    part("Interaction", ix),
+    part(paste(sg$subgroup, "subgroup"), sg),
+    part("Combined", cb)
+  ),
+  digits = 2
+)
+```
+
+The interaction credible interval lies above 1, so the higher-EDSS
+incidence-rate ratio is estimated to be larger than the lower-EDSS
+ratio. Both pooled subgroup ratios are below 1: the mean relapse rate
+is estimated to be lower on treatment in each EDSS subgroup, and the
+higher-EDSS ratio is closer to 1. The interaction above 1 means a
+smaller benefit in the higher-EDSS subgroup, not an absence of
+benefit. The prediction intervals are wider; for the subgroups and the
+combined effect they extend above 1. The combined credible interval
+excludes 1. Its prediction interval is the uncertainty for a new
+exchangeable comparison, not a second estimate of the mean.
+
+## 4. Interpreting pooled subgroup effects and information fractions
+
+The reporting value used above is a weighted average of the
+trial-specific fractions $\pi_j$. Comparisons that are estimated more
+precisely receive more weight. That average is still a summary of
+precision. It is not the proportion of patients with higher baseline
+EDSS.
+
+Write $\omega(\tau)$ for the reporting information fraction. With
+weights $w_j(\tau)$ that depend on a heterogeneity standard deviation
+$\tau$,
+
+$$
+\omega(\tau) =
+\frac{\sum_j \pi_j w_j(\tau)}{\sum_j w_j(\tau)}.
+$$
+
+The weights are the usual random-effects weights, one over heterogeneity
+variance plus sampling variance. The default, `ifrac = "interaction"`,
+takes those weights from the meta-analysis of the contrasts $g_j$, so
+$\tau$ is $\tau_g$. The alternative, `ifrac = "overall"`, takes them
+from the meta-regression of the combined estimates $m_j$, so $\tau$ is
+$\tau_m$. Heterogeneity is uncertain in this Bayesian model, so
+$\omega(\tau)$ has a posterior distribution.
+
+```{r edss-omega}
+ifrac(fit_edss)
+ifrac(fit_edss, ifrac = "overall")
+```
+
+The two summaries are close, and both lie inside the range of the
+trial-specific fractions. Every comparison's higher-EDSS share is well
+below one half, so 0.5 is outside the observed range. The interaction
+$\gamma$ does not depend on $\pi$. Evaluating the subgroup and combined
+means at another fraction inside that range would move those means.
+It would not move the interaction.
+
+`plot_contribution()` draws the mean functions against the information
+fraction. The points are the reported subgroup estimates at each
+comparison's own $\pi_j$. With `exponentiate = TRUE` the curves are
+incidence-rate ratios. On that scale the ratio of the two subgroup
+means is constant, and the combined-effect curve lies between them.
+These curves are fitted estimates. A visible change with the
+information fraction does not by itself show that the ecological slope
+$\theta - \gamma$ differs from zero. The shaded bands describe
+uncertainty in the fitted means at each information fraction.
+
+```{r edss-contribution, fig.height = 5}
+plot_contribution(fit_edss, exponentiate = TRUE)
+```
+
+## 5. Forest plots and trial-specific shrinkage estimates
+
+The contribution plot shows the fitted mean functions. `forestplot()`
+shows the same model one comparison at a time. `exponentiate = TRUE`
+shows incidence-rate ratios, and the horizontal axis is logarithmic.
+Values below 1 are lower relapse rates on treatment. The figure has
+one panel for each EDSS subgroup. The note under the axis reports the
+reporting information fraction and the two heterogeneity standard
+deviations.
+
+```{r edss-forest, fig.height = 8}
+forestplot(
+  fit_edss,
+  exponentiate = TRUE,
+  favours = c("Lower relapse rate", "Higher relapse rate")
+)
+```
+
+The black squares are the published subgroup estimates, with intervals
+from the reported sampling variances. The IF column is the information
+contributed by that subgroup within the comparison: $\pi_j$ for the
+higher-EDSS subgroup and $1 - \pi_j$ for the lower-EDSS subgroup. Those
+fractions sum to one. They are separate from the reporting fraction in
+the note under the axis.
+
+The grey diamonds are subgroup-specific shrinkage estimates. For each
+comparison, the combined effect is shrunk toward the combined-effect
+mean and the interaction is shrunk toward $\gamma$; the subgroup
+effects are then recovered at that comparison's own information
+fraction. The pooled diamond is the mean subgroup effect at the
+reporting information fraction, the same summary as the subgroup rows
+above. The grey diamond belongs to one comparison. The pooled diamond
+does not. The prediction row is the prediction interval from the
+results table. The article on
+[trial-specific effects and shrinkage](trial-specific-effects-and-shrinkage.html)
+follows one comparison through this re-expression.
+
+## 6. Frequentist and Bayesian inference
+
+A frequentist fit estimates the same CAMS model as the Bayesian fit
+already obtained. Both target the interaction $\gamma$, the subgroup
+means, and the reporting information fraction. They differ in how the
+parameters are estimated and in how uncertainty is represented. The
+Bayesian fit uses the half-normal priors set above. The frequentist
+fit uses restricted maximum likelihood (REML).
+
+```{r edss-reml}
+fit_edss_reml <- cams(
+  edss_ex,
+  reference = "Lower",
+  engine = "metafor",
+  method = "REML"
+)
+```
+
+In the Bayesian analysis the parameters have a posterior distribution.
+A posterior median is the central estimate, and a credible interval is
+a range that contains the parameter with the stated posterior
+probability under the model. Uncertainty in the heterogeneity standard
+deviations is part of that posterior, so it is carried into the
+interaction, the subgroup means, and the reporting fraction.
+
+REML instead returns a point estimate of each parameter, including a
+point estimate of each heterogeneity standard deviation. Those
+estimated heterogeneity values are then used in the weights and in the
+interval calculations. A confidence interval is a range from a
+procedure that covers the parameter at the stated rate across repeated
+samples. The Bayesian table marks intervals through the posterior. The
+frequentist tables below mark them as Wald confidence intervals.
+
+$\tau_m$ is the combined-effect heterogeneity and $\tau_g$ is the
+interaction heterogeneity. `plot_heterogeneity()` draws their marginal
+posteriors from `fit_edss`. The panels share vertical limits, so the
+height of one curve can be compared with the height of the other.
+Each panel keeps its own horizontal range. The interaction posterior
+lies on a shorter interval, and a common range out to the
+combined-effect tail would compress it.
+
+```{r edss-het, fig.height = 4}
+plot_heterogeneity(fit_edss)
+```
+
+The left panel is $\tau_m$, labelled $\tau$. The right panel is
+$\tau_g$, labelled $\tau_\gamma$. The darker shading is a 95% credible
+interval, and the line inside it is the posterior median. In this fit
+the interaction posterior is concentrated near zero, with its median
+near 0.07. The combined-effect posterior has median near 0.28. A
+taller curve is a more concentrated posterior, not a larger
+heterogeneity, and the figure is not a comparison of the mean
+treatment effects. The prior scale is 0.1 for $\tau_g$ and 0.5 for
+$\tau_m$, and that tighter interaction prior contributes to the
+concentration.
+
+The trial-specific information fractions are computed from the reported
+sampling variances before either fit, so they do not depend on the
+inferential approach. The reporting fraction is a heterogeneity-weighted
+average of those $\pi_j$. It is a posterior distribution in the
+Bayesian fit and a single number, at the estimated heterogeneity, in
+the REML fit. The comparison below uses the mean effects on the
+incidence-rate-ratio scale.
+
+```{r edss-reml-effects}
+interactions(fit_edss_reml, type = "Overall", exponentiate = TRUE)
+subgroups(fit_edss_reml, type = "Overall", exponentiate = TRUE)
+```
+
+The REML interaction agrees with the AD interaction, because both are
+random-effects meta-analyses of the same contrasts. The REML subgroup
+estimates agree with the Bayesian table at two decimals. The subgroup
+intervals are somewhat wider in the Bayesian fit. The approaches differ
+in how they account for heterogeneity uncertainty, and the Bayesian
+analysis additionally depends on the specified priors.
+
+Maximum likelihood is the other frequentist option, selected with
+`method = "ML"`. It estimates heterogeneity by maximum likelihood
+rather than by REML. No maximum-likelihood fit is shown here.
+
+## 7. Trials reporting only one subgroup
+
+Every comparison in the EDSS example reported both subgroups. Some
+trials do not.
+
+The `steroids` data come from the WHO REACT prospective meta-analysis
+of systemic corticosteroids in critically ill patients with COVID-19
+(Sterne, Murthy et al. 2020). The outcome is mortality. Each comparison
+is an odds ratio for corticosteroids versus control, and an odds ratio
+below 1 means lower odds of death on corticosteroids. The subgroups are
+invasively ventilated patients (IV) and patients who received
+non-invasive support (NIV).
+
+Four trials report both subgroups. CoDEX, DEXA-COVID 19, and RECOVERY
+report only IV patients. Each unreported NIV cell is stored as a row
+with `n = 0`. Here, `n = 0` indicates that the subgroup was not
+reported; it is different from a reported subgroup with zero observed
+events. Those rows are not observed outcomes.
+
+A trial that reports only IV patients informs the IV treatment effect.
+It does not contain both subgroup estimates, so it does not directly
+identify the within-trial interaction
+\(g_j = y_{\mathrm{IV},j} - y_{\mathrm{NIV},j}\).
+
+Odds ratios are calculated from the reported counts after the empty
+rows are removed. `ifrac()` then inserts a placeholder for each
+unreported NIV cell: a log odds ratio of 0 with sampling variance
+\(100^2\). The placeholder is a computational device. It makes the
+trial-by-subgroup table complete. It is not an observed treatment
+effect, and it is not an imputation of the unreported NIV effect. The
+value 0 is arbitrary. Because the variance is finite, the cell's
+contribution is negligible rather than exactly zero. Were that variance
+infinite, the IV information fraction would be 1 and the interaction
+contrast would have infinite variance. Filling the table is data
+preparation. The statistical model is unchanged.
+
+`reference = "NIV"` makes $\pi_j$ the IV share of the precision. With
+the placeholder, that share is close to 1. An IV-only trial contributes
+its IV treatment effect to the combined-effect analysis and receives
+negligible weight in the interaction. The interaction is identified by
+the four complete trials: CAPE COVID, COVID STEROID, REMAP-CAP, and
+Steroids-SARI.
+
+```{r steroids-fit}
+steroids_obs <- steroids[steroids$n > 0, ]
+steroids_es <- escalc(
+  measure = "OR",
+  ai = treat.events,
+  bi = treat.total - treat.events,
+  ci = cont.events,
+  di = cont.total - cont.events,
+  data = steroids_obs
+)
+des <- ifrac(steroids_es, reference = "NIV")
+fit_da_st <- da(des, reference = "NIV", engine = "metafor")
+fit_ad_st <- ad(des, reference = "NIV", engine = "metafor")
+fit_st <- cams(
+  des,
+  reference = "NIV",
+  engine = "metafor",
+  method = "REML"
+)
+```
+
+The table compares the IV-versus-NIV interaction odds ratios.
+
+```{r steroids-interactions, echo = FALSE}
+ix <- t(sapply(list(DA = fit_da_st, AD = fit_ad_st, CAMS = fit_st), function(fit) {
+  s <- tidy(interactions(fit, type = "Overall", exponentiate = TRUE))
+  c(estimate = s$estimate, conf.low = s$conf.low, conf.high = s$conf.high)
+}))
+knitr::kable(ix, digits = 2)
+```
+
+AD and CAMS agree with each other. The DA interval includes 1; the AD
+and CAMS intervals do not. The IV-only trials move the DA estimate for
+the IV subgroup. They do not identify \(g_j\).
+
+Interaction weights give the IV-only trials negligible weight, so the
+interaction-weighted reporting fraction summarizes the complete trials.
+Combined weights use their IV precision, and RECOVERY, the largest IV
+comparison, pulls that fraction toward 1. Each value is evaluated at
+the estimated heterogeneity. Neither fraction is a population
+proportion.
+
+```{r steroids-fractions, echo = FALSE}
+ifrac(fit_st, ifrac = "interaction")
+ifrac(fit_st, ifrac = "overall")
+sg_at <- function(which) {
+  s <- tidy(subgroups(
+    fit_st, type = "Overall", exponentiate = TRUE, ifrac = which
+  ))
+  data.frame(
+    reporting = which,
+    subgroup = s$subgroup,
+    estimate = s$estimate,
+    conf.low = s$conf.low,
+    conf.high = s$conf.high
+  )
+}
+knitr::kable(
+  rbind(sg_at("interaction"), sg_at("overall")),
+  digits = 2
+)
+```
+
+The subgroup odds ratios change between the two reporting fractions.
+The interaction does not. The different subgroup estimates are the same
+fitted functions evaluated at different information fractions, not a
+refit of the model.
+
+`forestplot()` draws this fit at the interaction-weighted reporting
+fraction. An odds ratio below 1 is lower mortality on corticosteroids.
+
+```{r steroids-forest, fig.height = 8}
+forestplot(
+  fit_st,
+  exponentiate = TRUE,
+  favours = c("Lower mortality", "Higher mortality")
+)
+```
+
+For CoDEX, DEXA-COVID 19, and RECOVERY, the IV information fractions
+are at or extremely close to 100%, and the NIV rows have no published
+estimate. A grey diamond for a subgroup the trial did not report is a
+model-based trial-specific estimate, not an observed subgroup effect.
+The wide COVID STEROID interval is the sampling interval of a small
+observed comparison. In this fit both heterogeneity standard
+deviations, $\tau_m$ and $\tau_g$, are estimated as zero. These are
+boundary estimates. They do not establish the absence of true
+heterogeneity. Because the estimates are zero, the pooled confidence
+intervals and the prediction intervals coincide.
+
+## 8. Additional datasets and functionality
+
+The examples above use `edss` and `steroids`. The package also includes
+`age`, `il6`, `respire_age`, and `respire_sex`. All six are
+subgroup-level aggregate data in long format. The model is fitted on
+the log scale stored in `yi`. For log-ratio effect measures, such as
+log odds ratios, log incidence-rate ratios, and log hazard ratios,
+`exponentiate = TRUE` reports the corresponding ratio. Estimates
+expressed as mean differences remain on the difference scale and
+should not ordinarily be exponentiated.
+
+| Dataset | Patients and comparison | Subgroups | Effect measure |
+|---|---|---|---|
+| `age` | Immunotherapies for relapsing-remitting multiple sclerosis; relapse | Younger, Older | Log incidence-rate ratio |
+| `edss` | The same review; relapse | Lower, Higher baseline EDSS | Log incidence-rate ratio |
+| `steroids` | Systemic corticosteroids in critically ill COVID-19; mortality | IV, NIV | Log odds ratio, from event counts |
+| `il6` | IL-6 antagonists in patients hospitalized for COVID-19; mortality | Corticosteroids `yes`, `no` | Log odds ratio, from event counts |
+| `respire_age` | Ciprofloxacin dry-powder inhalation in non-cystic-fibrosis bronchiectasis; time to first exacerbation | `<65`, `>=65` | Log hazard ratio |
+| `respire_sex` | The same trials and endpoint | Female, Male | Log hazard ratio |
+
+`age` and `edss` come from Heesen, Röver, Salem et al. (2024). In the
+raw `edss` table, CONFIRM contributes two treatments under one trial
+identifier; the EDSS example separates those rows, and dependence from
+the shared control is not modeled. `steroids` comes from Sterne, Murthy
+et al. (2020), and `il6` from Sterne, Murthy et al. (2021). Like
+`steroids`, some `il6` trials report only one subgroup; empty rows are
+stored with `n = 0`. `respire_age` and `respire_sex` come from the
+RESPIRE 1 and RESPIRE 2 trials (De Soyza et al. 2018; Aksamit et al.
+2018). Both subgroups are reported in each trial. The stored `yi` and
+`vi` are log hazard ratios and their variances. The published intervals
+used to derive them are not all 95% intervals.
+
+### References
+
+Panaro RV, Röver C, Friede T (2025). Consistent Bayesian meta-analysis
+on subgroup specific effects and interactions. arXiv:2512.18785.
+
+Panaro RV, Röver C, Friede T (2026a). Subgroup comparisons within and
+across studies in meta-analysis. *Research Synthesis Methods* (in
+press). arXiv:2508.15531.
+
+Panaro RV, Röver C, Friede T (2026b). Empirical prior distributions
+for treatment-by-subgroup interaction heterogeneity in random-effects
+meta-analysis. arXiv:2606.23968.
+
+van Houwelingen HC, Arends LR, Stijnen T (2002). Advanced methods in
+meta-analysis: multivariate approach and meta-regression.
+*Statistics in Medicine*, 21(4), 589--624.
+
+Godolphin PJ, White IR, Tierney JF, Fisher DJ (2023). Estimating
+interactions and subgroup-specific treatment effects in meta-analysis
+without aggregation bias: a within-trial framework. *Research
+Synthesis Methods*, 14(1), 68--78.
+
+Heesen C, Röver C, Salem S, et al. (2024). Treatment effect modifiers
+of immunotherapies for relapsing-remitting multiple sclerosis: a
+systematic review and meta-analysis. *Multiple Sclerosis Journal —
+Experimental, Translational and Clinical*, 10(4), 20552173241274618.
+
+WHO Rapid Evidence Appraisal for COVID-19 Therapies (REACT) Working
+Group, Sterne JAC, Murthy S, et al. (2020). Association between
+administration of systemic corticosteroids and mortality among
+critically ill patients with COVID-19: a meta-analysis. *JAMA*,
+324(13), 1330--1341.
+
+WHO Rapid Evidence Appraisal for COVID-19 Therapies (REACT) Working
+Group, Sterne JAC, Murthy S, et al. (2021). Association between
+administration of IL-6 antagonists and mortality among patients
+hospitalized for COVID-19: a meta-analysis. *JAMA*, 326(6), 499--518.
+
+De Soyza A, Aksamit T, Bandel T-J, et al. (2018). RESPIRE 1: a phase
+III placebo-controlled randomised trial of ciprofloxacin dry powder
+for inhalation in non-cystic fibrosis bronchiectasis. *European
+Respiratory Journal*, 51(1), 1702052.
+
+Aksamit T, De Soyza A, Bandel T-J, et al. (2018). RESPIRE 2: a phase
+III placebo-controlled randomised trial of ciprofloxacin dry powder
+for inhalation in non-cystic fibrosis bronchiectasis. *European
+Respiratory Journal*, 51(1), 1702053.

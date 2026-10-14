@@ -5,9 +5,9 @@
 \alias{compare_modifiers}
 \title{Side-by-side level-specific treatment effects from DA, SWADA, and CAMS}
 \usage{
-compare_subgroups(da, swada, cam = NULL, exponentiate = TRUE, type = "Pooled")
+compare_subgroups(da, swada, cam = NULL, exponentiate = TRUE, type = "Overall")
 
-compare_modifiers(da, swada, cam = NULL, exponentiate = TRUE, type = "Pooled")
+compare_modifiers(da, swada, cam = NULL, exponentiate = TRUE, type = "Overall")
 }
 \arguments{
 \item{da}{A \code{\link[=da]{da()}} or \code{\link[=conventional]{conventional()}} fit, or a \code{\link[=cam]{cam()}} fit when comparing
@@ -21,7 +21,7 @@ are already CAMS fits.}
 \item{exponentiate}{If \code{TRUE} (default), report on the exponentiated
 (ratio) scale. Use \code{FALSE} for the fitted log scale.}
 
-\item{type}{CAMS layer (\code{"Pooled"} default).}
+\item{type}{CAMS layer (\code{"Overall"} default).}
 }
 \value{
 A tibble with one row per approach × subgroup and class

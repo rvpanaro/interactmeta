@@ -205,7 +205,7 @@ print.cam_priors <- function(x, ...) {
   cat("CAMS priors:\n")
   cat("  tau (overall)     : ", format(x$tau), "\n", sep = "")
   cat("  tau (interaction) : ", format(x$tau_interaction), "\n", sep = "")
-  cat("  fixed effects     : ", format(x$fixed), "\n", sep = "")
+  cat("  population-level means: ", format(x$fixed), "\n", sep = "")
   invisible(x)
 }
 

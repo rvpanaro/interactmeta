@@ -9,11 +9,11 @@ Developer glossary. Public summaries still use descriptive labels
 }
 \details{
 \describe{
-\item{\code{alpha}}{Overall intercept; population mean at information fraction 0 for the reference subgroup.}
+\item{\code{alpha}}{Combined intercept; population mean at information fraction 0 for the reference subgroup.}
 \item{\code{beta}}{Ecological / composition slope (\code{b_ifrac}).}
 \item{\code{gamma}}{Interaction / subgroup offset (\code{b_subgroup}).}
-\item{\code{theta}}{Overall information-fraction slope; CAMS identity \code{theta = beta + gamma}.}
-\item{\code{tau_m}}{Overall-block heterogeneity SD (\code{sd_trial__Intercept}).}
+\item{\code{theta}}{Combined information-fraction slope; CAMS identity \code{theta = beta + gamma}.}
+\item{\code{tau_m}}{Combined-block heterogeneity SD (\code{sd_trial__Intercept}).}
 \item{\code{tau_g}}{Interaction-block heterogeneity SD (\verb{sd_trial__ifrac2_*}).}
 \item{\code{pi_j}}{Trial information fraction of the non-reference subgroup.}
 \item{\code{m_j}}{Trial overall (IV-pooled) effect.}

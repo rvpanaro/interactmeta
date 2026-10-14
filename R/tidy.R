@@ -57,14 +57,14 @@ tidy.interactmeta_subgroup_effects <- function(x, ...) {
   interactmeta_tidy_effects_summary(x$summary, id_cols = id_cols)
 }
 
-#' Tidy a `interactmeta_overall_effect` object
+#' Tidy an `interactmeta_combined_effect` object
 #'
-#' @param x A `interactmeta_overall_effect` object from [overall()].
+#' @param x An `interactmeta_combined_effect` object from [combined()].
 #' @param ... Ignored.
 #' @return A [tibble::tibble].
 #' @export
 #' @importFrom generics tidy
-tidy.interactmeta_overall_effect <- function(x, ...) {
+tidy.interactmeta_combined_effect <- function(x, ...) {
   id_cols <- if (isTRUE(x$shrinkage)) {
     c("trial", "type")
   } else {

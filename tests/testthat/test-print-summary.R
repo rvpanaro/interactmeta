@@ -17,13 +17,27 @@ test_that("print.interactmeta and summary.interactmeta are bayesmeta-style", {
   expect_false(grepl("b_subgroupOlder", out, fixed = TRUE))
   expect_match(out, "tau", fixed = TRUE)
   expect_match(out, "shortest credible intervals", fixed = TRUE)
-  expect_match(out, "approach: bayesmeta", fixed = TRUE)
+  expect_match(out, "approach: Bayesian (bayesmeta)", fixed = TRUE)
   expect_match(out, "Use summary()", fixed = TRUE)
   expect_false(grepl("combined-population effect", out, fixed = TRUE))
-  expect_match(out, "Subgroup:", fixed = TRUE)
+  expect_match(out, "2 subgroups", fixed = TRUE)
+  expect_match(out, "Subgroups:", fixed = TRUE)
   expect_false(grepl("subgroup effects", out, fixed = TRUE))
   expect_false(grepl("interaction effect", out, fixed = TRUE))
   expect_false(grepl("heterogeneity:", out, fixed = TRUE))
+
+  sg_out <- paste(
+    capture.output(print(subgroups(fit, type = "Overall"))),
+    collapse = "\n"
+  )
+  expect_match(sg_out, "Reporting IF:", fixed = TRUE)
+  expect_match(sg_out, "95% CrI:", fixed = TRUE)
+  comb_out <- paste(
+    capture.output(print(combined(fit, type = "Overall"))),
+    collapse = "\n"
+  )
+  expect_match(comb_out, "Reporting IF:", fixed = TRUE)
+  expect_match(comb_out, "95% CrI:", fixed = TRUE)
 
   s <- summary(fit, digits = 2, exponentiate = TRUE)
   expect_s3_class(s, "summary.interactmeta")
@@ -59,6 +73,30 @@ test_that("print.interactmeta and summary.interactmeta are bayesmeta-style", {
   expect_match(sout, "exponentiated", fixed = TRUE)
 })
 
+test_that("frequentist parameter summary includes metafor tau intervals", {
+  skip_if_not_installed("metafor")
+
+  es <- metafor::escalc(measure = "IRR", yi = age$yi, vi = age$vi, data = age)
+  fit <- cam(es, reference = "Younger", engine = "metafor")
+  params <- interactmeta_metafor_parameters_df(fit)
+  tau <- params[params$parameter %in% c("tau", "tau_gamma"), , drop = FALSE]
+
+  expect_true(all(is.finite(tau$lci)))
+  expect_true(all(is.finite(tau$uci)))
+  expect_equal(
+    as.numeric(tau[1L, c("lci", "uci")]),
+    as.numeric(as.data.frame(stats::confint(fit$metafor$overall)$random)[
+      "tau", c("ci.lb", "ci.ub")
+    ])
+  )
+  expect_equal(
+    as.numeric(tau[2L, c("lci", "uci")]),
+    as.numeric(as.data.frame(stats::confint(fit$metafor$interaction)$random)[
+      "tau", c("ci.lb", "ci.ub")
+    ])
+  )
+})
+
 test_that("print.interactmeta for MLE is no longer a supported engine path", {
   dat <- data.frame(
     trial = rep(c("A", "B", "C"), each = 2),
@@ -87,21 +125,21 @@ test_that("print header names quadrature nodes, not posterior draws", {
     n_draws = 384L
   )
   out <- paste(
-    utils::capture.output(interactmeta:::comparison_fit_print_header(meta)),
+    utils::capture.output(interact:::comparison_fit_print_header(meta)),
     collapse = "\n"
   )
   expect_match(out, "quadrature nodes: 384", fixed = TRUE)
   expect_false(grepl("posterior draws", out, fixed = TRUE))
   expect_equal(
-    interactmeta:::comparison_fit_draws_label(list(engine = "brms", algorithm = "MCMC")),
+    interact:::comparison_fit_draws_label(list(engine = "brms", algorithm = "MCMC")),
     "posterior draws"
   )
 })
 
-test_that("comparison_median_qi helpers use equal-tail quantiles", {
+test_that("comparison_median_qi helpers use shortest intervals", {
   set.seed(1)
   x <- rnorm(2000)
-  qi <- interactmeta:::comparison_median_qi_vec(x, prob = 0.9)
+  qi <- interact:::comparison_median_qi_vec(x, prob = 0.9)
   expect_equal(qi$estimate, stats::median(x), tolerance = 1e-10)
   expect_true(qi$lci < qi$estimate && qi$uci > qi$estimate)
   expect_equal(qi$prob, 0.9)
@@ -111,7 +149,7 @@ test_that("comparison_median_qi helpers use equal-tail quantiles", {
     effect = c(rnorm(500, 0), rnorm(500, 1)),
     stringsAsFactors = FALSE
   )
-  summ <- interactmeta:::comparison_median_qi_grouped(d, "effect", "g", prob = 0.95)
+  summ <- interact:::comparison_median_qi_grouped(d, "effect", "g", prob = 0.95)
   expect_equal(nrow(summ), 2L)
   expect_true(all(c("estimate", "mean", "sd", "lci", "uci", "prob") %in% names(summ)))
   expect_true(summ$estimate[summ$g == "b"] > summ$estimate[summ$g == "a"])

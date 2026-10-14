@@ -828,10 +828,10 @@ ggplot(grid_mg, aes(x, y, fill = z)) +
   coord_fixed(xlim = lim_grid, ylim = lim_grid, expand = FALSE, ratio = 1)
 ```
 
-## 8. Pooled subgroup effects
+## 8. Overall subgroup effects
 
 Same mixture as §7; different estimand. Shrinkage is this trial at
-$\pi_j$ (grey). Pooled is a population mixed at $\omega$ (navy), not
+$\pi_j$ (grey). Overall is a population mixed at $\omega$ (navy), not
 the greys averaged (`vignette("engine-comparison")`).
 
 $$

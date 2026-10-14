@@ -47,7 +47,7 @@ test_that("add_ifrac2_design() is added only for CAMS fitting", {
     reference = "g1"
   )
   res <- add_ifrac_design(dat)
-  fit_dat <- interactmeta:::add_ifrac2_design(res)
+  fit_dat <- interact:::add_ifrac2_design(res)
   expect_true("ifrac2_g2" %in% names(fit_dat))
   expect_equal(
     fit_dat$ifrac2_g2,
@@ -59,7 +59,7 @@ test_that("add_ifrac2_design() is added only for CAMS fitting", {
 test_that("add_ifrac_design() excludes overall rows by default", {
   dat <- dplyr::tibble(
     trial = rep("A", 4),
-    subgroup = c("g1", "g2", "g3", "Overall"),
+    subgroup = c("g1", "g2", "g3", "Combined"),
     yi = c(0, 0, 0, 0),
     vi = c(0.01, 0.04, 0.16, 0.008),
     reference = "g1"
@@ -67,7 +67,7 @@ test_that("add_ifrac_design() excludes overall rows by default", {
 
   res <- add_ifrac_design(dat)
   expect_equal(nrow(res), 3L)
-  expect_false("Overall" %in% res$subgroup)
+  expect_false("Combined" %in% res$subgroup)
 })
 
 test_that("add_ifrac_design() excludes contrast rows by default", {

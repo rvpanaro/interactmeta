@@ -29,15 +29,15 @@ test_that("comparison labels use inference when the analysis repeats", {
   class(sw) <- "interactmeta_swada"
 
   expect_equal(
-    interactmeta:::interactmeta_compare_labels(list(bayes, freq)),
+    interact:::interactmeta_compare_labels(list(bayes, freq)),
     c("CAMS \u2014 bayesmeta", "CAMS \u2014 metafor (REML)")
   )
   expect_equal(
-    interactmeta:::interactmeta_compare_labels(list(da, sw, bayes)),
+    interact:::interactmeta_compare_labels(list(da, sw, bayes)),
     c("DA", "SWADA", "CAMS")
   )
   expect_equal(
-    interactmeta:::interactmeta_inference_display(freq),
+    interact:::interactmeta_inference_display(freq),
     "metafor (REML)"
   )
 })
@@ -80,7 +80,7 @@ test_that("compare_* on two CAMS approaches labels and plots distinct approaches
 
   expect_silent(het <- compare_heterogeneity(fit_bayes, fit_freq))
   expect_s3_class(het, "interactmeta_compare_heterogeneity")
-  expect_true("Overall" %in% as.character(het$parameter))
+  expect_true("Combined" %in% as.character(het$parameter))
   expect_s3_class(plot(het), "ggplot")
 
   expect_silent(oi <- compare_ifrac(fit_bayes, fit_freq))

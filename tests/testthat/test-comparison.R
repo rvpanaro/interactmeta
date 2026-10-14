@@ -6,7 +6,7 @@ test_that("prepare_ifrac_input() runs ifrac on escalc-like input", {
     vi = c(0.01, 0.02)
   )
   class(es) <- c("escalc", "data.frame")
-  out <- interactmeta:::prepare_ifrac_input(
+  out <- interact:::prepare_ifrac_input(
     es,
     reference = "Younger",
     trial = "trial",
@@ -30,7 +30,7 @@ test_that("prepare_ifrac_input() passes through ifrac output", {
     ifrac_Older = 0.5,
     ifrac2_Older = 0.5
   )
-  out <- interactmeta:::prepare_ifrac_input(
+  out <- interact:::prepare_ifrac_input(
     dat,
     reference = "Younger",
     trial = "trial",
@@ -53,7 +53,7 @@ test_that("resolve_comparison_design() builds formula for age-like ifrac output"
     ifrac_Older = 0.3,
     ifrac2_Older = c(-0.3, 0.7)
   )
-  d <- interactmeta:::resolve_comparison_design(dat, reference = "Younger", trial_var = "trial", subgroup_var = "subgroup")
+  d <- interact:::resolve_comparison_design(dat, reference = "Younger", trial_var = "trial", subgroup_var = "subgroup")
   expect_equal(d$ifrac_var, "ifrac_Older")
   expect_equal(d$ifrac2_var, "ifrac2_Older")
   expect_equal(d$effects, "ifrac_Older:subgroup")
@@ -93,18 +93,18 @@ test_that("interactmeta_settings() reads comparison attribute", {
     subgroup_var = "subgroup",
     effects = "ifrac_Older:subgroup"
   )
-  st <- interactmeta:::interactmeta_settings(fit)
+  st <- interact:::interactmeta_settings(fit)
   expect_equal(st$ifrac_var, "ifrac_Older")
   expect_equal(st$effects, "ifrac_Older:subgroup")
 })
 
 test_that("comparison_model_formula() uses uncorrelated trial REs", {
-  uncorr <- interactmeta:::comparison_model_formula(1L)
+  uncorr <- interact:::comparison_model_formula(1L)
   expect_match(uncorr, "\\(1 \\+ ifrac2_1 \\|\\| trial\\)")
 })
 
 test_that("default_comparison_prior() uses trial and ifrac2 coefficient names", {
-  p <- interactmeta:::default_comparison_prior("ifrac2_Older", group = "trial")
+  p <- interact:::default_comparison_prior("ifrac2_Older", group = "trial")
   expect_equal(p$coef, c("Intercept", "ifrac2_Older"))
   expect_equal(p$group, c("trial", "trial"))
 })
@@ -187,5 +187,5 @@ test_that("cam() rejects retired engine arguments", {
 
 test_that("detect_ifrac_var() finds single ifrac_* column", {
   dat <- data.frame(ifrac_Older = 1, ifrac2_Older = 0, yi = 1)
-  expect_equal(interactmeta:::detect_ifrac_var(dat), "ifrac_Older")
+  expect_equal(interact:::detect_ifrac_var(dat), "ifrac_Older")
 })

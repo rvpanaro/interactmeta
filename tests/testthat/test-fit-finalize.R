@@ -34,7 +34,7 @@ test_that("fit stores call, model_spec, priors, and trial blocks", {
   expect_true(!is.null(fit$priors$common))
   expect_true(!is.null(fit$priors$engine))
   expect_equal(fit$priors$tau$family, "uniform")
-  expect_true(interactmeta:::cam_prior_is_improper_uniform(fit$priors$tau))
+  expect_true(interact:::cam_prior_is_improper_uniform(fit$priors$tau))
 })
 
 test_that("stored trial blocks match an independent hand calculation", {

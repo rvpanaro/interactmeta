@@ -33,7 +33,7 @@ test_that("interactions(shrinkage = TRUE) print shows one row per contrast", {
   fit <- cam(dat, engine = "bayesmeta", reference = "Younger")
   me <- interactions(fit, shrinkage = TRUE)
   expect_equal(nrow(me$summary), 2L)
-  once <- interactmeta:::comparison_interaction_shrinkage_summary_once(me$summary)
+  once <- interact:::comparison_interaction_shrinkage_summary_once(me$summary)
   expect_equal(nrow(once), 1L)
   expect_equal(unique(once$interaction), "Older-Younger")
 })
@@ -58,7 +58,7 @@ test_that("interactions(shrinkage = TRUE) returns one row per trial", {
   expect_true(all(c("A", "B") %in% me$summary$trial))
 })
 
-test_that("interaction Prediction intervals are wider than Pooled", {
+test_that("interaction Prediction intervals are wider than Overall", {
   skip_if_not_installed("bayesmeta")
 
   dat <- data.frame(
@@ -72,12 +72,12 @@ test_that("interaction Prediction intervals are wider than Pooled", {
   )
   fit <- cam(dat, engine = "bayesmeta", reference = "Younger")
   me <- interactions(fit)
-  pooled <- me$summary[me$summary$type == "Pooled", , drop = FALSE]
+  pooled <- me$summary[me$summary$type == "Overall", , drop = FALSE]
   pred <- me$summary[me$summary$type == "Prediction", , drop = FALSE]
   expect_gt(pred$uci - pred$lci, pooled$uci - pooled$lci)
 })
 
-test_that("interaction Pooled matches subgroup difference at overall IF", {
+test_that("interaction Overall matches subgroup difference at overall IF", {
   skip_if_not_installed("bayesmeta")
 
   dat <- data.frame(
@@ -90,11 +90,11 @@ test_that("interaction Pooled matches subgroup difference at overall IF", {
     ifrac2_Older = c(-0.3, 0.7, -0.4, 0.6)
   )
   fit <- cam(dat, engine = "bayesmeta", reference = "Younger")
-  int <- interactions(fit, type = "Pooled", summary = FALSE)
-  sg <- subgroups(fit, type = "Pooled", summary = FALSE)
+  int <- interactions(fit, type = "Overall", summary = FALSE)
+  sg <- subgroups(fit, type = "Overall", summary = FALSE)
   young <- sg$draws$effect[sg$draws$subgroup == "Younger"]
   old <- sg$draws$effect[sg$draws$subgroup == "Older"]
-  int_eff <- int$draws$effect[int$draws$type == "Pooled"]
+  int_eff <- int$draws$effect[int$draws$type == "Overall"]
   expect_equal(length(int_eff), length(young))
   expect_equal(mean(int_eff), mean(old - young), tolerance = 1e-6)
 })

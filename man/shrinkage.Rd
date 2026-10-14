@@ -6,7 +6,7 @@
 \usage{
 shrinkage(
   fit,
-  type = c("subgroups", "interaction", "overall", "combined"),
+  type = c("subgroups", "interaction", "combined"),
   format = c("list", "summary"),
   prob = 0.95,
   max_draws = NULL,
@@ -25,7 +25,7 @@ shrinkage(
 \itemize{
 \item \code{"subgroups"} (default; \code{"subgroup"} accepted): \eqn{\mu_{A,j}, \mu_{B,j}}
 \item \code{"interaction"}: \eqn{g_j}
-\item \code{"overall"}: \eqn{m_j}
+\item \code{"combined"}: \eqn{m_j}
 }}
 
 \item{format}{Output representation:
@@ -87,7 +87,7 @@ interaction blocks, then the same reconstruction.
 
 This is \strong{not} the fixed-effect linear predictor at \eqn{\pi_j}.
 \code{\link[=fitted]{fitted()}} returns that FE mean (\code{fit$mu}); \code{\link[=shrinkage]{shrinkage()}} is the
-trial-level reconstruction the forest greys use. Pooled / Prediction use
+trial-level reconstruction the forest greys use. Overall / Prediction use
 overall IF \eqn{\omega}; see \code{\link[=subgroups]{subgroups()}} and
 \code{\link[=standardized_trial_effects]{standardized_trial_effects()}}.
 }

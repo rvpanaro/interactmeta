@@ -223,16 +223,16 @@ test_that("forest shrinkage greys equal canonical accessor posterior QI", {
     dat, reference = "Younger",
     engine = "bayesmeta"))
   sg <- shrinkage(fit, type = "subgroups", summary = TRUE, exponentiate = FALSE)
-  panels <- interactmeta:::comparison_forest_build_fit_panels(
+  panels <- interact:::comparison_forest_build_fit_panels(
     fit,
     prob = 0.95,
     contrast_sep = "-",
-    max_ifrac_draws = 200L,
+    max_ifrac_draws = NULL,
     model_names = NULL,
     include_shrinkage = TRUE,
-    include_pooled = FALSE,
+    include_overall = FALSE,
     include_prediction = FALSE,
-    include_overall = FALSE
+    include_combined = FALSE
   )
   pan <- panels$resultsA
   labs <- panels$row_labels
@@ -261,7 +261,7 @@ test_that("forest shrinkage greys equal canonical accessor posterior QI", {
     expect_equal(pan$ci.lb[[ix[[1]]]], row$lci[[1]], tolerance = 1e-8)
     expect_equal(pan$ci.ub[[ix[[1]]]], row$uci[[1]], tolerance = 1e-8)
   }
-  expect_false(any(pan$row_kind == "pooled", na.rm = TRUE))
+  expect_false(any(pan$row_kind == "overall", na.rm = TRUE))
   expect_false(any(pan$row_kind == "prediction", na.rm = TRUE))
 })
 
@@ -372,19 +372,19 @@ test_that("forest does not use pooled/prediction as study shrinkage", {
   fit <- suppressWarnings(cam(
     dat, reference = "Younger",
     engine = "bayesmeta"))
-  panels <- interactmeta:::comparison_forest_build_fit_panels(
+  panels <- interact:::comparison_forest_build_fit_panels(
     fit,
     prob = 0.95,
     contrast_sep = "-",
-    max_ifrac_draws = 200L,
+    max_ifrac_draws = NULL,
     model_names = NULL,
     include_shrinkage = TRUE,
-    include_pooled = TRUE,
+    include_overall = TRUE,
     include_prediction = TRUE
   )
   pan <- panels$resultsA
   shr <- pan[pan$row_kind == "shrinkage" & !is.na(pan$shape), , drop = FALSE]
-  pooled <- pan[pan$row_kind == "pooled", , drop = FALSE]
+  pooled <- pan[pan$row_kind == "overall", , drop = FALSE]
   expect_true(nrow(shr) >= 1L)
   expect_true(nrow(pooled) >= 1L)
   expect_false(isTRUE(all.equal(

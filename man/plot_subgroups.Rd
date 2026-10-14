@@ -10,7 +10,7 @@ plot_subgroups(
   swada,
   cam,
   exponentiate = TRUE,
-  type = "Pooled",
+  type = "Overall",
   include_observed = TRUE,
   xlim = NULL
 )
@@ -20,7 +20,7 @@ plot_modifiers(
   swada,
   cam,
   exponentiate = TRUE,
-  type = "Pooled",
+  type = "Overall",
   include_observed = TRUE,
   xlim = NULL
 )
@@ -37,7 +37,7 @@ are already CAMS fits.}
 \item{exponentiate}{If \code{TRUE} (default), report on the exponentiated
 (ratio) scale. Use \code{FALSE} for the fitted log scale.}
 
-\item{type}{CAMS layer (\code{"Pooled"} default).}
+\item{type}{CAMS layer (\code{"Overall"} default).}
 
 \item{include_observed}{If \code{TRUE}, add published trial rows from \code{da$data}.}
 

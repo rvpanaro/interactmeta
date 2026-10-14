@@ -112,7 +112,7 @@ respire_build_dataset <- function(trial,
 #' Columns `hr`, `ci_lower`, `ci_upper`, and `ci_level` are the original
 #' published values. `yi`, `sei`, and `vi` are derived by [log_hr_from_ci()];
 #' RESPIRE 1 uses 97.5% intervals and RESPIRE 2 uses 95.1% intervals.
-#' See `vignette("consistent-interactions")`.
+#' See `vignette("introduction-to-interact")`.
 #'
 #' @format A data frame with 4 rows and 10 variables:
 #' \describe{

@@ -121,7 +121,7 @@ Frequentist: REML with Wald intervals from the stored `rma`
 covariance. `compare_*()` labels them `CAMS — bayesmeta` versus
 `CAMS — metafor (REML)`.
 
-## Pooled information fraction
+## Overall information fraction
 
 Trial $\pi_j$ is the same. `compare_ifrac()` compares pooled
 $\omega(\tau)$. `compare_weights()` is the Difference of Averages
@@ -197,7 +197,7 @@ compare_interactions(
 )
 ```
 
-Default `type = "Pooled"` is the population interaction, not a
+Default `type = "Overall"` is the population interaction, not a
 prediction for a new trial. The two points need not coincide:
 bayesmeta integrates over the prior on $\tau_\gamma$; metafor
 estimates it by REML.
@@ -208,7 +208,7 @@ estimates it by REML.
 compare_heterogeneity(fit_cams_bayes, fit_cams_freq)
 ```
 
-`Overall` is $\tau$; `Interaction_Older` is $\tau_\gamma$. The
+`Combined` is $\tau$; `Interaction_Older` is $\tau_\gamma$. The
 Bayesian fit above uses the article WIP half-normal
 $\mathrm{Normal}^+(0,0.1)$ on $\tau_\gamma$ (arXiv:2606.23968), so
 DIRECT is pulled toward smaller values than REML. That is
@@ -234,7 +234,7 @@ different question: `vignette("consistent-interactions")`.
 | Heterogeneity | Mixed into $\omega(\tau)$ | Plug-in $\omega(\tau)$ |
 | Default pooled diamonds | $\omega(\tau_q)$ on each node | plug-in $\omega(\tau)$ |
 | Population intervals | Credible intervals | Confidence intervals |
-| Overall-block dependence | Joint posterior support | `rma` covariance |
+| Combined-block dependence | Joint posterior support | `rma` covariance |
 | MCMC | No | No |
 
 ## References

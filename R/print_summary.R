@@ -287,9 +287,9 @@ comparison_format_cri <- function(lci, uci, digits = 2) {
   )
 }
 
-#' Fold Prediction rows into a `95% Pred` column on Pooled rows
+#' Fold Prediction rows into a `95% Pred` column on Overall rows
 #'
-#' Keeps Pooled median / mean / sd / CrI; attaches Prediction interval as an
+#' Keeps Overall median / mean / sd / CrI; attaches Prediction interval as an
 #' extra column so Prediction is not printed as its own line.
 #' @noRd
 comparison_collapse_pooled_prediction <- function(summary, prob = 0.95) {
@@ -298,7 +298,7 @@ comparison_collapse_pooled_prediction <- function(summary, prob = 0.95) {
   }
   df <- as.data.frame(summary, stringsAsFactors = FALSE)
   types <- unique(as.character(df$type))
-  if (!all(c("Pooled", "Prediction") %in% types)) {
+  if (!all(c("Overall", "Prediction") %in% types)) {
     return(list(summary = summary, has_prediction = FALSE))
   }
 
@@ -317,7 +317,7 @@ comparison_collapse_pooled_prediction <- function(summary, prob = 0.95) {
     ),
     "type"
   )
-  pooled <- df[as.character(df$type) == "Pooled", , drop = FALSE]
+  pooled <- df[as.character(df$type) == "Overall", , drop = FALSE]
   pred <- df[as.character(df$type) == "Prediction", , drop = FALSE]
   if (!nrow(pooled) || !nrow(pred)) {
     return(list(summary = summary, has_prediction = FALSE))
@@ -349,7 +349,7 @@ comparison_collapse_pooled_prediction <- function(summary, prob = 0.95) {
 #'
 #' Avoids tibble metadata. Bayesian columns: median, mean, sd, and a
 #' formatted credible-interval string. Frequentist columns: estimate, se,
-#' and a formatted confidence-interval string. When Pooled and Prediction are
+#' and a formatted confidence-interval string. When Overall and Prediction are
 #' both present, Prediction is folded into a `95% Pred` column.
 #' @noRd
 comparison_effects_print_df <- function(summary,
@@ -403,7 +403,7 @@ comparison_effects_print_df <- function(summary,
   } else {
     id_cols <- intersect(as.character(id_cols), names(df))
   }
-  # type is dropped after Pooled/Prediction collapse
+  # type is dropped after Overall/Prediction collapse
   if (isTRUE(has_prediction)) {
     id_cols <- setdiff(id_cols, "type")
   }
@@ -619,13 +619,26 @@ comparison_fit_print_meta <- function(x) {
 #' @noRd
 comparison_fit_print_header <- function(meta) {
   heading <- interactmeta_modifier_heading(meta$modifier %||% meta$subgroup_var)
+  is_subgroup <- identical(tolower(heading), "subgroup")
+  approach <- switch(
+    tolower(as.character(meta$engine)[[1L]]),
+    bayesmeta = "Bayesian (bayesmeta)",
+    metafor = "Frequentist (metafor)",
+    as.character(meta$engine)[[1L]]
+  )
+  count_heading <- if (is_subgroup) {
+    if (identical(meta$n_subgroups, 1L)) "subgroup" else "subgroups"
+  } else {
+    paste0(heading, if (identical(meta$n_subgroups, 1L)) " level" else " levels")
+  }
+  levels_heading <- if (is_subgroup) "Subgroups" else paste0(heading, " levels")
   cat(paste0(
     "\n",
     meta$n_trials,
     " trials, ",
     meta$n_subgroups,
     " ",
-    heading
+    count_heading
   ))
   if (!is.null(meta$reference) && nzchar(as.character(meta$reference)[[1L]])) {
     cat(paste0(" (reference: ", as.character(meta$reference)[[1L]], ")"))
@@ -641,11 +654,11 @@ comparison_fit_print_header <- function(meta) {
   }
   cat("\n")
   if (length(meta$subgroups)) {
-    cat(paste0(heading, ": ", paste(meta$subgroups, collapse = ", "), "\n"))
+    cat(paste0(levels_heading, ": ", paste(meta$subgroups, collapse = ", "), "\n"))
   }
   cat(paste0(
     "\napproach: ",
-    meta$engine,
+    approach,
     "\nmethod: ",
     meta$method
   ))
@@ -763,7 +776,23 @@ interactmeta_metafor_parameters_df <- function(fit, prob = 0.95) {
       stringsAsFactors = FALSE
     )
   }
-  tau_row <- function(parameter, tau2, se_tau2) {
+  tau_interval <- function(model) {
+    ci <- tryCatch(
+      suppressWarnings(stats::confint(model, level = prob)),
+      error = function(e) NULL
+    )
+    random <- ci$random %||% NULL
+    if (is.null(random) || is.null(dim(random)) ||
+        !"tau" %in% rownames(random) ||
+        !all(c("ci.lb", "ci.ub") %in% colnames(random))) {
+      return(c(lci = NA_real_, uci = NA_real_))
+    }
+    c(
+      lci = as.numeric(random["tau", "ci.lb"]),
+      uci = as.numeric(random["tau", "ci.ub"])
+    )
+  }
+  tau_row <- function(parameter, tau2, se_tau2, interval) {
     tau <- sqrt(max(as.numeric(tau2)[[1L]], 0))
     se <- NA_real_
     se_tau2 <- as.numeric(se_tau2)[[1L]]
@@ -774,8 +803,8 @@ interactmeta_metafor_parameters_df <- function(fit, prob = 0.95) {
       parameter = parameter,
       estimate = tau,
       se = se,
-      lci = NA_real_,
-      uci = NA_real_,
+      lci = unname(interval[["lci"]]),
+      uci = unname(interval[["uci"]]),
       stringsAsFactors = FALSE
     )
   }
@@ -797,8 +826,8 @@ interactmeta_metafor_parameters_df <- function(fit, prob = 0.95) {
     "Ecological"
   }
   rbind(
-    tau_row("tau", ov$tau2, ov$se.tau2),
-    tau_row("tau_gamma", int$tau2, int$se.tau2),
+    tau_row("tau", ov$tau2, ov$se.tau2, tau_interval(ov)),
+    tau_row("tau_gamma", int$tau2, int$se.tau2, tau_interval(int)),
     row_est("Intercept", alpha, ov$se[[1L]], ov$ci.lb[[1L]], ov$ci.ub[[1L]]),
     row_est("theta", theta, ov$se[[2L]], ov$ci.lb[[2L]], ov$ci.ub[[2L]]),
     row_est(eco_lab, eco, se_eco),

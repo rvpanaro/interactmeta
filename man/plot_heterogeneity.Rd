@@ -92,5 +92,5 @@ plot_heterogeneity(fit, which = "combined")
 }
 \seealso{
 \code{\link[=heterogeneity]{heterogeneity()}}, \link[bayesmeta:plot.bayesmeta]{bayesmeta::plot.bayesmeta},
-\link[metafor:profile.rma]{metafor::profile.rma}, \code{vignette("further")}
+\link[metafor:profile.rma]{metafor::profile.rma}, \code{vignette("introduction-to-interact")}
 }

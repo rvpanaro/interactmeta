@@ -92,9 +92,9 @@ test_that("EDSS end-to-end: bayesmeta quantities share origin and IF", {
   expect_equal(fit$engine, "bayesmeta")
   expect_true(identical(native_fit(fit), fit$bayesmeta))
 
-  int <- interactions(fit, type = "Pooled")
-  sg <- subgroups(fit, type = "Pooled")
-  cb <- combined(fit, type = "Pooled")
+  int <- interactions(fit, type = "Overall")
+  sg <- subgroups(fit, type = "Overall")
+  cb <- combined(fit, type = "Overall")
   het <- heterogeneity(fit)
   oi <- ifrac(fit)
   expect_origin_engine(int, "bayesmeta")
@@ -105,11 +105,11 @@ test_that("EDSS end-to-end: bayesmeta quantities share origin and IF", {
 
   sm <- summary(fit)
   expect_equal(sm$meta$engine, "bayesmeta")
-  pooled <- int$summary[int$summary$type == "Pooled", , drop = FALSE]
+  pooled <- int$summary[int$summary$type == "Overall", , drop = FALSE]
   expect_true(is.finite(pooled$lci[[1L]]))
   expect_true(pooled$uci[[1L]] > pooled$lci[[1L]])
 
-  lat <- interactmeta:::interactmeta_posterior_1d_summary(fit$latent$gamma)
+  lat <- interact:::interactmeta_posterior_1d_summary(fit$latent$gamma)
   expect_equal(pooled$estimate[[1L]], lat$median, tolerance = 0.05)
   expect_equal(pooled$sd[[1L]], lat$sd, tolerance = 0.08)
 
@@ -128,17 +128,17 @@ test_that("EDSS end-to-end: metafor derived intervals come from stored rma", {
   expect_equal(fit$engine, "metafor")
   expect_true(identical(native_fit(fit), fit$metafor))
 
-  int <- interactions(fit, type = "Pooled")
+  int <- interactions(fit, type = "Overall")
   expect_origin_engine(int, "metafor")
-  pooled <- int$summary[int$summary$type == "Pooled", , drop = FALSE]
+  pooled <- int$summary[int$summary$type == "Overall", , drop = FALSE]
   rma <- fit$metafor$interaction
   expect_equal(pooled$estimate[[1L]], as.numeric(rma$beta)[[1L]], tolerance = 1e-8)
   expect_equal(pooled$lci[[1L]], as.numeric(rma$ci.lb)[[1L]], tolerance = 1e-6)
   expect_equal(pooled$uci[[1L]], as.numeric(rma$ci.ub)[[1L]], tolerance = 1e-6)
 
-  cb <- combined(fit, type = "Pooled")
+  cb <- combined(fit, type = "Overall")
   expect_true(is.finite(cb$summary$lci[[1L]]))
-  sg <- subgroups(fit, type = "Pooled")
+  sg <- subgroups(fit, type = "Overall")
   expect_true(all(is.finite(sg$summary$lci)))
   expect_origin_engine(cb, "metafor")
   expect_origin_engine(sg, "metafor")

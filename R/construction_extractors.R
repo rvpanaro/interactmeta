@@ -30,7 +30,7 @@ interactmeta_construction_row_to_summary <- function(row, exponentiate = FALSE) 
     hi <- exp(hi)
   }
   data.frame(
-    type = "Pooled",
+    type = "Overall",
     estimate = est,
     mean = est,
     std.error = se,

@@ -1,7 +1,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# interactmeta
+# interact
 
 <!-- badges: start -->
 
@@ -19,13 +19,13 @@ The package constructs trial information fractions π<sub>j</sub>, rotates
 derived outputs. The target is not a separate meta-analysis within each
 subgroup.
 
-`bayesmeta` and `metafor` fit the two blocks. interactmeta adds the CAMS
+`bayesmeta` and `metafor` fit the two blocks. interact adds the CAMS
 rotation, reconstruction, and contribution-adjusted estimands.
 `cams()` fits the model. `interactions()`, `subgroups()`, and `combined()`
-extract those estimands (`overall()` is another name for `combined()`).
+extract those estimands.
 `plot_contribution()` draws
 μ<sub>A</sub>(π), μ<sub>B</sub>(π), and M(π) across π.
-See `vignette("cams")`.
+See `vignette("introduction-to-interact")`.
 
 **DA** (`da()`, Difference of Averages) and **AD** (`ad()`, Average
 Difference) are **different constructions** (Panaro, Röver & Friede
@@ -33,7 +33,7 @@ Difference) are **different constructions** (Panaro, Röver & Friede
 Different Analyses) is a shared-weight principle for those
 constructions, not a fourth model. They are context for CAMS, not
 alternative CAMS models. See
-`vignette("consistent-interactions")`.
+`vignette("introduction-to-interact")`.
 
 ## Installation
 
@@ -49,12 +49,12 @@ DIRECT quadrature (the default) and metafor (restricted maximum
 likelihood, REML, or maximum likelihood, ML). Bayesian heterogeneity
 defaults match bayesmeta (improper uniform on $\tau$); fixed effects
 use $N(0,10)$. Vignettes set empirical half-normal scales from
-arXiv:2606.23968 explicitly. See `vignette("engine-comparison")`.
+arXiv:2606.23968 explicitly. See `vignette("introduction-to-interact")`.
 
 ## Example
 
 ``` r
-library(interactmeta)
+library(interact)
 
 es <- escalc(measure = "IRR", yi = age$yi, vi = age$vi, data = age)
 fit <- cams(

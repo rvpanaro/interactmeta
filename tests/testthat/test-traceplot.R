@@ -36,7 +36,7 @@ test_that("traceplot() uses native bayesmeta objects and does not refit", {
     mtext_before
   )
 
-  objs_ov <- traceplot(fit, type = "overall")
+  objs_ov <- traceplot(fit, type = "combined")
   expect_length(objs_ov, 1L)
   expect_s3_class(objs_ov[[1L]], "bmr")
   expect_identical(objs_ov[[1L]], fit$bayesmeta$overall)
@@ -53,25 +53,18 @@ test_that("traceplot() does not substitute bayesmeta on another engine", {
     silent = 2
   ))
   expect_error(traceplot(fit, type = "interaction"), "engine = \"metafor\"")
-  expect_error(traceplot(fit, type = "overall"), "Auxiliary bayesmeta")
+  expect_error(traceplot(fit, type = "combined"), "Auxiliary bayesmeta")
 })
 
 test_that("traceplot() axis labels depend on type", {
-  labs_int <- interactmeta:::comparison_traceplot_axis_labels("interaction")
+  labs_int <- interact:::comparison_traceplot_axis_labels("interaction")
   expect_equal(labs_int$ylab, "Interaction")
   expect_equal(
     as.character(labs_int$xlab),
     as.character(expression("heterogeneity " * tau[gamma]))
   )
 
-  labs_ov <- interactmeta:::comparison_traceplot_axis_labels("overall")
-  expect_equal(labs_ov$ylab, "Effect")
-  expect_equal(
-    as.character(labs_ov$xlab),
-    as.character(expression("heterogeneity " * tau))
-  )
-
-  labs_comb <- interactmeta:::comparison_traceplot_axis_labels("combined")
+  labs_comb <- interact:::comparison_traceplot_axis_labels("combined")
   expect_equal(labs_comb$ylab, "Effect")
   expect_equal(
     as.character(labs_comb$xlab),
@@ -79,7 +72,7 @@ test_that("traceplot() axis labels depend on type", {
   )
 
   expect_equal(
-    interactmeta:::comparison_traceplot_axis_labels(
+    interact:::comparison_traceplot_axis_labels(
       "interaction",
       ylab = "custom"
     )$ylab,
@@ -98,7 +91,7 @@ test_that("comparison_traceplot_default_bmr_X() uses stored trial IF", {
     reference = "Younger",
     silent = 2
   ))
-  X <- interactmeta:::comparison_traceplot_default_bmr_X(fit)
+  X <- interact:::comparison_traceplot_default_bmr_X(fit)
   expect_true(is.matrix(X))
   expect_equal(dim(X), c(1L, 2L))
   expect_equal(unname(X[1L, 1L]), 1)

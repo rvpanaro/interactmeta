@@ -18,14 +18,14 @@ test_that("CAMS shrinkage is study-specific at pi_j with stored REs", {
 
   sg <- shrinkage(fit, type = "subgroups", format = "list", summary = FALSE)
   int <- shrinkage(fit, type = "interaction", format = "list", summary = FALSE)
-  ov <- shrinkage(fit, type = "overall", format = "list", summary = FALSE)
+  ov <- shrinkage(fit, type = "combined", format = "list", summary = FALSE)
   cmp <- shrinkage_components(fit)
   expect_equal(sort(names(cmp$pi)), c("A", "B"))
   expect_equal(unname(cmp$pi[["A"]]), 0.6, tolerance = 1e-12)
   expect_equal(cmp$evaluation, "trial")
   expect_true(length(cmp$omega) >= 1L)
 
-  prep <- interactmeta:::comparison_prepare_marginal_draws(fit, ifrac = "overall")
+  prep <- interact:::comparison_prepare_marginal_draws(fit, ifrac = "overall")
   post <- prep$post
   alpha <- as.numeric(post$b_Intercept)
   beta <- as.numeric(post$b_ifrac_Older)
@@ -65,7 +65,7 @@ test_that("CAMS shrinkage is study-specific at pi_j with stored REs", {
     expect_equal(g, y_B - y_A, tolerance = 1e-10)
 
     if (has_re) {
-      ya_lp <- interactmeta:::comparison_effect_linpred_draws(
+      ya_lp <- interact:::comparison_effect_linpred_draws(
         post = post,
         evaluation_if = pi_j,
         design = prep$design,
@@ -133,8 +133,8 @@ test_that("standardized and study-specific coincide when pi_j equals omega", {
   )
 
   cmp_shr <- shrinkage_components(fit, contribution = 0.5)
-  cmp_std <- interactmeta:::comparison_shrinkage_components_list(
-    interactmeta:::comparison_shrinkage_rotation_bundle(
+  cmp_std <- interact:::comparison_shrinkage_components_list(
+    interact:::comparison_shrinkage_rotation_bundle(
       fit, overall_ifrac = 0.5, evaluation = "overall"
     )
   )

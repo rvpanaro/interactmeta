@@ -13,64 +13,64 @@ test_that("forestplot.interactmeta() requires interactmeta fit metadata", {
 
 test_that("comparison_forest_resolve_model_names() warns on unrecognized layers", {
   expect_warning(
-    out <- interactmeta:::comparison_forest_resolve_model_names(
-      model_names = c("Nope", "Pooled"),
+    out <- interact:::comparison_forest_resolve_model_names(
+      model_names = c("Nope", "Overall"),
       include_shrinkage = FALSE,
-      include_pooled = TRUE,
+      include_overall = TRUE,
       include_prediction = FALSE
     ),
     "Unrecognized `model_names`"
   )
-  expect_equal(out, "Pooled")
+  expect_equal(out, "Overall")
 })
 
 test_that("omitted pooled/prediction layers keep NA placeholder rows", {
-  pooled_sg <- data.frame(
+  overall_sg <- data.frame(
     trial = c("0.5", "0.5"),
     subgroup = c("Younger", "Older"),
     yi = c(0.1, 0.2),
     vi = c(0.01, 0.01),
     stringsAsFactors = FALSE
   )
-  pred_sg <- pooled_sg
+  pred_sg <- overall_sg
   pred_sg$yi <- c(0.15, 0.25)
-  empty_int <- pooled_sg[0L, , drop = FALSE]
+  empty_int <- overall_sg[0L, , drop = FALSE]
 
-  both <- interactmeta:::comparison_forest_interleave_pooled_prediction(
-    pooled_sg = pooled_sg,
+  both <- interact:::comparison_forest_interleave_overall_prediction(
+    overall_sg = overall_sg,
     pred_sg = pred_sg,
-    pooled_int = empty_int,
+    overall_int = empty_int,
     pred_int = empty_int,
     reference = "Younger",
-    include_pooled = TRUE,
+    include_overall = TRUE,
     include_prediction = TRUE
   )
-  no_pred <- interactmeta:::comparison_forest_interleave_pooled_prediction(
-    pooled_sg = pooled_sg,
+  no_pred <- interact:::comparison_forest_interleave_overall_prediction(
+    overall_sg = overall_sg,
     pred_sg = pred_sg,
-    pooled_int = empty_int,
+    overall_int = empty_int,
     pred_int = empty_int,
     reference = "Younger",
-    include_pooled = TRUE,
+    include_overall = TRUE,
     include_prediction = FALSE
   )
   expect_equal(nrow(both$subgroup), nrow(no_pred$subgroup))
-  expect_equal(no_pred$subgroup$row_kind, rep(c("pooled", "prediction"), 2L))
-  expect_true(all(is.finite(no_pred$subgroup$yi[no_pred$subgroup$row_kind == "pooled"])))
+  expect_equal(no_pred$subgroup$row_kind, rep(c("overall", "prediction"), 2L))
+  expect_true(all(is.finite(no_pred$subgroup$yi[no_pred$subgroup$row_kind == "overall"])))
   expect_true(all(is.na(no_pred$subgroup$yi[no_pred$subgroup$row_kind == "prediction"])))
 
-  no_pooled <- interactmeta:::comparison_forest_interleave_pooled_prediction(
-    pooled_sg = pooled_sg,
+  no_overall <- interact:::comparison_forest_interleave_overall_prediction(
+    overall_sg = overall_sg,
     pred_sg = pred_sg,
-    pooled_int = empty_int,
+    overall_int = empty_int,
     pred_int = empty_int,
     reference = "Younger",
-    include_pooled = FALSE,
+    include_overall = FALSE,
     include_prediction = TRUE
   )
-  expect_equal(nrow(both$subgroup), nrow(no_pooled$subgroup))
-  expect_true(all(is.na(no_pooled$subgroup$yi[no_pooled$subgroup$row_kind == "pooled"])))
-  expect_true(all(is.finite(no_pooled$subgroup$yi[no_pooled$subgroup$row_kind == "prediction"])))
+  expect_equal(nrow(both$subgroup), nrow(no_overall$subgroup))
+  expect_true(all(is.na(no_overall$subgroup$yi[no_overall$subgroup$row_kind == "overall"])))
+  expect_true(all(is.finite(no_overall$subgroup$yi[no_overall$subgroup$row_kind == "prediction"])))
 })
 
 test_that("forestplot() validates prob on the comparison path", {
@@ -98,7 +98,7 @@ test_that("forestplot() validates prob on the comparison path", {
       fit,
       model_names = "Nope",
       include_shrinkage = FALSE,
-      include_pooled = TRUE,
+      include_overall = TRUE,
       include_prediction = FALSE
     ),
     "Unrecognized `model_names`"
@@ -118,7 +118,7 @@ test_that("comparison_forest_order_to_template() orders by trial and subgroup", 
     vi = 0.1,
     stringsAsFactors = FALSE
   )
-  out <- interactmeta:::comparison_forest_order_to_template(dat, template, "trial", "subgroup")
+  out <- interact:::comparison_forest_order_to_template(dat, template, "trial", "subgroup")
   expect_equal(out$trial, c("B", "B", "A", "A"))
   expect_equal(as.character(out$subgroup), rep(c("Younger", "Older"), 2))
 })
@@ -131,9 +131,9 @@ test_that("comparison_forest_order_to_template() matches split_ifrac_for_forest 
     subgroup = factor(c("Older", "Younger", "Older", "Younger"), levels = c("Younger", "Older")),
     reference = "Younger"
   )
-  template <- interactmeta:::split_ifrac_for_forest(d, contrast_sep = "-")$subgroup
-  sg <- interactmeta:::comparison_forest_subgroup_rows(d, "trial", "subgroup", "-")
-  out <- interactmeta:::comparison_forest_order_to_template(sg, template, "trial", "subgroup")
+  template <- interact:::split_ifrac_for_forest(d, contrast_sep = "-")$subgroup
+  sg <- interact:::comparison_forest_subgroup_rows(d, "trial", "subgroup", "-")
+  out <- interact:::comparison_forest_order_to_template(sg, template, "trial", "subgroup")
   expect_equal(
     paste(out$trial, as.character(out$subgroup)),
     paste(template$trial, as.character(template$subgroup))
@@ -152,22 +152,22 @@ test_that("CAMS forest panels keep log-scale marginal estimates on the ratio sca
     ifrac2_Older = c(-0.3, 0.7, -0.55, 0.45)
   )
   fit <- cam(dat, engine = "bayesmeta", reference = "Younger")
-  panels <- interactmeta:::comparison_forest_build_fit_panels(
+  panels <- interact:::comparison_forest_build_fit_panels(
     fit,
     prob = 0.95,
     contrast_sep = "-",
-    max_ifrac_draws = 200L,
-    model_names = c("Pooled"),
+    max_ifrac_draws = NULL,
+    model_names = c("Overall"),
     include_shrinkage = FALSE,
-    include_pooled = TRUE,
+    include_overall = TRUE,
     include_prediction = FALSE,
-    include_overall = FALSE
+    include_combined = FALSE
   )
-  pooled_yi <- panels$resultsA$yi[panels$resultsA$row_kind == "pooled"]
+  pooled_yi <- panels$resultsA$yi[panels$resultsA$row_kind == "overall"]
   study_yi <- panels$resultsA$yi[panels$obs_row_index]
   expect_true(all(abs(pooled_yi) < 1))
   expect_true(all(abs(study_yi) < 1))
-  limits <- interactmeta:::resolve_forestplot_limits(
+  limits <- interact:::resolve_forestplot_limits(
     list(panels$resultsA, panels$resultsB),
     exponentiate = TRUE
   )
@@ -186,16 +186,16 @@ test_that("forestplot_render() keeps log-scale panels when exponentiate is TRUE"
     ifrac2_Older = c(-0.3, 0.7, -0.55, 0.45)
   )
   fit <- cam(dat, engine = "bayesmeta", reference = "Younger")
-  built <- interactmeta:::comparison_forest_build_fit_panels(
+  built <- interact:::comparison_forest_build_fit_panels(
     fit,
     prob = 0.95,
     contrast_sep = "-",
-    max_ifrac_draws = 200L,
-    model_names = c("Pooled"),
+    max_ifrac_draws = NULL,
+    model_names = c("Overall"),
     include_shrinkage = FALSE,
-    include_pooled = TRUE,
+    include_overall = TRUE,
     include_prediction = FALSE,
-    include_overall = FALSE
+    include_combined = FALSE
   )
   render_args <- c(
     built,
@@ -204,24 +204,24 @@ test_that("forestplot_render() keeps log-scale panels when exponentiate is TRUE"
       contrast_sep = "-"
     )
   )
-  fp_log <- do.call(interactmeta:::forestplot_render, c(render_args, list(exponentiate = FALSE)))
-  fp_ratio <- do.call(interactmeta:::forestplot_render, c(render_args, list(exponentiate = TRUE)))
+  fp_log <- do.call(interact:::forestplot_render, c(render_args, list(exponentiate = FALSE)))
+  fp_ratio <- do.call(interact:::forestplot_render, c(render_args, list(exponentiate = TRUE)))
   expect_equal(attr(fp_log, "panels")[[1]]$yi, attr(fp_ratio, "panels")[[1]]$yi)
-  limits <- interactmeta:::resolve_forestplot_limits(attr(fp_ratio, "panels"), exponentiate = TRUE)
+  limits <- interact:::resolve_forestplot_limits(attr(fp_ratio, "panels"), exponentiate = TRUE)
   expect_true(all(unlist(limits$xlim) > 0))
 })
 
 test_that("comparison_forest_overall_subgroup_block() orders subgroups", {
   summary <- data.frame(
     subgroup = factor(c("Older", "Younger"), levels = c("Younger", "Older")),
-    type = "Pooled",
+    type = "Overall",
     mean = c(0.2, 0.1),
     sd = c(0.05, 0.04),
     stringsAsFactors = FALSE
   )
-  block <- interactmeta:::comparison_forest_overall_subgroup_block(
+  block <- interact:::comparison_forest_overall_subgroup_block(
     summary,
-    "Pooled",
+    "Overall",
     "0.500",
     subgroup_order = c("Younger", "Older")
   )
@@ -236,7 +236,7 @@ test_that("comparison_forest_subgroup_order() matches within-trial subgroup orde
     subgroup = factor(c("Older", "Younger", "Older", "Younger"), levels = c("Younger", "Older")),
     reference = "Younger"
   )
-  expect_equal(interactmeta:::comparison_forest_subgroup_order(d, "-"), c("Younger", "Older"))
+  expect_equal(interact:::comparison_forest_subgroup_order(d, "-"), c("Younger", "Older"))
 })
 
 test_that("interleave_comparison_shrinkage_rows() doubles rows with shrinkage estimates", {
@@ -265,7 +265,7 @@ test_that("interleave_comparison_shrinkage_rows() doubles rows with shrinkage es
     interaction = NULL
   )
   ifrac_disp <- c("80.0%", "20.0%")
-  out <- interactmeta:::interleave_comparison_shrinkage_rows(
+  out <- interact:::interleave_comparison_shrinkage_rows(
     resultsA,
     resultsB,
     row_labels,
@@ -287,7 +287,7 @@ test_that("interleave_comparison_shrinkage_rows() doubles rows with shrinkage es
   expect_equal(out$subgroup_shrinkage_row_index, c(2L, 4L))
   expect_true(is.finite(out$resultsB$yi[5]))
   expect_true(is.na(out$resultsB$yi[2]))
-  styled <- interactmeta:::comparison_forest_apply_shrinkage_colours(
+  styled <- interact:::comparison_forest_apply_shrinkage_colours(
     out$resultsA,
     out$resultsB,
     out$row_labels,
@@ -295,9 +295,9 @@ test_that("interleave_comparison_shrinkage_rows() doubles rows with shrinkage es
     out$interaction_shrinkage_row_index,
     "Younger"
   )
-  expect_equal(styled$resultsA$fill[2], interactmeta:::comparison_forest_shrinkage_colour())
-  expect_equal(styled$resultsA$fill[4], interactmeta:::comparison_forest_shrinkage_colour())
-  expect_equal(styled$resultsA$colour[2], interactmeta:::comparison_forest_shrinkage_colour())
+  expect_equal(styled$resultsA$fill[2], interact:::comparison_forest_shrinkage_colour())
+  expect_equal(styled$resultsA$fill[4], interact:::comparison_forest_shrinkage_colour())
+  expect_equal(styled$resultsA$colour[2], interact:::comparison_forest_shrinkage_colour())
 })
 
 test_that("comparison_forest_shrinkage_data() returns fitted values", {
@@ -313,13 +313,13 @@ test_that("comparison_forest_shrinkage_data() returns fitted values", {
   )
   fit <- cam(dat, engine = "bayesmeta", reference = "Younger")
 
-  shrink <- interactmeta:::comparison_forest_shrinkage_data(fit, prob = 0.95)
+  shrink <- interact:::comparison_forest_shrinkage_data(fit, prob = 0.95)
   expect_equal(nrow(shrink$subgroup), 4L)
   expect_true(all(is.finite(shrink$subgroup$yi)))
 
   sg <- shrinkage(fit, type = "subgroups", summary = TRUE)$summary
   int <- shrinkage(fit, type = "interaction", summary = TRUE)$summary
-  ov <- shrinkage(fit, type = "overall", summary = TRUE)$summary
+  ov <- shrinkage(fit, type = "combined", summary = TRUE)$summary
   key_sg <- paste(shrink$subgroup$trial, shrink$subgroup$subgroup, sep = "\r")
   key_fit <- paste(sg$trial, sg$subgroup, sep = "\r")
   m <- match(key_sg, key_fit)
@@ -373,7 +373,7 @@ test_that("interleave_comparison_shrinkage_rows() adds interaction shrinkage onc
       stringsAsFactors = FALSE
     )
   )
-  out <- interactmeta:::interleave_comparison_shrinkage_rows(
+  out <- interact:::interleave_comparison_shrinkage_rows(
     resultsA,
     resultsB,
     row_labels,
@@ -413,64 +413,64 @@ test_that("interleave_comparison_shrinkage_rows() adds interaction shrinkage onc
 
 test_that("comparison_forest_resolve_model_names() respects include flags", {
   expect_equal(
-    interactmeta:::comparison_forest_resolve_model_names(
+    interact:::comparison_forest_resolve_model_names(
       model_names = NULL,
       include_shrinkage = TRUE,
-      include_pooled = FALSE,
+      include_overall = FALSE,
       include_prediction = TRUE
     ),
     c("Shrinkage", "Prediction")
   )
   expect_equal(
-    interactmeta:::comparison_forest_resolve_model_names(
+    interact:::comparison_forest_resolve_model_names(
       model_names = NULL,
       include_shrinkage = FALSE,
-      include_pooled = FALSE,
+      include_overall = FALSE,
       include_prediction = FALSE
     ),
     character(0)
   )
   expect_equal(
-    interactmeta:::comparison_forest_resolve_model_names(
-      model_names = c("Pooled"),
+    interact:::comparison_forest_resolve_model_names(
+      model_names = c("Overall"),
       include_shrinkage = FALSE,
-      include_pooled = TRUE,
+      include_overall = TRUE,
       include_prediction = FALSE
     ),
-    "Pooled"
+    "Overall"
   )
   expect_equal(
-    interactmeta:::comparison_forest_resolve_model_names(
-      model_names = c("Shrinkage", "Pooled", "Prediction"),
+    interact:::comparison_forest_resolve_model_names(
+      model_names = c("Shrinkage", "Overall", "Prediction"),
       include_shrinkage = FALSE,
-      include_pooled = TRUE,
+      include_overall = TRUE,
       include_prediction = TRUE
     ),
-    c("Pooled", "Prediction")
+    c("Overall", "Prediction")
   )
   expect_equal(
-    interactmeta:::comparison_forest_resolve_model_names(
-      model_names = c("Pooled", "Prediction"),
+    interact:::comparison_forest_resolve_model_names(
+      model_names = c("Overall", "Prediction"),
       include_shrinkage = TRUE,
-      include_pooled = TRUE,
+      include_overall = TRUE,
       include_prediction = TRUE
     ),
-    c("Shrinkage", "Pooled", "Prediction")
+    c("Shrinkage", "Overall", "Prediction")
   )
   expect_equal(
-    interactmeta:::comparison_forest_resolve_model_names(
-      model_names = c("Shrinkage", "Pooled"),
+    interact:::comparison_forest_resolve_model_names(
+      model_names = c("Shrinkage", "Overall"),
       include_shrinkage = TRUE,
-      include_pooled = TRUE,
+      include_overall = TRUE,
       include_prediction = TRUE
     ),
-    c("Shrinkage", "Pooled", "Prediction")
+    c("Shrinkage", "Overall", "Prediction")
   )
   expect_equal(
-    interactmeta:::comparison_forest_resolve_model_names(
+    interact:::comparison_forest_resolve_model_names(
       model_names = NULL,
       include_shrinkage = FALSE,
-      include_pooled = FALSE,
+      include_overall = FALSE,
       include_prediction = TRUE
     ),
     "Prediction"
@@ -489,12 +489,12 @@ test_that("comparison_forest_build_fit_panels() includes shrinkage when include_
     ifrac2_Older = c(-0.3, 0.7, -0.55, 0.45)
   )
   fit <- cam(dat, engine = "bayesmeta", reference = "Younger")
-  panels <- interactmeta:::comparison_forest_build_fit_panels(
+  panels <- interact:::comparison_forest_build_fit_panels(
     fit,
     prob = 0.95,
     contrast_sep = "-",
-    max_ifrac_draws = 200L,
-    model_names = c("Pooled", "Prediction"),
+    max_ifrac_draws = NULL,
+    model_names = c("Overall", "Prediction"),
     include_shrinkage = TRUE,
     include_prediction = TRUE,
   )
@@ -514,21 +514,21 @@ test_that("comparison_forest_build_fit_panels() omits shrinkage when include_shr
     ifrac2_Older = c(-0.3, 0.7, -0.55, 0.45)
   )
   fit <- cam(dat, engine = "bayesmeta", reference = "Younger")
-  panels <- interactmeta:::comparison_forest_build_fit_panels(
+  panels <- interact:::comparison_forest_build_fit_panels(
     fit,
     prob = 0.95,
     contrast_sep = "-",
-    max_ifrac_draws = 200L,
-    model_names = c("Pooled", "Prediction"),
+    max_ifrac_draws = NULL,
+    model_names = c("Overall", "Prediction"),
     include_shrinkage = FALSE,
     include_prediction = TRUE,
   )
   expect_false(any(panels$resultsA$row_kind == "shrinkage", na.rm = TRUE))
   expect_equal(nrow(panels$resultsA), panels$n_study + 6L)
-  expect_true(any(panels$resultsA$row_kind == "overall", na.rm = TRUE))
+  expect_true(any(panels$resultsA$row_kind == "combined", na.rm = TRUE))
 })
 
-test_that("comparison_forest_build_fit_panels() omits overall when include_overall is FALSE", {
+test_that("comparison_forest_build_fit_panels() omits combined rows when include_combined is FALSE", {
   skip_if_not_installed("bayesmeta")
   dat <- data.frame(
     trial = rep(c("A", "B"), each = 2),
@@ -540,16 +540,16 @@ test_that("comparison_forest_build_fit_panels() omits overall when include_overa
     ifrac2_Older = c(-0.3, 0.7, -0.55, 0.45)
   )
   fit <- cam(dat, engine = "bayesmeta", reference = "Younger")
-  panels <- interactmeta:::comparison_forest_build_fit_panels(
+  panels <- interact:::comparison_forest_build_fit_panels(
     fit,
     prob = 0.95,
     contrast_sep = "-",
-    max_ifrac_draws = 200L,
-    model_names = c("Pooled", "Prediction"),
+    max_ifrac_draws = NULL,
+    model_names = c("Overall", "Prediction"),
     include_shrinkage = FALSE,
-    include_overall = FALSE,
+    include_combined = FALSE,
   )
-  expect_false(any(panels$resultsA$row_kind == "overall", na.rm = TRUE))
+  expect_false(any(panels$resultsA$row_kind == "combined", na.rm = TRUE))
   expect_equal(nrow(panels$resultsA), panels$n_study + 4L)
 })
 
@@ -566,35 +566,35 @@ test_that("comparison_forest_build_fit_panels() keeps NA placeholders when inclu
     n = 10
   )
   fit <- cam(dat, engine = "bayesmeta", reference = "Younger")
-  full <- interactmeta:::comparison_forest_build_fit_panels(
+  full <- interact:::comparison_forest_build_fit_panels(
     fit,
     prob = 0.95,
     contrast_sep = "-",
-    max_ifrac_draws = 200L,
-    model_names = c("Shrinkage", "Pooled", "Prediction"),
+    max_ifrac_draws = NULL,
+    model_names = c("Shrinkage", "Overall", "Prediction"),
     include_shrinkage = TRUE,
-    include_pooled = TRUE,
+    include_overall = TRUE,
     include_prediction = TRUE,
     n_var = "n"
   )
-  panels <- interactmeta:::comparison_forest_build_fit_panels(
+  panels <- interact:::comparison_forest_build_fit_panels(
     fit,
     prob = 0.95,
     contrast_sep = "-",
-    max_ifrac_draws = 200L,
-    model_names = c("Shrinkage", "Pooled"),
+    max_ifrac_draws = NULL,
+    model_names = c("Shrinkage", "Overall"),
     include_shrinkage = TRUE,
-    include_pooled = TRUE,
+    include_overall = TRUE,
     include_prediction = FALSE,
     n_var = "n"
   )
   expect_equal(nrow(panels$resultsA), nrow(full$resultsA))
   expect_true(any(panels$resultsA$row_kind == "prediction", na.rm = TRUE))
   expect_true(all(is.na(panels$resultsA$yi[panels$resultsA$row_kind == "prediction"])))
-  expect_true(any(is.finite(panels$resultsA$yi[panels$resultsA$row_kind == "pooled"])))
+  expect_true(any(is.finite(panels$resultsA$yi[panels$resultsA$row_kind == "overall"])))
 })
 
-test_that("comparison_forest_build_fit_panels() keeps NA placeholders when include_pooled is FALSE", {
+test_that("comparison_forest_build_fit_panels() keeps NA placeholders when include_overall is FALSE", {
   skip_if_not_installed("bayesmeta")
   dat <- data.frame(
     trial = rep(c("A", "B"), each = 2),
@@ -607,19 +607,19 @@ test_that("comparison_forest_build_fit_panels() keeps NA placeholders when inclu
     n = 10
   )
   fit <- cam(dat, engine = "bayesmeta", reference = "Younger")
-  panels <- interactmeta:::comparison_forest_build_fit_panels(
+  panels <- interact:::comparison_forest_build_fit_panels(
     fit,
     prob = 0.95,
     contrast_sep = "-",
-    max_ifrac_draws = 200L,
-    model_names = c("Shrinkage", "Pooled", "Prediction"),
+    max_ifrac_draws = NULL,
+    model_names = c("Shrinkage", "Overall", "Prediction"),
     include_shrinkage = TRUE,
-    include_pooled = FALSE,
+    include_overall = FALSE,
     include_prediction = TRUE,
     n_var = "n"
   )
-  expect_true(any(panels$resultsA$row_kind == "pooled", na.rm = TRUE))
-  expect_true(all(is.na(panels$resultsA$yi[panels$resultsA$row_kind == "pooled"])))
+  expect_true(any(panels$resultsA$row_kind == "overall", na.rm = TRUE))
+  expect_true(all(is.na(panels$resultsA$yi[panels$resultsA$row_kind == "overall"])))
   expect_true(any(panels$resultsA$row_kind == "prediction", na.rm = TRUE))
   expect_true(any(panels$resultsA$row_kind == "shrinkage", na.rm = TRUE))
   pred_ix <- which(panels$resultsA$row_kind == "prediction")
@@ -641,14 +641,14 @@ test_that("comparison_forest_build_fit_panels() includes prediction when include
     ifrac2_Older = c(-0.3, 0.7, -0.55, 0.45)
   )
   fit <- cam(dat, engine = "bayesmeta", reference = "Younger")
-  panels <- interactmeta:::comparison_forest_build_fit_panels(
+  panels <- interact:::comparison_forest_build_fit_panels(
     fit,
     prob = 0.95,
     contrast_sep = "-",
-    max_ifrac_draws = 200L,
-    model_names = c("Shrinkage", "Pooled"),
+    max_ifrac_draws = NULL,
+    model_names = c("Shrinkage", "Overall"),
     include_shrinkage = TRUE,
-    include_pooled = TRUE,
+    include_overall = TRUE,
     include_prediction = TRUE,
   )
   expect_true(any(panels$resultsA$row_kind == "prediction", na.rm = TRUE))
@@ -672,21 +672,21 @@ test_that("comparison_forest_build_fit_panels() uses diamonds and grey shrinkage
     ifrac2_Older = c(-0.3, 0.7, -0.55, 0.45)
   )
   fit <- cam(dat, engine = "bayesmeta", reference = "Younger")
-  panels <- interactmeta:::comparison_forest_build_fit_panels(
+  panels <- interact:::comparison_forest_build_fit_panels(
     fit,
     prob = 0.95,
     contrast_sep = "-",
-    max_ifrac_draws = 200L,
+    max_ifrac_draws = NULL,
     model_names = NULL,
     include_shrinkage = TRUE,
-    include_pooled = TRUE,
+    include_overall = TRUE,
     include_prediction = TRUE,
   )
   expect_true(all(panels$resultsA$row_kind[panels$obs_row_index] == "study"))
   shr_ix <- which(panels$resultsA$row_kind == "shrinkage")
   expect_equal(length(shr_ix), panels$n_study + 2L)
   expect_true(all(nzchar(as.character(panels$row_labels$label[shr_ix]))))
-  expect_false(any(interactmeta:::comparison_forest_is_blank_row_label(
+  expect_false(any(interact:::comparison_forest_is_blank_row_label(
     panels$row_labels$label[shr_ix]
   )))
   int_ix <- which(panels$resultsB$row_kind == "shrinkage" & !is.na(panels$resultsB$shape))
@@ -701,53 +701,53 @@ test_that("comparison_forest_build_fit_panels() uses diamonds and grey shrinkage
   expect_true(all(is.finite(panels$resultsB$ci.lb[int_ix])))
   expect_true(all(is.finite(panels$resultsB$ci.ub[int_ix])))
   expect_true(all(
-    panels$resultsA$fill[sg_shr_ix] == interactmeta:::comparison_forest_shrinkage_colour()
+    panels$resultsA$fill[sg_shr_ix] == interact:::comparison_forest_shrinkage_colour()
   ))
-  pooled_ix <- which(panels$resultsA$row_kind == "pooled")
-  pred_ix <- which(panels$resultsA$row_kind == "prediction")
   overall_ix <- which(panels$resultsA$row_kind == "overall")
-  expect_true(length(pooled_ix) >= 2L)
+  pred_ix <- which(panels$resultsA$row_kind == "prediction")
+  combined_ix <- which(panels$resultsA$row_kind == "combined")
+  expect_true(length(overall_ix) >= 2L)
   expect_equal(length(pred_ix), 2L)
-  expect_equal(length(overall_ix), 2L)
-  expect_true(all(panels$resultsA$shape[overall_ix] == 18L))
-  expect_true(all(is.na(panels$resultsB$yi[overall_ix])))
-  marg_ix <- c(pooled_ix, pred_ix, overall_ix)
+  expect_equal(length(combined_ix), 2L)
+  expect_true(all(panels$resultsA$shape[combined_ix] == 18L))
+  expect_true(all(is.na(panels$resultsB$yi[combined_ix])))
+  marg_ix <- c(overall_ix, pred_ix, combined_ix)
   expect_equal(
     unique(panels$row_labels$subheading[marg_ix]),
-    c("Younger", "Older", "Overall")
+    c("Younger", "Older", "Combined")
   )
-  expect_equal(panels$row_labels$subheading[overall_ix], rep("Overall", 2L))
-  expect_equal(panels$row_labels$colour_label[pooled_ix], c("Younger", "Older"))
+  expect_equal(panels$row_labels$subheading[combined_ix], rep("Combined", 2L))
+  expect_equal(panels$row_labels$colour_label[overall_ix], c("Younger", "Older"))
   pred_sg_ix <- pred_ix[is.finite(panels$resultsA$yi[pred_ix])]
   expect_equal(panels$row_labels$colour_label[pred_sg_ix], c("Younger", "Older"))
   # Summary diamonds: blue for all pooled / prediction / overall.
-  expect_true(all(panels$resultsA$shape[pooled_ix] == 18L))
+  expect_true(all(panels$resultsA$shape[overall_ix] == 18L))
   pred_int_ix <- pred_ix[is.finite(panels$resultsB$yi[pred_ix])]
   expect_true(all(panels$resultsA$shape[pred_sg_ix] == 18L))
   expect_true(all(panels$resultsB$shape[pred_int_ix] == 18L))
-  pooled_cols <- interactmeta:::forestplot_summary_diamond_colours(
-    panels$row_labels$colour_label[pooled_ix],
+  pooled_cols <- interact:::forestplot_summary_diamond_colours(
+    panels$row_labels$colour_label[overall_ix],
     reference = "Younger"
   )
-  expect_equal(panels$resultsA$fill[pooled_ix], pooled_cols)
-  expect_equal(panels$resultsA$colour[pooled_ix], pooled_cols)
-  pred_cols <- interactmeta:::forestplot_summary_diamond_colours(
+  expect_equal(panels$resultsA$fill[overall_ix], pooled_cols)
+  expect_equal(panels$resultsA$colour[overall_ix], pooled_cols)
+  pred_cols <- interact:::forestplot_summary_diamond_colours(
     panels$row_labels$colour_label[pred_sg_ix],
     reference = "Younger"
   )
   expect_equal(panels$resultsA$fill[pred_sg_ix], pred_cols)
   expect_equal(panels$resultsA$colour[pred_sg_ix], pred_cols)
   expect_true(all(
-    panels$resultsA$fill[overall_ix] == interactmeta:::forestplot_overall_summary_colour()
+    panels$resultsA$fill[combined_ix] == interact:::forestplot_overall_summary_colour()
   ))
-  pooled_int_ix <- pooled_ix[is.finite(panels$resultsB$yi[pooled_ix])]
-  expect_true(length(pooled_int_ix) >= 1L)
+  overall_int_ix <- overall_ix[is.finite(panels$resultsB$yi[overall_ix])]
+  expect_true(length(overall_int_ix) >= 1L)
   expect_equal(unique(panels$row_labels$label[pred_ix]), "Prediction")
-  expect_equal(unique(panels$row_labels$label[pooled_ix]), "Pooled")
+  expect_equal(unique(panels$row_labels$label[overall_ix]), "Overall")
   obs_ix <- panels$obs_row_index
   expect_true(all(panels$resultsA$point_scale[obs_ix] == 1))
-  expect_true(all(panels$resultsA$point_scale[shr_ix] == interactmeta:::comparison_forest_shrinkage_point_scale()))
-  expect_true(all(panels$resultsB$point_scale[int_ix] == interactmeta:::comparison_forest_shrinkage_point_scale()))
+  expect_true(all(panels$resultsA$point_scale[shr_ix] == interact:::comparison_forest_shrinkage_point_scale()))
+  expect_true(all(panels$resultsB$point_scale[int_ix] == interact:::comparison_forest_shrinkage_point_scale()))
 })
 
 test_that("marginal rows keep subgroup grouping labels for the forest renderer", {
@@ -766,17 +766,17 @@ test_that("marginal rows keep subgroup grouping labels for the forest renderer",
     dat,
     engine = "bayesmeta",
     reference = "Younger"))
-  built <- interactmeta:::comparison_forest_build_fit_panels(
+  built <- interact:::comparison_forest_build_fit_panels(
     fit,
     prob = 0.95,
     contrast_sep = "-",
-    max_ifrac_draws = 200L,
+    max_ifrac_draws = NULL,
     model_names = NULL,
     include_shrinkage = FALSE,
-    include_pooled = TRUE,
+    include_overall = TRUE,
     include_prediction = TRUE
   )
-  marg_ix <- which(built$resultsA$row_kind %in% c("pooled", "prediction", "overall"))
+  marg_ix <- which(built$resultsA$row_kind %in% c("overall", "prediction", "combined"))
   expect_true(length(marg_ix) >= 4L)
   older_ix <- marg_ix[built$row_labels$subheading[marg_ix] == "Older"]
   expect_true(length(older_ix) >= 1L)
@@ -823,8 +823,8 @@ test_that("CAMS forest shrinkage fill is consistent within every trial after ren
   shr_ix <- which(ra$row_kind == "shrinkage" & !is.na(ra$shape))
   expect_true(length(shr_ix) >= 6L)
   expect_false(any(ra$fill[shr_ix] %in% c("white", NA_character_)))
-  expect_true(all(ra$fill[shr_ix] == interactmeta:::comparison_forest_shrinkage_colour()))
-  expect_true(all(ra$colour[shr_ix] == interactmeta:::comparison_forest_shrinkage_colour()))
+  expect_true(all(ra$fill[shr_ix] == interact:::comparison_forest_shrinkage_colour()))
+  expect_true(all(ra$colour[shr_ix] == interact:::comparison_forest_shrinkage_colour()))
 })
 
 test_that("forest markers are black with gray45 shrinkage", {
@@ -850,38 +850,38 @@ test_that("forest markers are black with gray45 shrinkage", {
     include_shrinkage = TRUE
   )
   ra <- attr(fp, "panels")[[1]]
-  pooled_ix <- which(ra$row_kind == "pooled")
+  overall_ix <- which(ra$row_kind == "overall")
   pred_ix <- which(ra$row_kind == "prediction" & is.finite(ra$yi))
   study_ix <- which(ra$row_kind == "study")
   shr_ix <- which(ra$row_kind == "shrinkage" & !is.na(ra$shape))
-  expect_true(length(pooled_ix) >= 2L)
+  expect_true(length(overall_ix) >= 2L)
   expect_true(length(pred_ix) >= 2L)
   rl <- fp$specs$row_labels
   expect_true(all(
-    ra$fill[pooled_ix] == interactmeta:::forestplot_summary_diamond_colours(
-      rl$heading[pooled_ix],
+    ra$fill[overall_ix] == interact:::forestplot_summary_diamond_colours(
+      rl$heading[overall_ix],
       reference = "Younger"
     )
   ))
   expect_true(all(
-    ra$fill[pred_ix] == interactmeta:::forestplot_summary_diamond_colours(
+    ra$fill[pred_ix] == interact:::forestplot_summary_diamond_colours(
       rl$heading[pred_ix],
       reference = "Younger"
     )
   ))
-  expect_true(all(ra$fill[study_ix] %in% c(interactmeta:::comparison_forest_marker_colour(), "black", "#000000")))
+  expect_true(all(ra$fill[study_ix] %in% c(interact:::comparison_forest_marker_colour(), "black", "#000000")))
   expect_true(length(shr_ix) >= 1L)
-  expect_true(all(ra$fill[shr_ix] == interactmeta:::comparison_forest_shrinkage_colour()))
+  expect_true(all(ra$fill[shr_ix] == interact:::comparison_forest_shrinkage_colour()))
 
   fp_int <- forestplot(fit, type = "interaction", include_shrinkage = TRUE)
   ra_int <- attr(fp_int, "panels")[[1]]
   rl_int <- fp_int$specs$row_labels
   int_ix <- which(
-    ra_int$row_kind %in% c("pooled", "prediction") &
+    ra_int$row_kind %in% c("overall", "prediction") &
       rl_int$heading == "Interaction"
   )
   expect_true(length(int_ix) >= 2L)
-  expect_true(all(ra_int$fill[int_ix] == interactmeta:::forestplot_interaction_summary_colour()))
+  expect_true(all(ra_int$fill[int_ix] == interact:::forestplot_interaction_summary_colour()))
 })
 
 test_that("include_shrinkage with group=subgroup uses alphabetical trial pairs", {
@@ -991,7 +991,7 @@ test_that("forestplot(fit) passes weight with shrinkage and exponentiate", {
   expect_equal(render$include_shrinkage, TRUE)
   panels <- attr(fp, "panels")
   expect_true(any(panels[[1]]$row_kind == "shrinkage"))
-  expect_true(any(panels[[1]]$row_kind == "pooled"))
+  expect_true(any(panels[[1]]$row_kind == "overall"))
   expect_match(attr(fp, "footnote"), "Information fraction \\(\u03c0\\)")
 
   fp_overall <- forestplot(
@@ -1002,11 +1002,11 @@ test_that("forestplot(fit) passes weight with shrinkage and exponentiate", {
   )
   expect_match(attr(fp_overall, "footnote"), "Information fraction \\(\u03c0\\)")
 
-  # Pooled / Prediction / Overall diamonds use ifrac(..., ifrac =); panels
+  # Overall / Prediction / Combined diamonds use ifrac(..., ifrac =); panels
   # should differ when overall- vs interaction-weighted ω diverge.
   panels_int <- attr(fp, "panels")[[1]]
   panels_ov <- attr(fp_overall, "panels")[[1]]
-  ix_sum <- panels_int$row_kind %in% c("pooled", "prediction", "overall")
+  ix_sum <- panels_int$row_kind %in% c("overall", "prediction", "combined")
   expect_false(isTRUE(all.equal(
     panels_int$yi[ix_sum],
     panels_ov$yi[ix_sum],
@@ -1016,11 +1016,11 @@ test_that("forestplot(fit) passes weight with shrinkage and exponentiate", {
 
 test_that("forestplot IF annotation prefix follows weight", {
   expect_equal(
-    interactmeta:::forestplot_ifrac_annotation_prefix("overall"),
+    interact:::forestplot_ifrac_annotation_prefix("overall"),
     "Information fraction (\u03c0)"
   )
   expect_equal(
-    interactmeta:::forestplot_ifrac_annotation_prefix("interaction"),
+    interact:::forestplot_ifrac_annotation_prefix("interaction"),
     "Information fraction (\u03c0)"
   )
 })
@@ -1043,9 +1043,9 @@ test_that("forestplot(fit) adds heterogeneity and overall-IF annotations", {
   fp <- forestplot(
     fit,
         include_shrinkage = FALSE,
-    include_pooled = FALSE,
+    include_overall = FALSE,
     include_prediction = FALSE,
-    include_overall = FALSE
+    include_combined = FALSE
   )
   foot <- attr(fp, "footnote")
   expect_true(is.character(foot) && nzchar(foot))
@@ -1053,13 +1053,13 @@ test_that("forestplot(fit) adds heterogeneity and overall-IF annotations", {
   expect_false(grepl("% interval", foot, fixed = TRUE))
   expect_match(foot, "\\([0-9.]+, [0-9.]+\\)")
   expect_match(foot, "Heterogeneity (\u03c4)", fixed = TRUE)
-  expect_false(grepl("Overall IF", foot, fixed = TRUE))
-  expect_false(grepl("Overall heterogeneity", foot, fixed = TRUE))
+  expect_false(grepl("Combined IF", foot, fixed = TRUE))
+  expect_false(grepl("Combined heterogeneity", foot, fixed = TRUE))
   expect_match(foot, "Interaction heterogeneity (\u03c4_\u03b3):", fixed = TRUE)
   expect_false(grepl("Older - Younger", foot, fixed = TRUE))
   expect_true("Older" %in% names(attr(fp, "annotations")$ifrac))
   expect_true("Older" %in% names(attr(fp, "annotations")$subgroup_ifrac))
-  expect_true("overall" %in% names(attr(fp, "annotations")$heterogeneity))
+  expect_true("combined" %in% names(attr(fp, "annotations")$heterogeneity))
   expect_true("interaction" %in% names(attr(fp, "annotations")$heterogeneity))
   expect_equal(length(attr(fp, "annotations")$lines), 0L)
 
@@ -1067,9 +1067,9 @@ test_that("forestplot(fit) adds heterogeneity and overall-IF annotations", {
     fit,
         show_annotations = FALSE,
     include_shrinkage = FALSE,
-    include_pooled = FALSE,
+    include_overall = FALSE,
     include_prediction = FALSE,
-    include_overall = FALSE
+    include_combined = FALSE
   )
   expect_null(attr(fp_off, "footnote"))
 })
@@ -1103,9 +1103,9 @@ test_that("all forestplot shrinkage rows match shrinkage() from the fit", {
 
   sg_me <- shrinkage(fit, type = "subgroups", summary = TRUE)$summary
   int_me <- shrinkage(fit, type = "interaction", summary = TRUE)$summary
-  ov_me <- shrinkage(fit, type = "overall", summary = TRUE)$summary
+  ov_me <- shrinkage(fit, type = "combined", summary = TRUE)$summary
 
-  shr <- interactmeta:::comparison_forest_shrinkage_data(
+  shr <- interact:::comparison_forest_shrinkage_data(
     fit,
     prob = 0.95,
     max_draws = NULL,
@@ -1132,7 +1132,7 @@ test_that("all forestplot shrinkage rows match shrinkage() from the fit", {
     ra$row_kind == "shrinkage" &
       !is.na(ra$shape) &
       is.finite(ra$yi) &
-      !interactmeta:::forestplot_heading_is_overall(rl$heading)
+      !interact:::forestplot_heading_is_combined(rl$heading)
   )
   expect_equal(length(ix_sg), 4L)
   for (i in ix_sg) {
@@ -1158,13 +1158,13 @@ test_that("all forestplot shrinkage rows match shrinkage() from the fit", {
     expect_equal(rb$vi[[i]], pmax(int_me$sd[[hit]]^2, 1e-12), tolerance = 1e-8)
   }
 
-  # type = "overall"
-  fp_ov <- forestplot(fit, type = "overall", include_shrinkage = TRUE)
+  # type = "combined"
+  fp_ov <- forestplot(fit, type = "combined", include_shrinkage = TRUE)
   ra_ov <- attr(fp_ov, "panels")[[1]]
   rl_ov <- forestplot_unwrap_row_labels(fp_ov$specs$row_labels)
   ix_ov <- which(
     ra_ov$row_kind == "shrinkage" &
-      interactmeta:::forestplot_heading_is_overall(rl_ov$heading)
+      interact:::forestplot_heading_is_combined(rl_ov$heading)
   )
   expect_equal(length(ix_ov), 2L)
   for (i in ix_ov) {
@@ -1188,7 +1188,7 @@ test_that("all forestplot shrinkage rows match shrinkage() from the fit", {
     ra_tr$row_kind == "shrinkage" &
       !is.na(ra_tr$shape) &
       is.finite(ra_tr$yi) &
-      !interactmeta:::forestplot_heading_is_overall(rl_tr$heading)
+      !interact:::forestplot_heading_is_combined(rl_tr$heading)
   )
   expect_equal(length(ix_tr), 4L)
   for (i in ix_tr) {

@@ -31,7 +31,7 @@ ifrac(x, ...)
   contrast = "all",
   contrast_sep = "-",
   reference = NULL,
-  include_overall = FALSE,
+  include_combined = FALSE,
   include_interaction = FALSE,
   yi = NULL,
   ...
@@ -53,7 +53,7 @@ ifrac(x, ...)
   prob = 0.95,
   big_var = 100^2,
   contrast = "all",
-  include_overall = FALSE,
+  include_combined = FALSE,
   include_interaction = FALSE,
   yi = NULL,
   ...
@@ -73,20 +73,30 @@ ifrac(x, ...)
 \method{ifrac}{interactmeta_swada}(x, ...)
 }
 \arguments{
-\item{vi}{Numeric vector. Variance of the subgroup estimate. Not used when \code{yi}
-is a data frame or \code{escalc} object.}
+\item{x}{Effect estimates. A numeric vector, or a data frame or
+\href{https://wviechtb.github.io/metafor/reference/escalc.html}{\code{escalc}} object
+with columns \code{yi} and \code{vi}. If omitted, \code{yi} is used.}
 
-\item{trial}{Trial identifier. A vector (same length as \code{yi}), or when \code{yi} is
-a data frame the name of the trial column (default \code{"trial"}).}
+\item{...}{Further arguments passed to methods.}
 
-\item{subgroup}{Subgroup identifier. A vector (same length as \code{yi}), or when
-\code{yi} is a data frame the name of the subgroup column (default \code{"subgroup"}).
-\code{modifier} is the column-name alias and overrides \code{subgroup} when set.}
+\item{vi}{Numeric vector. Variance of the subgroup estimate. Not used when the
+estimates are a data frame or \code{escalc} object.}
 
-\item{big_var}{Positive number. Variance used to impute missing
-\code{trial}-by-\code{subgroup} combinations when trials have an uneven set of
-subgroups, and to replace \code{escalc} placeholder rows with \code{yi = 0} and
-\code{vi = 8}. Defaults to \code{100^2}.}
+\item{trial}{Trial identifier. A vector (same length as the estimates), or when
+the estimates are a data frame the name of the trial column (default \code{"trial"}).}
+
+\item{modifier}{Column name for the subgroup levels when the estimates are a
+data frame. A single string, supplied by name. Overrides \code{subgroup}. This is
+not the vector of subgroup labels; pass that vector in \code{subgroup}.}
+
+\item{subgroup}{Subgroup identifier. A vector (same length as the estimates), or
+when the estimates are a data frame the name of the subgroup column (default
+\code{"subgroup"}).}
+
+\item{big_var}{Positive number. Variance used to impute a missing
+\code{trial}-by-\code{subgroup} cell (\code{yi = 0}, \code{vi = big_var}). For an \code{escalc}
+object, a row that already has the placeholder \code{yi = 0} and \code{vi = 8} keeps
+that estimate, and \code{vi} is replaced by \code{big_var}. Defaults to \code{100^2}.}
 
 \item{contrast}{Either \code{NULL} (subgroup rows only, wide \verb{ifrac_<subgroup>}
 columns), a character vector of length 2 giving the two subgroup labels to
@@ -109,9 +119,9 @@ When supplied, extra rows per trial are added with \code{subgroup} labels
 \code{yi1 - yi2} and \code{vi1 + vi2}. Missing \code{trial}-by-\code{subgroup} combinations use
 the imputed \code{yi=0} and \code{vi=big_var}.}
 
-\item{include_overall}{Logical. If \code{FALSE} (default), return subgroup rows only.
-If \code{TRUE}, append one precision-weighted overall row per trial with
-\code{subgroup = "Overall"}.}
+\item{include_combined}{Logical. If \code{FALSE} (default), return subgroup rows only.
+If \code{TRUE}, append one precision-weighted combined row per trial with
+\code{subgroup = "Combined"}.}
 
 \item{include_interaction}{Logical. If \code{FALSE} (default), return subgroup rows
 only while still using \code{contrast} to define the reference-centered
@@ -133,10 +143,9 @@ pooling is a plug-in at the fitted \eqn{\tau} or \eqn{\tau_\gamma}.
 See argument details below and examples.}
 
 \item{yi}{Either a numeric vector of subgroup effect estimates, or a data frame /
-\href{https://wviechtb.github.io/metafor/reference/escalc.html}{\code{escalc}} object
-containing columns \code{yi} and \code{vi}. When a data frame is supplied, \code{vi} must
-not be passed separately; \code{trial} and \code{subgroup} name columns (defaults
-\code{"trial"} and \code{"subgroup"}).}
+\code{escalc} object containing columns \code{yi} and \code{vi}. When a data frame is
+supplied as \code{x} or \code{yi}, \code{vi} must not be passed separately; \code{trial} and
+\code{subgroup} name columns (defaults \code{"trial"} and \code{"subgroup"}).}
 
 \item{ifrac}{For pooling only: \code{"interaction"} (default) or \code{"overall"}.}
 
@@ -172,15 +181,15 @@ convention, the reference subgroup is the label \emph{after} \code{contrast_sep}
 in a label like \code{"g2-g1"}, \code{"g1"} is the reference subgroup.
 
 By default, components are the observed subgroup labels. When
-\code{include_overall = TRUE}, one precision-weighted overall row per trial is
-appended with \code{subgroup = "Overall"} (contribution-weighted mean $m_j$ on the
+\code{include_combined = TRUE}, one precision-weighted combined row per trial is
+appended with \code{subgroup = "Combined"} (contribution-weighted mean $m_j$ on the
 chosen scale). When \code{include_interaction = TRUE}, contrast rows are stacked
 below subgroup rows with \code{subgroup} labels like \code{"g2-g1"} (reference after
 \code{contrast_sep}), using \code{yi} and \code{vi} for the contrast estimate and variance.
 Wide columns \verb{ifrac_<non-reference>} are filled
 on every row (no \code{NA}), plus \code{precision}, and a \code{reference} column (last
 column). For each non-reference subgroup \code{k}, \code{ifrac_k} is the trial-level
-information fraction. On overall
+information fraction. On combined
 and contrast rows, \code{precision} is the sum of subgroup precisions in the trial
 (or in that comparison for a single contrast).
 }
@@ -191,26 +200,36 @@ trial <- c("A", "A", "B", "B")
 subgroup <- c("g1", "g2", "g1", "g2")
 
 # Default: all non-reference vs reference contrasts (reference = first
-# factor level, or first sorted label for character subgroups)
-ifrac(yi, vi, trial, subgroup)
+# factor level, or first sorted label for character subgroups).
+# Name `subgroup`: the fourth positional argument is `modifier`.
+ifrac(yi = yi, vi = vi, trial = trial, subgroup = subgroup)
 
 # Subgroup rows only, wide ifrac_<subgroup> for every label
-ifrac(yi, vi, trial, subgroup, contrast = NULL)
+ifrac(yi = yi, vi = vi, trial = trial, subgroup = subgroup, contrast = NULL)
 
 # Single contrast (g1 - g2, reference g2)
-ifrac(yi, vi, trial, subgroup, contrast = c("g1", "g2"))
+ifrac(
+  yi = yi, vi = vi, trial = trial, subgroup = subgroup,
+  contrast = c("g1", "g2")
+)
 
 # Specify reference subgroup explicitly
-ifrac(yi, vi, trial, subgroup, reference = "g1")
+ifrac(yi = yi, vi = vi, trial = trial, subgroup = subgroup, reference = "g1")
 
-# Append overall rows (one per trial)
-ifrac(yi, vi, trial, subgroup, include_overall = TRUE)
+# Append combined rows (one per trial)
+ifrac(
+  yi = yi, vi = vi, trial = trial, subgroup = subgroup,
+  include_combined = TRUE
+)
 
 # Append interaction rows at the bottom
-ifrac(yi, vi, trial, subgroup, include_interaction = TRUE)
+ifrac(
+  yi = yi, vi = vi, trial = trial, subgroup = subgroup,
+  include_interaction = TRUE
+)
 
 \dontrun{
-library(interactmeta)
+library(interact)
 e <- escalc(measure = "IRR", yi = edss$yi, vi = edss$vi, data = edss)
 d <- ifrac(e, reference = "Lower", include_interaction = TRUE)
 fit <- cam(d, reference = "Lower")

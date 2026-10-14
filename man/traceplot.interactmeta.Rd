@@ -6,7 +6,7 @@
 \usage{
 \method{traceplot}{interactmeta}(
   x,
-  type = c("subgroups", "interaction", "overall", "combined"),
+  type = c("subgroups", "interaction", "combined"),
   ylab = NULL,
   xlab = NULL,
   tau.prior = "sqrt",
@@ -18,17 +18,17 @@
 \item{x}{A Bayesian \code{\link{interactmeta}} from \code{\link[=cam]{cam()}}
 (\code{engine = "bayesmeta"}).}
 
-\item{type}{\code{"interaction"} or \code{"overall"} (also \code{"combined"}, an alias of
-overall). \code{"subgroups"} is rejected: Bayesian CAMS does not store
+\item{type}{\code{"interaction"} or \code{"combined"}. \code{"subgroups"} is rejected:
+Bayesian CAMS does not store
 separate per-subgroup meta-analyses.}
 
 \item{ylab}{y-axis label passed to \code{\link[bayesmeta:traceplot]{bayesmeta::traceplot()}}. Default is
 \code{"Interaction"} for \code{type = "interaction"} and \code{"Effect"} for
-\code{"overall"} / \code{"combined"}.}
+\code{"combined"}.}
 
 \item{xlab}{x-axis label used in place of bayesmeta's hardcoded
 \code{"heterogeneity τ"}. Default is \code{"heterogeneity τ_γ"} for
-interaction and \code{"heterogeneity τ"} for overall / combined.}
+interaction and \code{"heterogeneity τ"} for combined.}
 
 \item{tau.prior}{Ignored. Retained for compatibility; the stored native
 objects already use the CAMS priors from the original \code{\link[=cam]{cam()}} fit.}
@@ -48,9 +48,9 @@ Invisibly, a named list of the native \code{\link[bayesmeta:bayesmeta]{bayesmeta
 Draws \code{\link[bayesmeta:traceplot]{bayesmeta::traceplot()}} diagnostics from the \strong{native}
 \code{bayesmeta} / \code{bmr} objects stored on a Bayesian CAMS fit
 (study-specific shrinkage means vs heterogeneity τ, with the τ posterior
-underneath). Available \code{type} values match those native objects:
-\strong{interaction} (the interaction-block \code{bayesmeta} fit) and \strong{overall}
-(the overall-block \code{bmr} fit).
+underneath). Available \code{type} values are \strong{interaction} (the
+interaction-block \code{bayesmeta} fit) and \strong{combined} (the combined-population
+effects represented by the overall-block \code{bmr} fit).
 }
 \details{
 This method does \strong{not} fit auxiliary \code{\link[bayesmeta:bayesmeta]{bayesmeta::bayesmeta()}} models.
@@ -61,15 +61,15 @@ CAMS factorization (\code{type = "subgroups"} errors).
 }
 \examples{
 \dontrun{
-library(interactmeta)
+library(interact)
 es <- escalc(measure = "IRR", yi = age$yi, vi = age$vi, data = age)
 fit <- cam(es, reference = "Younger")
 traceplot(fit, type = "interaction")
-traceplot(fit, type = "overall", prior = TRUE)
+traceplot(fit, type = "combined", prior = TRUE)
 }
 
 }
 \seealso{
 \code{\link[=forestplot]{forestplot()}}, \code{\link[bayesmeta:traceplot]{bayesmeta::traceplot()}}, \code{\link[=plot_heterogeneity]{plot_heterogeneity()}},
-\code{\link[=native_fit]{native_fit()}}, \code{vignette("further")}
+\code{\link[=native_fit]{native_fit()}}, \code{vignette("introduction-to-interact")}
 }

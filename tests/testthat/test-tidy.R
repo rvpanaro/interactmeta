@@ -74,8 +74,8 @@ test_that("print methods use biostatistical tables (not tibbles)", {
   expect_false(any(grepl("^\\s*Prediction\\s+", out)))
   expect_false(any(grepl("^\\s*term\\b", out)))
 
-  ov <- capture.output(print(overall(fit)))
+  ov <- capture.output(print(combined(fit)))
   expect_true(any(grepl("95% Pred", ov, fixed = TRUE)))
   expect_false(any(grepl("^\\s*Prediction\\s+", ov)))
-  expect_false(any(grepl("^\\s*Pooled\\s+", ov)))
+  expect_false(any(grepl("^\\s*Overall\\s+", ov)))
 })

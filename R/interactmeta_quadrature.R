@@ -123,17 +123,27 @@ interactmeta_gm_var <- function(gm) {
   sum(gm$weight * (gm$sd^2 + (gm$mean - mu)^2))
 }
 
-interactmeta_gm_summary <- function(gm, prob = 0.95) {
+interactmeta_gm_summary <- function(gm, prob = 0.95,
+                                    interval.type = "shortest") {
+  interval.type <- interactmeta_match_interval_type(interval.type)
   mu <- interactmeta_gm_mean(gm)
   s <- sqrt(max(interactmeta_gm_var(gm), 0))
-  qs <- interactmeta_gm_quantile(gm, c((1 - prob) / 2, 0.5, 1 - (1 - prob) / 2))
+  median <- interactmeta_gm_quantile(gm, 0.5)
+  bounds <- interactmeta_interval_from_distribution(
+    quantile = function(p) interactmeta_gm_quantile(gm, p),
+    cdf = function(x) interactmeta_gm_cdf(gm, x),
+    prob = prob,
+    interval.type = interval.type
+  )
+  qs <- c(bounds[[1L]], median[[1L]], bounds[[2L]])
   list(
     mean = mu,
     sd = s,
-    median = unname(qs[[2L]]),
+    median = unname(median[[1L]]),
     lower = unname(qs[[1L]]),
     upper = unname(qs[[3L]]),
-    q = stats::setNames(qs, c((1 - prob) / 2, 0.5, 1 - (1 - prob) / 2))
+    q = stats::setNames(qs, c("lower", "median", "upper")),
+    interval.type = interval.type
   )
 }
 
@@ -677,12 +687,12 @@ interactmeta_native_quantile <- function(object,
   }, numeric(1))
 }
 
-#' Central or shortest interval from his quantile and cdf.
+#' Central or shortest interval from a posterior quantile function.
 #'
 #' Central is `quantile(c((1-p)/2, 1-(1-p)/2))`. Shortest minimizes
-#' `q(p + F(left)) - left` on `[q((1-p)/50), q(1-p)]` with `tol` equal to
-#' the fit's `tol.uniroot`. Effect parameters are not forced to a boundary
-#' at 0 (his tau `$post.interval` may be; call that instead of this helper).
+#' `q(a+p)-q(a)` over the lower-tail probability `a`. Effect parameters are
+#' not forced to a boundary at 0 (his tau `$post.interval` may be; call that
+#' instead of this helper).
 #' @noRd
 interactmeta_interval_from_distribution <- function(quantile,
                                                    cdf,
@@ -697,18 +707,20 @@ interactmeta_interval_from_distribution <- function(quantile,
   if (identical(interval.type, "central")) {
     return(unname(as.numeric(quantile(c((1 - prob) / 2, 1 - (1 - prob) / 2)))))
   }
-  lower <- as.numeric(quantile((1 - prob) / 50))[[1L]]
-  upper <- as.numeric(quantile(1 - prob))[[1L]]
-  if (!is.finite(lower) || !is.finite(upper) || !(upper > lower)) {
-    stop("Could not bracket a shortest posterior interval.", call. = FALSE)
+  force(cdf)
+  tail_max <- 1 - prob
+  tail_min <- tail_max / 50
+  width <- function(a) {
+    bounds <- as.numeric(quantile(c(a, a + prob)))
+    bounds[[2L]] - bounds[[1L]]
   }
-  width <- function(left) {
-    right <- as.numeric(quantile(prob + as.numeric(cdf(left))[[1L]]))[[1L]]
-    right - as.numeric(left)[[1L]]
-  }
-  left <- stats::optimize(width, lower = lower, upper = upper, tol = tol)$minimum
-  right <- as.numeric(quantile(prob + as.numeric(cdf(left))[[1L]]))[[1L]]
-  c(left, right)
+  tail <- stats::optimize(
+    width,
+    lower = tail_min,
+    upper = tail_max,
+    tol = tol
+  )$minimum
+  unname(as.numeric(quantile(c(tail, tail + prob))))
 }
 
 #' One-dimensional posterior (mixture check and/or published convolve / native)
@@ -795,7 +807,11 @@ interactmeta_posterior_1d_summary <- function(x, prob = 0.95, interval.type = NU
   use_published <- !is.null(x$published) || !is.null(x$convolve)
   if (!use_published) {
     if (!is.null(x$gm)) {
-      return(interactmeta_gm_summary(x$gm, prob = prob))
+      return(interactmeta_gm_summary(
+        x$gm,
+        prob = prob,
+        interval.type = interval.type
+      ))
     }
     if (is.null(x$quantile)) {
       stop("1-D posterior has neither a Gaussian mixture nor a quantile function.", call. = FALSE)

@@ -49,7 +49,7 @@
 #' @section Inference:
 #' CAMS can be fitted using Bayesian or frequentist inference. These are not
 #' two different scientific models. The approaches are **bayesmeta** (DIRECT,
-#' the default) and **metafor** (REML or ML). See `vignette("engine-comparison")`.
+#' the default) and **metafor** (REML or ML). See `vignette("introduction-to-interact")`.
 #'
 #' Computational knobs (quadrature controls, optimizer settings) go in
 #' `engine_args`, not as model arguments.
@@ -124,13 +124,10 @@
 #' @section Intervals:
 #' For Bayesian CAMS, public extractors ([subgroups()], [interactions()],
 #' [combined()], [predict_cams_by_if()], [shrinkage()], [plot_contribution()])
-#' report **equal-tail** credible intervals from the DIRECT-node Gaussian
-#' mixture (`.weight` and within-node `.cond_*` moments). That is the fast
-#' manuscript-facing rule. Native bayesmeta/`bmr` `$post.interval` and
-#' `bayesmeta::convolve()` (with `interval.type` `"shortest"` or `"central"`)
-#' remain on `$latent` as the engine-native concept and are not recomputed
-#' for every extractor or IF-grid point. Alpha and theta are never convolved
-#' with each other.
+#' report shortest credible intervals from the DIRECT-node Gaussian mixture
+#' (`.weight` and within-node `.cond_*` moments), matching the default
+#' bayesmeta interval rule. Alpha and theta are never convolved with each
+#' other.
 #'
 #' @param x A [`metafor::escalc`] object, a data frame with `yi` / `vi`, or output
 #'   from [ifrac()] (must include `ifrac_*` design columns). Also accepts a
@@ -147,7 +144,7 @@
 #'   accepted; `modifier` is the name to use.
 #' @param trial_var,subgroup_var Column names used in the model (defaults
 #'   match `trial` and `subgroup`). `subgroup_var` remains accepted.
-#' @param contrast,contrast_sep,big_var,include_overall,include_interaction Passed
+#' @param contrast,contrast_sep,big_var,include_combined,include_interaction Passed
 #'   to [ifrac()] when information fractions are computed inside `cam()`.
 #' @param method Inferential method: `"bayes"` (default for Bayesian CAMS),
 #'   `"REML"` or `"ML"` (frequentist CAMS). Not a backend name. If `engine` is
@@ -198,7 +195,7 @@
 #'
 #' @examples
 #' \dontrun{
-#' library(interactmeta)
+#' library(interact)
 #'
 #' es <- escalc(measure = "IRR", yi = age$yi, vi = age$vi, data = age)
 #' fit <- bayescams(es, reference = "Younger")
@@ -241,7 +238,7 @@ cams <- function(x,
                  contrast = "all",
                  contrast_sep = "-",
                  big_var = 100^2,
-                 include_overall = FALSE,
+                 include_combined = FALSE,
                  include_interaction = FALSE,
                  method = c("bayes", "REML", "ML"),
                  ecological_slope = TRUE,
@@ -290,7 +287,7 @@ cams <- function(x,
     contrast = contrast,
     contrast_sep = contrast_sep,
     big_var = big_var,
-    include_overall = include_overall,
+    include_combined = include_combined,
     include_interaction = include_interaction
   )
   # ifrac() writes the level column as `subgroup`. Keep the caller's

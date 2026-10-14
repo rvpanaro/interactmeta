@@ -21,9 +21,9 @@ forestplot(
   pooled = NULL,
   model_names = "Model 1",
   include_shrinkage = TRUE,
-  include_pooled = TRUE,
-  include_prediction = TRUE,
   include_overall = TRUE,
+  include_prediction = TRUE,
+  include_combined = TRUE,
   ifrac = c("interaction", "overall"),
   xlab = NULL,
   group = "subgroup",
@@ -49,7 +49,7 @@ forestplot(
   grouping = NULL,
   panel.height = NULL,
   estimates_only = FALSE,
-  type = c("subgroups", "interaction", "overall", "combined"),
+  type = c("subgroups", "interaction", "combined"),
   which_panel = NULL,
   ...
 )
@@ -72,20 +72,20 @@ present (2-by-2 event-count data), study size is taken as their sum.}
 (default \code{"-"}).}
 
 \item{model_names}{Optional character vector selecting marginal layers among
-\code{"Shrinkage"}, \code{"Pooled"}, and \code{"Prediction"} (intersected with the
-\verb{include_*} flags). Prefer \code{include_shrinkage} / \code{include_pooled} /
+\code{"Shrinkage"}, \code{"Overall"}, and \code{"Prediction"} (intersected with the
+\verb{include_*} flags). Prefer \code{include_shrinkage} / \code{include_overall} /
 \code{include_prediction} for new code. When \code{NULL} or the default \code{"Model 1"},
 layers follow those flags alone.}
 
-\item{include_shrinkage, include_pooled, include_prediction, include_overall}{Include shrinkage, pooled, prediction, and overall marginal rows.
-Shrinkage, pooled, prediction, and overall default to \code{TRUE}. Grey
+\item{include_shrinkage, include_overall, include_prediction, include_combined}{Include shrinkage, overall-effect, prediction, and combined-population rows.
+All four layers default to \code{TRUE}. Grey
 shrinkage intervals appear alongside quoted estimates (bayesmeta style)
 in the active \code{type} block. Set \code{include_shrinkage = FALSE} to omit them.
-Switching off pooled or prediction keeps blank placeholder rows so the
+Switching off overall or prediction keeps blank placeholder rows so the
 figure height and spacing stay close to the full plot.}
 
 \item{ifrac}{How the overall information fraction ω is pooled via \code{\link[=ifrac]{ifrac()}}
-for \strong{annotations} and for \strong{Pooled / Prediction / Overall} diamonds:
+for \strong{annotations} and for \strong{Overall / Prediction / Combined} diamonds:
 \code{"interaction"} (default; τ_γ and subgroup sampling variances) or
 \code{"overall"} (τ and design SEs). Shrinkage greys are the trial-specific
 CAMS reconstructions from \code{\link[=shrinkage]{shrinkage()}} (shrunken \eqn{m_j,g_j} inverted
@@ -109,7 +109,7 @@ intervals.}
 
 \item{favours}{Optional length-2 character labels placed under the x-axis
 (left / right of the null). Default is \code{c("Control", "Experimental")}
-for \code{type = "subgroups"} / \code{"overall"}. For \code{type = "interaction"}, the
+for \code{type = "subgroups"} / \code{"combined"}. For \code{type = "interaction"}, the
 default names the reference and non-reference subgroups (same left/right
 roles). Set to \code{FALSE} to suppress.}
 
@@ -145,10 +145,10 @@ summary diamonds) and omit the IF and study-size columns.}
 
 \item{type}{Which forest block(s) to draw. One of:
 \itemize{
-\item \code{"subgroups"} (default): subgroup blocks only (each with \strong{Pooled} and
-\strong{Prediction} when \code{include_pooled} / \code{include_prediction} are \code{TRUE})
-\item \code{"interaction"}: Interaction block only (Pooled + Prediction)
-\item \code{"overall"} / \code{"combined"}: Combined-population block only (Pooled + Prediction)
+\item \code{"subgroups"} (default): subgroup blocks only (each with \strong{Overall} and
+\strong{Prediction} when \code{include_overall} / \code{include_prediction} are \code{TRUE})
+\item \code{"interaction"}: Interaction block only (Overall + Prediction)
+\item \code{"combined"}: Combined-population block only (Overall + Prediction)
 }
 
 Other features (favours, annotations, \code{include_shrinkage}, …) apply
@@ -170,7 +170,7 @@ A \code{interactmeta_forestplot} object (see \code{\link[=forestplot]{forestplot
 Draws a forest for a \code{\link[=cam]{cam()}} fit using \link[bayesmeta:forestplot.bayesmeta]{bayesmeta::forestplot.bayesmeta}
 (single-block) or \code{\link[forestplot:forestplot]{forestplot::forestplot()}} with the same conventions
 (multi-block): observed study estimates, optional grey \strong{shrinkage}
-overlays, and \strong{mean} / \strong{prediction} / \strong{Overall} summaries. An
+overlays, and \strong{Overall} / \strong{Prediction} / \strong{Combined} summaries. An
 \strong{information fraction} column shows each row's share of trial precision.
 
 Thin adapter so \code{forestplot::forestplot(fit, ...)} reaches the same
@@ -184,12 +184,12 @@ Metafor-idiomatic entry point for a \code{\link[=cam]{cam()}} fit. Delegates to
 \details{
 For non-\link{interactmeta} input (e.g. \link[metafor:escalc]{metafor::escalc}), arguments are forwarded
 to \code{\link[forestplot:forestplot]{forestplot::forestplot()}}, which dispatches to
-\link[bayesmeta:forestplot.escalc]{bayesmeta::forestplot.escalc} when \strong{bayesmeta} is loaded (interactmeta loads it
+\link[bayesmeta:forestplot.escalc]{bayesmeta::forestplot.escalc} when \strong{bayesmeta} is loaded (interact loads it
 on attach).
 
 By default (\code{type = "subgroups"}) the plot shows \strong{subgroup} blocks
-(each with \strong{Pooled} and \strong{Prediction}), with overall-IF notes under the
-x-axis. Use \code{type = "interaction"} or \code{type = "overall"} / \code{"combined"} for those blocks.
+(each with \strong{Overall} and \strong{Prediction}), with overall-IF notes under the
+x-axis. Use \code{type = "interaction"} or \code{type = "combined"} for those blocks.
 }
 \section{Aesthetics vs content}{
 

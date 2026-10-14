@@ -36,16 +36,16 @@ parse_ifrac_display <- function(x) {
 }
 
 forest_shrinkage_rows <- function(fit, group = "subgroup") {
-  panels <- interactmeta:::comparison_forest_build_fit_panels(
+  panels <- interact:::comparison_forest_build_fit_panels(
     fit,
     prob = 0.95,
     contrast_sep = "-",
     max_ifrac_draws = NULL,
     model_names = NULL,
     include_shrinkage = TRUE,
-    include_pooled = FALSE,
-    include_prediction = FALSE,
     include_overall = FALSE,
+    include_prediction = FALSE,
+    include_combined = FALSE,
     group = group
   )
   pan <- panels$resultsA
@@ -64,16 +64,16 @@ forest_shrinkage_rows <- function(fit, group = "subgroup") {
 }
 
 forest_observed_ifrac <- function(fit) {
-  panels <- interactmeta:::comparison_forest_build_fit_panels(
+  panels <- interact:::comparison_forest_build_fit_panels(
     fit,
     prob = 0.95,
     contrast_sep = "-",
     max_ifrac_draws = NULL,
     model_names = NULL,
     include_shrinkage = TRUE,
-    include_pooled = FALSE,
+    include_overall = FALSE,
     include_prediction = FALSE,
-    include_overall = FALSE
+    include_combined = FALSE
   )
   pan <- panels$resultsA
   labs <- panels$row_labels
@@ -157,8 +157,8 @@ test_that("bayesmeta shrinkage equals DIRECT latent reconstruction, not FE fitte
   expect_gt(max_fe, 0.05)
 
   for (tr in cmp$trials) {
-    smA <- interactmeta:::interactmeta_posterior_1d_summary(fit$latent$mu_A[[tr]])
-    smB <- interactmeta:::interactmeta_posterior_1d_summary(fit$latent$mu_B[[tr]])
+    smA <- interact:::interactmeta_posterior_1d_summary(fit$latent$mu_A[[tr]])
+    smB <- interact:::interactmeta_posterior_1d_summary(fit$latent$mu_B[[tr]])
     rowA <- sg$summary[
       sg$summary$trial == tr & sg$summary$subgroup == "Younger",
       ,
@@ -200,10 +200,10 @@ test_that("metafor shrinkage equals BLUP reconstruction, not FE fitted()", {
   max_fe <- 0
   for (tr in cmp$trials) {
     pi_j <- unname(cmp$pi[[tr]])
-    bm <- interactmeta:::comparison_blup_row(bl_m, tr, fit$metafor$overall$slab)
-    bg <- interactmeta:::comparison_blup_row(bl_g, tr, fit$metafor$interaction$slab)
-    muA <- interactmeta:::interactmeta_muA_from_mg(bm$pred, bg$pred, pi_j)
-    muB <- interactmeta:::interactmeta_muB_from_mg(bm$pred, bg$pred, pi_j)
+    bm <- interact:::comparison_blup_row(bl_m, tr, fit$metafor$overall$slab)
+    bg <- interact:::comparison_blup_row(bl_g, tr, fit$metafor$interaction$slab)
+    muA <- interact:::interactmeta_muA_from_mg(bm$pred, bg$pred, pi_j)
+    muB <- interact:::interactmeta_muB_from_mg(bm$pred, bg$pred, pi_j)
     rowA <- sg$summary[
       sg$summary$trial == tr & sg$summary$subgroup == "Younger",
       ,
@@ -289,7 +289,7 @@ test_that("reversed reference keeps A/B reconstruction signs and forest matching
   }
   sg <- shrinkage(fit, type = "subgroups", summary = TRUE, exponentiate = FALSE)
   for (tr in cmp$trials) {
-    smA <- interactmeta:::interactmeta_posterior_1d_summary(fit$latent$mu_A[[tr]])
+    smA <- interact:::interactmeta_posterior_1d_summary(fit$latent$mu_A[[tr]])
     rowA <- sg$summary[
       sg$summary$trial == tr & sg$summary$subgroup == "Older",
       ,
@@ -323,16 +323,16 @@ test_that("exponentiation happens only after CAMS reconstruction", {
   ]
   expect_false(isTRUE(all.equal(ya_exp, wrong, tolerance = 1e-3)))
 
-  panels <- interactmeta:::comparison_forest_build_fit_panels(
+  panels <- interact:::comparison_forest_build_fit_panels(
     fit,
     prob = 0.95,
     contrast_sep = "-",
     max_ifrac_draws = NULL,
     model_names = NULL,
     include_shrinkage = TRUE,
-    include_pooled = FALSE,
+    include_overall = FALSE,
     include_prediction = FALSE,
-    include_overall = FALSE
+    include_combined = FALSE
   )
   pan <- panels$resultsA
   labs <- panels$row_labels

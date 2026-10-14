@@ -10,7 +10,7 @@ compare_interactions(
   swada = NULL,
   cam = NULL,
   exponentiate = FALSE,
-  type = "Pooled"
+  type = "Overall"
 )
 }
 \arguments{
@@ -27,7 +27,7 @@ a second \code{\link[=cam]{cam()}} fit.}
 \item{exponentiate}{If \code{TRUE}, report on the exponentiated (ratio) scale.
 Default \code{FALSE} (fitted log scale).}
 
-\item{type}{CAMS layer (\code{"Pooled"} default).}
+\item{type}{CAMS layer (\code{"Overall"} default).}
 }
 \value{
 A tibble with class \code{interactmeta_compare_interactions}.

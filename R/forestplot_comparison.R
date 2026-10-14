@@ -1,30 +1,30 @@
 #' Forest plot for a fitted CAMS model
 #'
 #' Layers observed study rows with optional grey **shrinkage** from
-#' [shrinkage()], then **Pooled** / **Prediction** / **Overall** diamonds at
+#' [shrinkage()], then **Overall** / **Prediction** / **Combined** diamonds at
 #' the overall information fraction. Drawn via the bayesmeta / forestplot
 #' backend (see [forestplot.interactmeta]).
 #'
 #' @param fit A CAMS fit from [cam()] (`interactmeta`).
 #' @param model_names Optional character vector of model row labels. When `NULL`
-#'   (default), built from `include_shrinkage`, `include_pooled`, and
+#'   (default), built from `include_shrinkage`, `include_overall`, and
 #'   `include_prediction`.
 #' @param include_shrinkage If `TRUE` (default), interleave grey shrinkage rows from
 #'   [shrinkage()].
-#' @param include_pooled If `TRUE` (default), append pooled marginal diamonds.
+#' @param include_overall If `TRUE` (default), append overall-effect diamonds.
 #' @param include_prediction If `TRUE` (default), append prediction marginal rows.
-#' @param include_overall If `TRUE` (default), append overall marginal rows from
-#'   [overall()].
-#' @details Panel rows carry `row_kind`: `"study"`, `"shrinkage"`, `"pooled"`,
-#'   `"prediction"`, and `"overall"`.
+#' @param include_combined If `TRUE` (default), append combined-population rows from
+#'   [combined()].
+#' @details Panel rows carry `row_kind`: `"study"`, `"shrinkage"`, `"overall"`,
+#'   `"prediction"`, and `"combined"`.
 #' @param prob Coverage probability for intervals.
 #' @param ifrac How the overall information fraction ω is pooled via [ifrac()]
-#'   for annotations and for Pooled / Prediction / Overall diamonds:
+#'   for annotations and for Overall / Prediction / Combined diamonds:
 #'   `"interaction"` (default) or `"overall"`. Shrinkage greys use each trial's
 #'   own \eqn{\pi_j}; see [shrinkage()].
 #' @param contrast_sep Separator between subgroup labels on interaction rows.
-#' @param max_ifrac_draws Maximum posterior draws for overall-IF summaries
-#'   (default `4000`).
+#' @param max_ifrac_draws Optional cap for unweighted posterior draws.
+#'   Leave `NULL` (default) for Bayesian DIRECT supports, which cannot be thinned.
 #' @param exponentiate Logical; if `TRUE`, estimates are shown on the ratio scale.
 #' @param n_var Column for study size labels; `FALSE` (default) omits them.
 #' @param group `"subgroup"` (default) or `"trial"` nesting.
@@ -40,9 +40,9 @@
 comparison_forestplot_from_fit <- function(fit,
                                     model_names = NULL,
                                     include_shrinkage = TRUE,
-                                    include_pooled = TRUE,
-                                    include_prediction = TRUE,
                                     include_overall = TRUE,
+                                    include_prediction = TRUE,
+                                    include_combined = TRUE,
                                     exponentiate = FALSE,
                                     n_var = FALSE,
                                     group = "subgroup",
@@ -51,7 +51,7 @@ comparison_forestplot_from_fit <- function(fit,
                                     prob = 0.95,
                                     ifrac = c("interaction", "overall"),
                                     contrast_sep = "-",
-                                    max_ifrac_draws = 4000L,
+                                    max_ifrac_draws = NULL,
                                     ...) {
   check_comparison_fit(fit)
   if (!inherits(fit, "interactmeta")) {
@@ -76,7 +76,7 @@ comparison_forestplot_from_fit <- function(fit,
   if ("type" %in% names(dots)) {
     type <- match.arg(
       as.character(dots$type)[[1L]],
-      c("subgroups", "interaction", "overall")
+      c("subgroups", "interaction", "combined")
     )
     dots$type <- NULL
   }
@@ -84,7 +84,7 @@ comparison_forestplot_from_fit <- function(fit,
     warning("`result` is deprecated; use `type` instead.", call. = FALSE)
     type <- match.arg(
       as.character(dots$result)[[1L]],
-      c("subgroups", "interaction", "overall")
+      c("subgroups", "interaction", "combined")
     )
     dots$result <- NULL
   }
@@ -129,7 +129,7 @@ comparison_forestplot_from_fit <- function(fit,
   model_names <- comparison_forest_resolve_model_names(
     model_names = model_names,
     include_shrinkage = include_shrinkage,
-    include_pooled = include_pooled,
+    include_overall = include_overall,
     include_prediction = include_prediction
   )
 
@@ -140,9 +140,9 @@ comparison_forestplot_from_fit <- function(fit,
     max_draws = max_ifrac_draws,
     contrast_sep = contrast_sep,
     include_shrinkage = include_shrinkage,
-    include_pooled = include_pooled,
-    include_prediction = include_prediction,
     include_overall = include_overall,
+    include_prediction = include_prediction,
+    include_combined = include_combined,
     show_annotations = show_annotations,
     annotation_digits = annotation_digits,
     model_names = model_names
@@ -155,9 +155,9 @@ comparison_forestplot_from_fit <- function(fit,
     max_ifrac_draws = max_ifrac_draws,
     model_names = model_names,
     include_shrinkage = include_shrinkage,
-    include_pooled = include_pooled,
-    include_prediction = include_prediction,
     include_overall = include_overall,
+    include_prediction = include_prediction,
+    include_combined = include_combined,
     n_var = n_var,
     group = group,
     ifrac = ifrac,
@@ -224,9 +224,9 @@ comparison_forest_effect_bundle <- function(fit,
                                       max_draws = NULL,
                                       contrast_sep = "-",
                                       include_shrinkage = TRUE,
-                                      include_pooled = TRUE,
-                                      include_prediction = TRUE,
                                       include_overall = TRUE,
+                                      include_prediction = TRUE,
+                                      include_combined = TRUE,
                                       show_annotations = TRUE,
                                       annotation_digits = 2,
                                       model_names = NULL) {
@@ -253,7 +253,7 @@ comparison_forest_effect_bundle <- function(fit,
         rot, type = "interaction", prob = prob, summary = TRUE, exponentiate = FALSE
       ),
       overall = comparison_shrinkage_effect_from_bundle(
-        rot, type = "overall", prob = prob, summary = TRUE, exponentiate = FALSE
+        rot, type = "combined", prob = prob, summary = TRUE, exponentiate = FALSE
       )
     )
   } else {
@@ -267,9 +267,9 @@ comparison_forest_effect_bundle <- function(fit,
     ifrac = ifrac,
     max_draws = max_draws,
     contrast_sep = contrast_sep,
-    include_pooled = include_pooled,
-    include_prediction = include_prediction,
     include_overall = include_overall,
+    include_prediction = include_prediction,
+    include_combined = include_combined,
     overall_ifrac = oi
   )
 
@@ -373,7 +373,7 @@ forestplot_fit_annotations <- function(fit,
           piece <- paste0(piece, " (MLE)")
         }
         ty <- as.character(summ$type[[i]])
-        key <- if (identical(ty, "slope")) "interaction" else "overall"
+        key <- if (identical(ty, "slope")) "interaction" else "combined"
         het_notes[[key]] <- piece
       }
     }
@@ -387,7 +387,7 @@ forestplot_fit_annotations <- function(fit,
   )
 }
 
-#' Overall-IF estimate (and interval, when it is a posterior) per non-reference subgroup
+#' Combined-IF estimate (and interval, when it is a posterior) per non-reference subgroup
 #' @noRd
 forestplot_overall_ifrac_annotations <- function(fit,
                                                  ifrac = c("interaction", "overall"),
@@ -511,12 +511,12 @@ comparison_forest_layer_on <- function(x) {
 #' @noRd
 comparison_forest_resolve_model_names <- function(model_names,
                                             include_shrinkage,
-                                            include_pooled,
+                                            include_overall,
                                             include_prediction) {
-  layers <- c("Shrinkage", "Pooled", "Prediction")
+  layers <- c("Shrinkage", "Overall", "Prediction")
   flags <- c(
     comparison_forest_layer_on(include_shrinkage),
-    comparison_forest_layer_on(include_pooled),
+    comparison_forest_layer_on(include_overall),
     comparison_forest_layer_on(include_prediction)
   )
   enabled_by_flag <- layers[flags]
@@ -540,8 +540,8 @@ comparison_forest_resolve_model_names <- function(model_names,
   if (comparison_forest_layer_on(include_shrinkage)) {
     out <- unique(c("Shrinkage", out))
   }
-  if (comparison_forest_layer_on(include_pooled)) {
-    out <- unique(c(out, "Pooled"))
+  if (comparison_forest_layer_on(include_overall)) {
+    out <- unique(c(out, "Overall"))
   }
   if (comparison_forest_layer_on(include_prediction)) {
     out <- unique(c(out, "Prediction"))
@@ -549,8 +549,8 @@ comparison_forest_resolve_model_names <- function(model_names,
   if (isFALSE(include_shrinkage)) {
     out <- setdiff(out, "Shrinkage")
   }
-  if (isFALSE(include_pooled)) {
-    out <- setdiff(out, "Pooled")
+  if (isFALSE(include_overall)) {
+    out <- setdiff(out, "Overall")
   }
   if (isFALSE(include_prediction)) {
     out <- setdiff(out, "Prediction")
@@ -645,7 +645,7 @@ comparison_forest_is_blank_row_label <- function(x) {
 
 #' Build model-based forest panel data frames from a CAMS fit
 #'
-#' Pooled / Prediction / Overall diamonds are evaluated at the overall IF
+#' Overall / Prediction / Combined diamonds are evaluated at the overall IF
 #' \eqn{\omega}. Shrinkage greys are trial-specific CAMS reconstructions
 #' from [shrinkage()] at each trial's \eqn{\pi_j} (not the FE linpred).
 #' @noRd
@@ -655,9 +655,9 @@ comparison_forest_build_fit_panels <- function(fit,
                                          max_ifrac_draws,
                                          model_names,
                                          include_shrinkage = TRUE,
-                                         include_pooled = TRUE,
-                                         include_prediction = TRUE,
                                          include_overall = TRUE,
+                                         include_prediction = TRUE,
+                                         include_combined = TRUE,
                                          n_var = FALSE,
                                          group = "subgroup",
                                          ifrac = c("interaction", "overall"),
@@ -671,7 +671,7 @@ comparison_forest_build_fit_panels <- function(fit,
   model_names <- comparison_forest_resolve_model_names(
     model_names = model_names,
     include_shrinkage = include_shrinkage,
-    include_pooled = include_pooled,
+    include_overall = include_overall,
     include_prediction = include_prediction
   )
   data <- validate_forestplot_data(st$ifrac_data)
@@ -803,9 +803,9 @@ comparison_forest_build_fit_panels <- function(fit,
   marginal_names <- setdiff(model_names, "Shrinkage")
   blocks <- list()
   need_marginal <- length(marginal_names) &&
-    (comparison_forest_layer_on(include_pooled) ||
+    (comparison_forest_layer_on(include_overall) ||
       comparison_forest_layer_on(include_prediction) ||
-      comparison_forest_layer_on(include_overall))
+      comparison_forest_layer_on(include_combined))
   if (need_marginal) {
     blocks <- effect_bundle$summary_blocks %||% comparison_forest_summary_blocks(
       fit,
@@ -814,9 +814,9 @@ comparison_forest_build_fit_panels <- function(fit,
       ifrac = ifrac,
       max_draws = max_ifrac_draws,
       contrast_sep = contrast_sep,
-      include_pooled = include_pooled,
-      include_prediction = include_prediction,
       include_overall = include_overall,
+      include_prediction = include_prediction,
+      include_combined = include_combined,
       overall_ifrac = effect_bundle$overall_ifrac
     )
   }
@@ -864,7 +864,7 @@ comparison_forest_build_fit_panels <- function(fit,
   )
 }
 
-#' Diamond styling for Pooled / Prediction / Overall
+#' Diamond styling for Overall / Prediction / Combined
 #'
 #' Summary diamonds use blue (`forestplot_default_summary_colour()`) for
 #' every block — the same whether `group` is `"subgroup"` or `"trial"`.
@@ -892,10 +892,10 @@ comparison_forest_apply_effect_styles <- function(resultsA,
   } else {
     as.character(marker)[[1L]]
   }
-  pooled_ix <- which(resultsA$row_kind == "pooled")
-  pred_ix <- which(resultsA$row_kind == "prediction")
   overall_ix <- which(resultsA$row_kind == "overall")
-  if (!length(pooled_ix) && !length(pred_ix) && !length(overall_ix)) {
+  pred_ix <- which(resultsA$row_kind == "prediction")
+  combined_ix <- which(resultsA$row_kind == "combined")
+  if (!length(overall_ix) && !length(pred_ix) && !length(combined_ix)) {
     return(list(resultsA = resultsA, resultsB = resultsB))
   }
 
@@ -939,12 +939,12 @@ comparison_forest_apply_effect_styles <- function(resultsA,
     resultsB$bold[ix] <<- isTRUE(bold_summary)
   }
 
-  if (length(pooled_ix)) {
-    paint_summary_ix(pooled_ix)
-    resultsB$shape[pooled_ix] <- NA_integer_
-    resultsB$fill[pooled_ix] <- NA_character_
-    resultsB$colour[pooled_ix] <- NA_character_
-    ok_b <- pooled_ix[is.finite(resultsB$yi[pooled_ix])]
+  if (length(overall_ix)) {
+    paint_summary_ix(overall_ix)
+    resultsB$shape[overall_ix] <- NA_integer_
+    resultsB$fill[overall_ix] <- NA_character_
+    resultsB$colour[overall_ix] <- NA_character_
+    ok_b <- overall_ix[is.finite(resultsB$yi[overall_ix])]
     if (length(ok_b)) {
       resultsB$shape[ok_b] <- diamond
       resultsB$fill[ok_b] <- sum_cols[ok_b]
@@ -971,16 +971,16 @@ comparison_forest_apply_effect_styles <- function(resultsA,
     }
   }
 
-  if (length(overall_ix)) {
+  if (length(combined_ix)) {
     overall_col <- forestplot_overall_summary_colour()
-    resultsA$shape[overall_ix] <- diamond
-    resultsB$shape[overall_ix] <- NA_integer_
-    resultsA$fill[overall_ix] <- overall_col
-    resultsA$colour[overall_ix] <- overall_col
-    resultsB$fill[overall_ix] <- NA_character_
-    resultsB$colour[overall_ix] <- NA_character_
-    resultsA$bold[overall_ix] <- isTRUE(bold_summary)
-    resultsB$bold[overall_ix] <- isTRUE(bold_summary)
+    resultsA$shape[combined_ix] <- diamond
+    resultsB$shape[combined_ix] <- NA_integer_
+    resultsA$fill[combined_ix] <- overall_col
+    resultsA$colour[combined_ix] <- overall_col
+    resultsB$fill[combined_ix] <- NA_character_
+    resultsB$colour[combined_ix] <- NA_character_
+    resultsA$bold[combined_ix] <- isTRUE(bold_summary)
+    resultsB$bold[combined_ix] <- isTRUE(bold_summary)
   }
 
   list(resultsA = resultsA, resultsB = resultsB)
@@ -1017,7 +1017,7 @@ comparison_forest_shrinkage_data <- function(fit,
         rot, type = "interaction", prob = prob, summary = TRUE, exponentiate = FALSE
       ),
       overall = comparison_shrinkage_effect_from_bundle(
-        rot, type = "overall", prob = prob, summary = TRUE, exponentiate = FALSE
+        rot, type = "combined", prob = prob, summary = TRUE, exponentiate = FALSE
       )
     )
   }
@@ -1066,7 +1066,7 @@ comparison_forest_shrinkage_data <- function(fit,
   list(subgroup = sg, interaction = int, overall = ov)
 }
 
-#' Trial-level overall shrinkage `yi` / `vi` for the Overall forest block
+#' Trial-level overall shrinkage `yi` / `vi` for the Combined forest block
 #'
 #' Uses the median and posterior QI of reconstructed overall (`m_j`) draws.
 #' @noRd
@@ -1120,7 +1120,7 @@ comparison_forest_overall_shrinkage_yivi <- function(summary, trial_var = "trial
   )
 }
 
-#' Build one Pooled / Prediction block (Pooled rows, then Prediction rows)
+#' Build one Overall / Prediction block (Overall rows, then Prediction rows)
 #' @noRd
 comparison_forest_summary_blocks <- function(fit,
                                        model_names,
@@ -1128,9 +1128,9 @@ comparison_forest_summary_blocks <- function(fit,
                                        ifrac = c("interaction", "overall"),
                                        max_draws = NULL,
                                        contrast_sep = "-",
-                                       include_pooled = TRUE,
-                                       include_prediction = TRUE,
                                        include_overall = TRUE,
+                                       include_prediction = TRUE,
+                                       include_combined = TRUE,
                                        overall_ifrac = NULL) {
   ifrac <- match.arg(ifrac)
   st <- attr(fit, "interactmeta", exact = TRUE)
@@ -1138,12 +1138,12 @@ comparison_forest_summary_blocks <- function(fit,
   model_names <- comparison_forest_resolve_model_names(
     model_names = setdiff(model_names, "Shrinkage"),
     include_shrinkage = FALSE,
-    include_pooled = include_pooled,
+    include_overall = include_overall,
     include_prediction = include_prediction
   )
-  show_pooled <- comparison_forest_layer_on(include_pooled) && "Pooled" %in% model_names
+  show_overall <- comparison_forest_layer_on(include_overall) && "Overall" %in% model_names
   show_prediction <- comparison_forest_layer_on(include_prediction) && "Prediction" %in% model_names
-  if (!length(model_names) || (!show_pooled && !show_prediction)) {
+  if (!length(model_names) || (!show_overall && !show_prediction)) {
     return(list())
   }
 
@@ -1158,19 +1158,19 @@ comparison_forest_summary_blocks <- function(fit,
     vi = numeric(0),
     stringsAsFactors = FALSE
   )
-  pooled_sg <- empty_sg
-  pooled_int <- empty_sg
+  overall_sg <- empty_sg
+  overall_int <- empty_sg
   pred_sg <- empty_sg
   pred_int <- empty_sg
 
-  if (show_pooled) {
-    pooled_sg <- comparison_forest_marginal_subgroup_block(
-      fit, oi, "Pooled", overall_label, prob, max_draws, contrast_sep,
+  if (show_overall) {
+    overall_sg <- comparison_forest_marginal_subgroup_block(
+      fit, oi, "Overall", overall_label, prob, max_draws, contrast_sep,
       subgroup_order = subgroup_order,
       ifrac = ifrac
     )
-    pooled_int <- comparison_forest_marginal_interaction_block(
-      fit, oi, "Pooled", overall_label, prob, max_draws, contrast_sep,
+    overall_int <- comparison_forest_marginal_interaction_block(
+      fit, oi, "Overall", overall_label, prob, max_draws, contrast_sep,
       ifrac = ifrac
     )
   }
@@ -1186,22 +1186,22 @@ comparison_forest_summary_blocks <- function(fit,
     )
   }
 
-  combined <- comparison_forest_interleave_pooled_prediction(
-    pooled_sg = pooled_sg,
+  combined <- comparison_forest_interleave_overall_prediction(
+    overall_sg = overall_sg,
     pred_sg = pred_sg,
-    pooled_int = pooled_int,
+    overall_int = overall_int,
     pred_int = pred_int,
     reference = ref,
-    include_pooled = show_pooled,
+    include_overall = show_overall,
     include_prediction = show_prediction
   )
 
-  if (comparison_forest_layer_on(include_overall)) {
-    # Always reserve Pooled + Prediction Overall slots when either summary
+  if (comparison_forest_layer_on(include_combined)) {
+    # Always reserve Overall + Prediction Combined slots when either summary
     # layer is shown, so switching one off does not shrink the figure.
     overall_types <- character(0)
-    if (show_pooled || show_prediction) {
-      overall_types <- c("Pooled", "Prediction")
+    if (show_overall || show_prediction) {
+      overall_types <- c("Overall", "Prediction")
     }
     if (length(overall_types)) {
       overall_extra <- comparison_forest_overall_rows(
@@ -1213,7 +1213,7 @@ comparison_forest_summary_blocks <- function(fit,
         max_draws = max_draws,
         ifrac = ifrac,
         include_types = c(
-          if (show_pooled) "Pooled",
+          if (show_overall) "Overall",
           if (show_prediction) "Prediction"
         )
       )
@@ -1308,9 +1308,9 @@ comparison_forest_marginal_interaction_block <- function(fit,
   )
 }
 
-#' Overall marginal rows from [overall()] (left panel only)
+#' Combined marginal rows from [combined()] (left panel only)
 #'
-#' `types` is the full slot order (usually `Pooled` then `Prediction`).
+#' `types` is the full slot order (usually `Overall` then `Prediction`).
 #' `include_types` is which of those get real estimates; the rest are `NA`
 #' placeholders that keep vertical space when a layer is switched off.
 #' @noRd
@@ -1335,7 +1335,7 @@ comparison_forest_overall_rows <- function(fit,
   include_types <- as.character(include_types %||% character())
 
   me <- if (length(include_types)) {
-    overall(
+    combined(
       fit,
       contribution = overall_ifrac,
       ifrac = ifrac,
@@ -1359,20 +1359,24 @@ comparison_forest_overall_rows <- function(fit,
       return(data.frame(
         trial = overall_label,
         subgroup = ty,
-        colour_label = "Overall",
-        row_kind = "overall",
+        colour_label = "Combined",
+        row_kind = "combined",
         yi = NA_real_,
         vi = NA_real_,
+        ci.lb = NA_real_,
+        ci.ub = NA_real_,
         stringsAsFactors = FALSE
       ))
     }
     data.frame(
       trial = overall_label,
       subgroup = ty,
-      colour_label = "Overall",
-      row_kind = "overall",
+      colour_label = "Combined",
+      row_kind = "combined",
       yi = row$mean[[1L]],
       vi = pmax(row$sd[[1L]]^2, 1e-12, na.rm = TRUE),
+      ci.lb = comparison_forest_interval_col(row, "lci")[[1L]],
+      ci.ub = comparison_forest_interval_col(row, "uci")[[1L]],
       stringsAsFactors = FALSE
     )
   })
@@ -1383,6 +1387,8 @@ comparison_forest_overall_rows <- function(fit,
   panel_b <- data.frame(
     yi = rep(NA_real_, nrow(sg)),
     vi = rep(NA_real_, nrow(sg)),
+    ci.lb = rep(NA_real_, nrow(sg)),
+    ci.ub = rep(NA_real_, nrow(sg)),
     stringsAsFactors = FALSE
   )
   list(subgroup = sg, panel_b = panel_b)
@@ -1398,6 +1404,8 @@ comparison_forest_align_marginal_interaction <- function(subgroup_df,
       subgroup = character(0),
       yi = numeric(0),
       vi = numeric(0),
+      ci.lb = numeric(0),
+      ci.ub = numeric(0),
       stringsAsFactors = FALSE
     ))
   }
@@ -1405,6 +1413,8 @@ comparison_forest_align_marginal_interaction <- function(subgroup_df,
     subgroup = subgroup_df$subgroup,
     yi = NA_real_,
     vi = NA_real_,
+    ci.lb = NA_real_,
+    ci.ub = NA_real_,
     stringsAsFactors = FALSE
   )
   if (!nrow(interaction_df)) {
@@ -1412,37 +1422,50 @@ comparison_forest_align_marginal_interaction <- function(subgroup_df,
   }
   int_yi <- interaction_df$yi[[1L]]
   int_vi <- interaction_df$vi[[1L]]
+  int_lci <- comparison_forest_interval_col(interaction_df, "ci.lb")[[1L]]
+  int_uci <- comparison_forest_interval_col(interaction_df, "ci.ub")[[1L]]
   ref_chr <- as.character(reference)
   non_ref <- nzchar(as.character(out$subgroup)) &
     as.character(out$subgroup) != ref_chr
   out$yi[non_ref] <- int_yi
   out$vi[non_ref] <- int_vi
+  out$ci.lb[non_ref] <- int_lci
+  out$ci.ub[non_ref] <- int_uci
   out
+}
+
+#' Read an optional precomputed interval column
+#' @noRd
+comparison_forest_interval_col <- function(x, name) {
+  if (name %in% names(x)) {
+    return(as.numeric(x[[name]]))
+  }
+  rep(NA_real_, nrow(x))
 }
 
 #' Interleave marginal rows by subgroup (pooled then prediction per level)
 #'
-#' When one of `include_pooled` / `include_prediction` is `FALSE` but the other
+#' When one of `include_overall` / `include_prediction` is `FALSE` but the other
 #' is `TRUE`, the omitted layer still gets an all-`NA` placeholder row so the
 #' forest keeps the same vertical rhythm as the full plot.
 #' @noRd
-comparison_forest_interleave_pooled_prediction <- function(pooled_sg,
+comparison_forest_interleave_overall_prediction <- function(overall_sg,
                                                      pred_sg,
-                                                     pooled_int,
+                                                     overall_int,
                                                      pred_int,
                                                      reference,
-                                                     include_pooled = TRUE,
+                                                     include_overall = TRUE,
                                                      include_prediction = TRUE) {
-  want_pooled <- isTRUE(include_pooled)
+  want_overall <- isTRUE(include_overall)
   want_pred <- isTRUE(include_prediction)
   # Reserve both slots whenever either layer is shown.
-  reserve_pair <- want_pooled || want_pred
-  template <- if (want_pooled && nrow(pooled_sg) > 0L) {
-    pooled_sg
+  reserve_pair <- want_overall || want_pred
+  template <- if (want_overall && nrow(overall_sg) > 0L) {
+    overall_sg
   } else if (want_pred && nrow(pred_sg) > 0L) {
     pred_sg
   } else {
-    pooled_sg
+    overall_sg
   }
   if (!nrow(template) || !reserve_pair) {
     return(list(
@@ -1450,16 +1473,16 @@ comparison_forest_interleave_pooled_prediction <- function(pooled_sg,
       panel_b = data.frame(yi = numeric(0), vi = numeric(0), stringsAsFactors = FALSE)
     ))
   }
-  if (want_pooled && want_pred &&
-      nrow(pooled_sg) > 0L && nrow(pred_sg) > 0L &&
-      nrow(pred_sg) != nrow(pooled_sg)) {
-    stop("Pooled and Prediction subgroup rows must match.", call. = FALSE)
+  if (want_overall && want_pred &&
+      nrow(overall_sg) > 0L && nrow(pred_sg) > 0L &&
+      nrow(pred_sg) != nrow(overall_sg)) {
+    stop("Overall and Prediction subgroup rows must match.", call. = FALSE)
   }
 
-  pooled_b <- if (want_pooled && nrow(pooled_sg) > 0L) {
+  overall_b <- if (want_overall && nrow(overall_sg) > 0L) {
     comparison_forest_align_marginal_interaction(
-      pooled_sg,
-      pooled_int,
+      overall_sg,
+      overall_int,
       reference = reference
     )
   } else {
@@ -1485,8 +1508,12 @@ comparison_forest_interleave_pooled_prediction <- function(pooled_sg,
       row_kind = row_kind,
       yi = NA_real_,
       vi = NA_real_,
+      ci.lb = NA_real_,
+      ci.ub = NA_real_,
       b_yi = NA_real_,
       b_vi = NA_real_,
+      b_ci.lb = NA_real_,
+      b_ci.ub = NA_real_,
       stringsAsFactors = FALSE
     )
   }
@@ -1503,16 +1530,20 @@ comparison_forest_interleave_pooled_prediction <- function(pooled_sg,
       colour_lab <- lab
     }
 
-    if (want_pooled && nrow(pooled_sg) > 0L) {
+    if (want_overall && nrow(overall_sg) > 0L) {
       rows[[length(rows) + 1L]] <- data.frame(
         trial = tr,
         subgroup = lab,
         colour_label = colour_lab,
-        row_kind = "pooled",
-        yi = pooled_sg$yi[[i]],
-        vi = pooled_sg$vi[[i]],
-        b_yi = pooled_b$yi[[i]],
-        b_vi = pooled_b$vi[[i]],
+        row_kind = "overall",
+        yi = overall_sg$yi[[i]],
+        vi = overall_sg$vi[[i]],
+        ci.lb = comparison_forest_interval_col(overall_sg, "ci.lb")[[i]],
+        ci.ub = comparison_forest_interval_col(overall_sg, "ci.ub")[[i]],
+        b_yi = overall_b$yi[[i]],
+        b_vi = overall_b$vi[[i]],
+        b_ci.lb = comparison_forest_interval_col(overall_b, "ci.lb")[[i]],
+        b_ci.ub = comparison_forest_interval_col(overall_b, "ci.ub")[[i]],
         stringsAsFactors = FALSE
       )
     } else {
@@ -1520,7 +1551,7 @@ comparison_forest_interleave_pooled_prediction <- function(pooled_sg,
         tr = tr,
         lab = lab,
         colour_lab = colour_lab,
-        row_kind = "pooled"
+        row_kind = "overall"
       )
     }
 
@@ -1532,8 +1563,12 @@ comparison_forest_interleave_pooled_prediction <- function(pooled_sg,
         row_kind = "prediction",
         yi = pred_sg$yi[[i]],
         vi = pred_sg$vi[[i]],
+        ci.lb = comparison_forest_interval_col(pred_sg, "ci.lb")[[i]],
+        ci.ub = comparison_forest_interval_col(pred_sg, "ci.ub")[[i]],
         b_yi = pred_b$yi[[i]],
         b_vi = pred_b$vi[[i]],
+        b_ci.lb = comparison_forest_interval_col(pred_b, "ci.lb")[[i]],
+        b_ci.ub = comparison_forest_interval_col(pred_b, "ci.ub")[[i]],
         stringsAsFactors = FALSE
       )
     } else {
@@ -1547,9 +1582,14 @@ comparison_forest_interleave_pooled_prediction <- function(pooled_sg,
   }
 
   out <- dplyr::bind_rows(rows)
-  panel_b <- data.frame(yi = out$b_yi, vi = out$b_vi, stringsAsFactors = FALSE)
-  out$b_yi <- NULL
-  out$b_vi <- NULL
+  panel_b <- data.frame(
+    yi = out$b_yi,
+    vi = out$b_vi,
+    ci.lb = out$b_ci.lb,
+    ci.ub = out$b_ci.ub,
+    stringsAsFactors = FALSE
+  )
+  out[c("b_yi", "b_vi", "b_ci.lb", "b_ci.ub")] <- NULL
   list(subgroup = out, panel_b = panel_b)
 }
 
@@ -1564,6 +1604,8 @@ comparison_forest_overall_subgroup_block <- function(summary,
     subgroup = s$subgroup,
     yi = s$mean,
     vi = pmax(s$sd^2, 1e-12, na.rm = TRUE),
+    ci.lb = comparison_forest_interval_col(s, "lci"),
+    ci.ub = comparison_forest_interval_col(s, "uci"),
     row_kind = "subgroup_effect",
     stringsAsFactors = FALSE
   )
@@ -1573,7 +1615,7 @@ comparison_forest_overall_subgroup_block <- function(summary,
   ord <- match(as.character(subgroup_order), as.character(out$subgroup))
   if (any(is.na(ord))) {
     stop(
-      "Pooled subgroup rows do not match forest subgroup levels.",
+      "Overall subgroup rows do not match forest subgroup levels.",
       call. = FALSE
     )
   }
@@ -1601,6 +1643,8 @@ comparison_forest_overall_interaction_block <- function(summary, type, overall_l
     subgroup = s$interaction,
     yi = s$mean,
     vi = pmax(s$sd^2, 1e-12, na.rm = TRUE),
+    ci.lb = comparison_forest_interval_col(s, "lci"),
+    ci.ub = comparison_forest_interval_col(s, "uci"),
     row_kind = "interaction_effect",
     stringsAsFactors = FALSE
   )
@@ -1619,7 +1663,7 @@ comparison_forest_subgroup_rows <- function(dat, trial_var, subgroup_var, contra
   out
 }
 
-#' Reorder forest rows to match a trial × subgroup template
+#' Reorder forest rows to match a trial-by-subgroup template
 #' @noRd
 comparison_forest_order_to_template <- function(df, template, trial_var = "trial", subgroup_var = "subgroup") {
   if (!nrow(df) || !nrow(template)) {
@@ -1631,7 +1675,7 @@ comparison_forest_order_to_template <- function(df, template, trial_var = "trial
   idx <- match(keys, df_keys)
   if (any(is.na(idx))) {
     stop(
-      "Forest rows do not align with the trial × subgroup template.",
+      "Forest rows do not align with the trial-by-subgroup template.",
       call. = FALSE
     )
   }
@@ -1895,14 +1939,14 @@ append_comparison_forest_block <- function(resultsA,
     ""
   }
 
-  # Axis detail: block name, else Pooled/Prediction from subgroup for overall
+  # Axis detail: block name, else Overall/Prediction from subgroup for overall
   # rows, else title-cased row_kind. Avoids NBSP placeholders and duplicate
-  # "Younger" / "Overall" axis ticks.
+  # "Younger" / "Combined" axis ticks.
   detail_lab <- if (nzchar(block_lab)) {
     rep(block_lab, n_add)
   } else {
     ifelse(
-      row_kind_chr == "overall" & nzchar(sg_lab),
+      row_kind_chr == "combined" & nzchar(sg_lab),
       sg_lab,
       ifelse(
         nzchar(row_kind_chr),

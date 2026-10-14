@@ -20,10 +20,10 @@ univariate fits: \verb{$overall} (\code{\link[bayesmeta:bmr]{bayesmeta::bmr()}} 
 \verb{$interaction} (\code{\link[bayesmeta:bayesmeta]{bayesmeta::bayesmeta()}} of \eqn{g_j}), and \verb{$trial_blocks}.
 Those objects are the \code{bayesmeta} / DIRECT backend, not CAMS estimands.
 Plot them with the native \code{bayesmeta} methods
-(\code{vignette("further")}). For frequentist CAMS the
+(\code{vignette("introduction-to-interact")}). For frequentist CAMS the
 analogue is \verb{$metafor}.
 }
 \seealso{
-\code{\link[=traceplot.interactmeta]{traceplot.interactmeta()}}, \code{vignette("further")}
+\code{\link[=traceplot.interactmeta]{traceplot.interactmeta()}}, \code{vignette("introduction-to-interact")}
 }
 \keyword{internal}

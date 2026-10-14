@@ -16,7 +16,7 @@ cams(
   contrast = "all",
   contrast_sep = "-",
   big_var = 100^2,
-  include_overall = FALSE,
+  include_combined = FALSE,
   include_interaction = FALSE,
   method = c("bayes", "REML", "ML"),
   ecological_slope = TRUE,
@@ -42,7 +42,7 @@ cam(
   contrast = "all",
   contrast_sep = "-",
   big_var = 100^2,
-  include_overall = FALSE,
+  include_combined = FALSE,
   include_interaction = FALSE,
   method = c("bayes", "REML", "ML"),
   ecological_slope = TRUE,
@@ -78,7 +78,7 @@ accepted; \code{modifier} is the name to use.}
 \item{trial_var, subgroup_var}{Column names used in the model (defaults
 match \code{trial} and \code{subgroup}). \code{subgroup_var} remains accepted.}
 
-\item{contrast, contrast_sep, big_var, include_overall, include_interaction}{Passed
+\item{contrast, contrast_sep, big_var, include_combined, include_interaction}{Passed
 to \code{\link[=ifrac]{ifrac()}} when information fractions are computed inside \code{cam()}.}
 
 \item{method}{Inferential method: \code{"bayes"} (default for Bayesian CAMS),
@@ -197,7 +197,7 @@ Population lines become \eqn{\mu_A=\alpha}, \eqn{\mu_B=\alpha+\gamma},
 
 CAMS can be fitted using Bayesian or frequentist inference. These are not
 two different scientific models. The approaches are \strong{bayesmeta} (DIRECT,
-the default) and \strong{metafor} (REML or ML). See \code{vignette("engine-comparison")}.
+the default) and \strong{metafor} (REML or ML). See \code{vignette("introduction-to-interact")}.
 
 Computational knobs (quadrature controls, optimizer settings) go in
 \code{engine_args}, not as model arguments.
@@ -280,18 +280,15 @@ blocks. Independent normals on \eqn{(\alpha,\beta,\gamma)} would couple
 
 For Bayesian CAMS, public extractors (\code{\link[=subgroups]{subgroups()}}, \code{\link[=interactions]{interactions()}},
 \code{\link[=combined]{combined()}}, \code{\link[=predict_cams_by_if]{predict_cams_by_if()}}, \code{\link[=shrinkage]{shrinkage()}}, \code{\link[=plot_contribution]{plot_contribution()}})
-report \strong{equal-tail} credible intervals from the DIRECT-node Gaussian
-mixture (\code{.weight} and within-node \verb{.cond_*} moments). That is the fast
-manuscript-facing rule. Native bayesmeta/\code{bmr} \verb{$post.interval} and
-\code{bayesmeta::convolve()} (with \code{interval.type} \code{"shortest"} or \code{"central"})
-remain on \verb{$latent} as the engine-native concept and are not recomputed
-for every extractor or IF-grid point. Alpha and theta are never convolved
-with each other.
+report shortest credible intervals from the DIRECT-node Gaussian mixture
+(\code{.weight} and within-node \verb{.cond_*} moments), matching the default
+bayesmeta interval rule. Alpha and theta are never convolved with each
+other.
 }
 
 \examples{
 \dontrun{
-library(interactmeta)
+library(interact)
 
 es <- escalc(measure = "IRR", yi = age$yi, vi = age$vi, data = age)
 fit <- bayescams(es, reference = "Younger")

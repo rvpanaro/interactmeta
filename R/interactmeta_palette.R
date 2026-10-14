@@ -68,7 +68,7 @@ interactmeta_paletteer_d <- function(palette, n) {
   interactmeta_normalize_hex(paletteer::paletteer_d(pal, n = n))
 }
 
-#' Colour palette for interactmeta figures
+#' Colour palette for interact figures
 #'
 #' Named colours for figures. The default discrete scale (`"okabeito"`) uses
 #' **red** for the reference subgroup and **blue** for the non-reference, then

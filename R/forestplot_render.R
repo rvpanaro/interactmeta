@@ -449,7 +449,7 @@ forestplot_style_colours <- function(...) {
 
 #' Default summary diamond colour (palette navy)
 #'
-#' Used for all Pooled / Prediction / Overall diamonds. Not subgroup identity.
+#' Used for all Overall / Prediction / Combined diamonds. Not subgroup identity.
 #' @noRd
 forestplot_default_summary_colour <- function() {
   interactmeta_plot_constants()$forest_summary
@@ -473,7 +473,7 @@ forestplot_interaction_summary_colour <- function() {
   forestplot_default_summary_colour()
 }
 
-#' Overall-block summary diamond colour
+#' Combined-block summary diamond colour
 #' @noRd
 forestplot_overall_summary_colour <- function() {
   forestplot_default_summary_colour()
@@ -482,7 +482,7 @@ forestplot_overall_summary_colour <- function() {
 #' Summary diamond / prediction-bar colour for a forest block heading
 #'
 #' All summary diamonds use palette navy, independent of `group`
-#' and block role (subgroups, Interaction, Overall).
+#' and block role (subgroups, Interaction, Combined).
 #'
 #' @param heading Block heading (unused for colour; kept for call compatibility).
 #' @param reference Optional reference subgroup label (unused for colour).
@@ -664,7 +664,7 @@ forestplot_apply_default_colours <- function(resultsA, resultsB) {
     if (!nrow(df) || !"row_kind" %in% names(df)) {
       return(df)
     }
-    ix <- which(df$row_kind %in% c("pooled", "prediction", "overall"))
+    ix <- which(df$row_kind %in% c("overall", "prediction", "combined"))
     if (!length(ix)) {
       return(df)
     }
@@ -725,7 +725,7 @@ forestplot_apply_journal_colours <- function(resultsA,
       rk <- as.character(df$row_kind)
       paint_ix <- paint_ix &
         !identical_row_kind_shrinkage(rk) &
-        !(rk %in% c("pooled", "prediction", "overall") & !is.na(rk))
+        !(rk %in% c("overall", "prediction", "combined") & !is.na(rk))
     }
     if ("shape" %in% names(df)) {
       shapes <- as.integer(df$shape)

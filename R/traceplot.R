@@ -15,9 +15,9 @@ check_bayesmeta <- function() {
 #' Draws [bayesmeta::traceplot()] diagnostics from the **native**
 #' `bayesmeta` / `bmr` objects stored on a Bayesian CAMS fit
 #' (study-specific shrinkage means vs heterogeneity τ, with the τ posterior
-#' underneath). Available `type` values match those native objects:
-#' **interaction** (the interaction-block `bayesmeta` fit) and **overall**
-#' (the overall-block `bmr` fit).
+#' underneath). Available `type` values are **interaction** (the
+#' interaction-block `bayesmeta` fit) and **combined** (the combined-population
+#' effects represented by the overall-block `bmr` fit).
 #'
 #' This method does **not** fit auxiliary [bayesmeta::bayesmeta()] models.
 #' Frequentist CAMS fits have no native bayesmeta objects; `traceplot()`
@@ -27,15 +27,15 @@ check_bayesmeta <- function() {
 #'
 #' @param x A Bayesian [`interactmeta`] from [cam()]
 #'   (`engine = "bayesmeta"`).
-#' @param type `"interaction"` or `"overall"` (also `"combined"`, an alias of
-#'   overall). `"subgroups"` is rejected: Bayesian CAMS does not store
+#' @param type `"interaction"` or `"combined"`. `"subgroups"` is rejected:
+#'   Bayesian CAMS does not store
 #'   separate per-subgroup meta-analyses.
 #' @param ylab y-axis label passed to [bayesmeta::traceplot()]. Default is
 #'   `"Interaction"` for `type = "interaction"` and `"Effect"` for
-#'   `"overall"` / `"combined"`.
+#'   `"combined"`.
 #' @param xlab x-axis label used in place of bayesmeta's hardcoded
 #'   `"heterogeneity τ"`. Default is `"heterogeneity τ_γ"` for
-#'   interaction and `"heterogeneity τ"` for overall / combined.
+#'   interaction and `"heterogeneity τ"` for combined.
 #' @param tau.prior Ignored. Retained for compatibility; the stored native
 #'   objects already use the CAMS priors from the original [cam()] fit.
 #' @param X Optional design row for [bayesmeta::traceplot.bmr]. Default is
@@ -49,19 +49,19 @@ check_bayesmeta <- function() {
 #'
 #' @examples
 #' \dontrun{
-#' library(interactmeta)
+#' library(interact)
 #' es <- escalc(measure = "IRR", yi = age$yi, vi = age$vi, data = age)
 #' fit <- cam(es, reference = "Younger")
 #' traceplot(fit, type = "interaction")
-#' traceplot(fit, type = "overall", prior = TRUE)
+#' traceplot(fit, type = "combined", prior = TRUE)
 #' }
 #'
 #' @seealso [forestplot()], [bayesmeta::traceplot()], [plot_heterogeneity()],
-#'   [native_fit()], `vignette("further")`
+#'   [native_fit()], `vignette("introduction-to-interact")`
 #' @export
 #' @exportS3Method bayesmeta::traceplot interactmeta
 traceplot.interactmeta <- function(x,
-                               type = c("subgroups", "interaction", "overall", "combined"),
+                               type = c("subgroups", "interaction", "combined"),
                                ylab = NULL,
                                xlab = NULL,
                                tau.prior = "sqrt",
@@ -132,7 +132,7 @@ comparison_traceplot_axis_labels <- function(type, ylab = NULL, xlab = NULL) {
     xlab <- if (identical(type, "interaction")) {
       heterogeneity_tau_xlab("Interaction")
     } else {
-      heterogeneity_tau_xlab("Overall")
+      heterogeneity_tau_xlab("Combined")
     }
   }
   list(ylab = ylab, xlab = xlab)
@@ -195,7 +195,7 @@ comparison_traceplot_objects <- function(fit, type, tau.prior = "sqrt") {
     stop(
       "traceplot(type = \"subgroups\") is not available. The bayesmeta CAMS ",
       "engine stores an overall bmr fit and an interaction bayesmeta fit, ",
-      "not separate per-subgroup meta-analyses. Use type = \"overall\" or ",
+      "not separate per-subgroup meta-analyses. Use type = \"combined\" or ",
       "type = \"interaction\".",
       call. = FALSE
     )
@@ -211,7 +211,7 @@ comparison_traceplot_objects <- function(fit, type, tau.prior = "sqrt") {
   if (is.null(obj)) {
     stop("This CAMS fit has no stored native overall bmr object.", call. = FALSE)
   }
-  list(Overall = obj)
+  list(Combined = obj)
 }
 
 #' Default X row for overall bmr: intercept + mean trial IF from the stored fit
@@ -231,7 +231,7 @@ comparison_traceplot_default_bmr_X <- function(fit, overall_fit = NULL) {
   matrix(
     c(1, pi),
     nrow = 1L,
-    dimnames = list(sprintf("Overall (IF = %.2f)", pi), c("intercept", "ifrac"))
+    dimnames = list(sprintf("Combined (IF = %.2f)", pi), c("intercept", "ifrac"))
   )
 }
 

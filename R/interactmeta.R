@@ -84,7 +84,7 @@ interactmeta_build_input <- function(data,
 #'
 #' @examples
 #' \dontrun{
-#' library(interactmeta)
+#' library(interact)
 #' es <- escalc(measure = "IRR", yi = age$yi, vi = age$vi, data = age)
 #' fit <- bayescams(es, reference = "Younger")
 #' }
@@ -102,7 +102,7 @@ bayescams <- function(x,
                      contrast = "all",
                      contrast_sep = "-",
                      big_var = 100^2,
-                     include_overall = FALSE,
+                     include_combined = FALSE,
                      include_interaction = FALSE,
                      ecological_slope = TRUE,
                      engine = "bayesmeta",
@@ -132,7 +132,7 @@ bayescams <- function(x,
         contrast = contrast,
         contrast_sep = contrast_sep,
         big_var = big_var,
-        include_overall = include_overall,
+        include_combined = include_combined,
         include_interaction = include_interaction,
         method = "bayes",
         ecological_slope = ecological_slope,

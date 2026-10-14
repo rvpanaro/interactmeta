@@ -22,7 +22,7 @@
 #'
 #' @examples
 #' \dontrun{
-#' library(interactmeta)
+#' library(interact)
 #' fit <- cam(es, reference = "Younger")
 #' heterogeneity(fit)
 #' heterogeneity(fit, component = "intercept")
@@ -169,7 +169,7 @@ heterogeneity_footnote <- function(x, prob = NULL, digits = 2, include_ci = TRUE
     return("")
   }
 
-  # Overall (intercept) before interaction (slope) when both are present.
+  # Combined (intercept) before interaction (slope) when both are present.
   if ("type" %in% names(summ)) {
     ord <- order(match(as.character(summ$type), c("intercept", "slope"), nomatch = 99L))
     summ <- summ[ord, , drop = FALSE]
@@ -259,7 +259,7 @@ comparison_heterogeneity_specs <- function(fit, trial_var = NULL, component = "a
   }
 
   specs <- data.frame(
-    parameter = "Overall",
+    parameter = "Combined",
     hypothesis = sprintf("%s__Intercept = 0", trial_var),
     label = heterogeneity_tau_label("overall"),
     type = "intercept",

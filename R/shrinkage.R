@@ -22,7 +22,7 @@
 #'
 #' This is **not** the fixed-effect linear predictor at \eqn{\pi_j}.
 #' [fitted()] returns that FE mean (`fit$mu`); [shrinkage()] is the
-#' trial-level reconstruction the forest greys use. Pooled / Prediction use
+#' trial-level reconstruction the forest greys use. Overall / Prediction use
 #' overall IF \eqn{\omega}; see [subgroups()] and
 #' [standardized_trial_effects()].
 #'
@@ -30,7 +30,7 @@
 #' @param type Which estimand (same labels as [forestplot()]):
 #'   - `"subgroups"` (default; `"subgroup"` accepted): \eqn{\mu_{A,j}, \mu_{B,j}}
 #'   - `"interaction"`: \eqn{g_j}
-#'   - `"overall"`: \eqn{m_j}
+#'   - `"combined"`: \eqn{m_j}
 #' @param format Output representation:
 #'   - `"list"` (default): S3 object with long `$draws`, optional `$summary`,
 #'     and `$components` (observed / shrunk matrices)
@@ -57,7 +57,7 @@
 #'   [subgroups()], [interactions()], [combined()], [forestplot()]
 #' @export
 shrinkage <- function(fit,
-                      type = c("subgroups", "interaction", "overall", "combined"),
+                      type = c("subgroups", "interaction", "combined"),
                       format = c("list", "summary"),
                       prob = 0.95,
                       max_draws = NULL,
@@ -138,7 +138,7 @@ shrinkage_components <- function(fit, ..., contribution = NULL) {
 #' posterior means.
 #'
 #' @param fit A [`interactmeta`] from [cam()].
-#' @param type Which estimand: `"subgroups"`, `"interaction"`, or `"overall"`.
+#' @param type Which estimand: `"subgroups"`, `"interaction"`, or `"combined"`.
 #' @param format Output representation (same choices as [shrinkage()]).
 #' @param prob Coverage probability for intervals when a summary is built.
 #' @param max_draws Optional cap on unweighted posterior rows. Rejected for
@@ -156,7 +156,7 @@ shrinkage_components <- function(fit, ..., contribution = NULL) {
 #' @seealso [shrinkage()], [subgroups()]
 #' @export
 standardized_trial_effects <- function(fit,
-                                       type = c("subgroups", "interaction", "overall", "combined"),
+                                       type = c("subgroups", "interaction", "combined"),
                                        format = c("list", "summary"),
                                        prob = 0.95,
                                        max_draws = NULL,
@@ -201,13 +201,13 @@ standardized_trial_effects <- function(fit,
 
 #' Resolve shrinkage `type`, accepting forestplot labels and legacy `component`
 #' @noRd
-comparison_shrinkage_resolve_type <- function(type = c("subgroups", "interaction", "overall", "combined"),
+comparison_shrinkage_resolve_type <- function(type = c("subgroups", "interaction", "combined"),
                                         component = NULL) {
   if (!is.null(component)) {
     warning(
       "`component` is soft-deprecated; use `type` with the same labels as ",
       "`forestplot()` / `traceplot()` (`\"subgroups\"`, `\"interaction\"`, ",
-      "or `\"overall\"`).",
+      "or `\"combined\"`).",
       call. = FALSE
     )
     component <- as.character(component)[[1L]]
@@ -216,17 +216,16 @@ comparison_shrinkage_resolve_type <- function(type = c("subgroups", "interaction
       subgroup = "subgroups",
       subgroups = "subgroups",
       interaction = "interaction",
-      overall = "overall",
-      combined = "overall",
+      combined = "combined",
       all = stop(
         "`component = \"all\"` is no longer supported; call `shrinkage()` ",
-        "once per `type` (`\"subgroups\"`, `\"interaction\"`, `\"overall\"`, ",
-        "or `\"combined\"`).",
+        "once per `type` (`\"subgroups\"`, `\"interaction\"`, or ",
+        "`\"combined\"`).",
         call. = FALSE
       ),
       stop(
         "`component` must be one of \"subgroup\", \"subgroups\", ",
-        "\"interaction\", \"overall\", or \"combined\".",
+        "\"interaction\", or \"combined\".",
         call. = FALSE
       )
     )
@@ -236,10 +235,11 @@ comparison_shrinkage_resolve_type <- function(type = c("subgroups", "interaction
   if (identical(type, "all")) {
     stop(
       "`type = \"all\"` is not supported; use `\"subgroups\"`, ",
-      "`\"interaction\"`, `\"overall\"`, or `\"combined\"` (same as `forestplot()`).",
+      "`\"interaction\"`, or `\"combined\"` (same as `forestplot()`).",
       call. = FALSE
     )
   }
+  type <- match.arg(type, c("subgroups", "interaction", "combined"))
   comparison_resolve_effect_type(type)
 }
 
@@ -328,7 +328,7 @@ interactmeta_shrinkage_component <- function(type, fit, ...) {
     type,
     subgroups = interactmeta_subgroup_effects_shrinkage(fit, ...),
     interaction = interactmeta_interaction_effects_shrinkage(fit, ...),
-    overall = interactmeta_overall_effects_shrinkage(fit, ...),
+    combined = interactmeta_combined_effects_shrinkage(fit, ...),
     stop("Unknown shrinkage type `", type, "`.", call. = FALSE)
   )
   interactmeta_attach_origin(out, fit, quantity = paste0("shrinkage_", type))

@@ -36,7 +36,7 @@
 #' @param ifrac When `contribution` is `NULL`, passed to [ifrac()]: `"interaction"`
 #'   (default; interaction-weighted pooling of trial-level \eqn{\pi_j}) or
 #'   `"overall"` for overall-block precision weights.
-#' @param type One or both of `"Pooled"` and `"Prediction"`. `"Pooled"` uses fixed
+#' @param type One or both of `"Overall"` and `"Prediction"`. `"Overall"` uses fixed
 #'   effects only; `"Prediction"` adds a new-trial random effect drawn from the
 #'   posterior trial SDs at the combined-population IF (effect in a new **study**).
 #' @param prob Coverage probability for `lci` / `uci` when `summary = TRUE`.
@@ -49,15 +49,15 @@
 #'   summarizing (e.g. log rate ratios to ratios).
 #' @param shrinkage If `TRUE`, delegate to [shrinkage()] with
 #'   `type = "subgroups"` (trial-specific reconstruction at each study's
-#'   \eqn{\pi_j}). If `FALSE` (default), return only Pooled / Prediction at the
+#'   \eqn{\pi_j}). If `FALSE` (default), return only Overall / Prediction at the
 #'   combined-population information fraction.
 #'
 #' @return A `interactmeta_subgroup_effects` object (list with `draws`, `summary`,
 #'   `overall_ifrac`, `overall_ifrac_source` (`"fit"` or `"user"`), `reference`,
 #'   `prob`, `exponentiate`). Draws are indexed by `subgroup` and `type`.
 #'   `summary` includes `estimate` (median), `mean`, `sd`, `lci`, and `uci`.
-#'   For Bayesian CAMS, `lci`/`uci` are equal-tail mixture quantiles from the
-#'   DIRECT-node table; native `$post.interval` / `convolve()` stay on `$latent`.
+#'   For Bayesian CAMS, `lci`/`uci` are shortest posterior intervals from the
+#'   DIRECT-node mixture.
 #'
 #' @seealso [combined()], [interactions()], [shrinkage()], [ifrac()],
 #'   [forestplot.interactmeta()]
@@ -65,7 +65,7 @@
 subgroups <- function(fit,
                              contribution = NULL,
                              ifrac = c("interaction", "overall"),
-                             type = c("Pooled", "Prediction"),
+                             type = c("Overall", "Prediction"),
                              prob = 0.95,
                              max_draws = NULL,
                              summary = TRUE,
@@ -102,7 +102,7 @@ subgroups <- function(fit,
     }
     return(out)
   }
-  type <- match.arg(type, c("Pooled", "Prediction"), several.ok = TRUE)
+  type <- match.arg(type, c("Overall", "Prediction"), several.ok = TRUE)
   ifrac <- match.arg(ifrac)
 
   prep <- comparison_prepare_marginal_draws(
@@ -203,31 +203,28 @@ modifiers <- subgroups
 #' effects are the transformed quantities
 #' \eqn{m_j = (1-\pi_j)y_{Aj}+\pi_j y_{Bj}}.
 #'
-#' Prefer [combined()] in new code. [overall()] is a backward-compatible alias.
-#'
 #' @param fit A [`interactmeta`] from [cam()] / [cam()].
 #' @param contribution Combined-population information fraction \eqn{\pi}
 #'   to evaluate at; see [subgroups()].
 #' @param ifrac When `contribution` is `NULL`, passed to [ifrac()]: `"interaction"`
 #'   (default) or `"overall"` for overall-block pooling of trial
 #'   information fractions.
-#' @param type One or both of `"Pooled"` and `"Prediction"` (new-trial random
+#' @param type One or both of `"Overall"` and `"Prediction"` (new-trial random
 #'   effect; see [subgroups()]).
 #' @param prob,max_draws,summary,contrast_sep,exponentiate,shrinkage As in
 #'   [subgroups()].
 #'
-#' @return A `interactmeta_overall_effect` object (list with `draws`, `summary`,
-#'   `overall_ifrac`, `overall_ifrac_source`, `ifrac`, `reference`, `prob`).
-#'   Also inherits class `interactmeta_combined_effect`. Draws are indexed by
-#'   `type`. `summary` includes `estimate` (median), `mean`, `sd`, `lci`, and
-#'   `uci`.
+#' @return An `interactmeta_combined_effect` object (list with `draws`,
+#'   `summary`, `overall_ifrac`, `overall_ifrac_source`, `ifrac`, `reference`,
+#'   `prob`). Draws are indexed by `type`. `summary` includes `estimate`
+#'   (median), `mean`, `sd`, `lci`, and `uci`.
 #'
 #' @seealso [subgroups()], [interactions()], [ifrac()]
 #' @export
 combined <- function(fit,
                      contribution = NULL,
                      ifrac = c("interaction", "overall"),
-                     type = c("Pooled", "Prediction"),
+                     type = c("Overall", "Prediction"),
                      prob = 0.95,
                      max_draws = NULL,
                      summary = TRUE,
@@ -242,7 +239,7 @@ combined <- function(fit,
   if (isTRUE(shrinkage)) {
     return(shrinkage(
       fit,
-      type = "overall",
+      type = "combined",
       prob = prob,
       max_draws = max_draws,
       summary = summary,
@@ -252,7 +249,7 @@ combined <- function(fit,
       exponentiate = exponentiate
     ))
   }
-  type <- match.arg(type, c("Pooled", "Prediction"), several.ok = TRUE)
+  type <- match.arg(type, c("Overall", "Prediction"), several.ok = TRUE)
   ifrac <- match.arg(ifrac)
 
   prep <- comparison_prepare_marginal_draws(
@@ -319,34 +316,8 @@ combined <- function(fit,
   } else {
     out$draws <- comparison_transform_effect_draws(draws, exponentiate)
   }
-  class(out) <- c("interactmeta_combined_effect", "interactmeta_overall_effect", class(out))
+  class(out) <- c("interactmeta_combined_effect", class(out))
   interactmeta_attach_origin(out, fit, quantity = "combined")
-}
-
-#' @rdname combined
-#' @export
-overall <- function(fit,
-                    contribution = NULL,
-                    ifrac = c("interaction", "overall"),
-                    type = c("Pooled", "Prediction"),
-                    prob = 0.95,
-                    max_draws = NULL,
-                    summary = TRUE,
-                    contrast_sep = "-",
-                    exponentiate = FALSE,
-                    shrinkage = FALSE) {
-  combined(
-    fit = fit,
-    contribution = contribution,
-    ifrac = ifrac,
-    type = type,
-    prob = prob,
-    max_draws = max_draws,
-    summary = summary,
-    contrast_sep = contrast_sep,
-    exponentiate = exponentiate,
-    shrinkage = shrinkage
-  )
 }
 
 #' @noRd
@@ -377,7 +348,7 @@ interactmeta_subgroup_effects_shrinkage <- function(fit,
 }
 
 #' @noRd
-interactmeta_overall_effects_shrinkage <- function(fit,
+interactmeta_combined_effects_shrinkage <- function(fit,
                                            prob,
                                            max_draws,
                                            summary,
@@ -396,7 +367,7 @@ interactmeta_overall_effects_shrinkage <- function(fit,
   )
   comparison_shrinkage_effect_from_bundle(
     bundle = bundle,
-    type = "overall",
+    type = "combined",
     prob = prob,
     summary = summary,
     exponentiate = exponentiate
@@ -406,7 +377,7 @@ interactmeta_overall_effects_shrinkage <- function(fit,
 #' Build a typed shrinkage effect object from one rotation bundle
 #' @noRd
 comparison_shrinkage_effect_from_bundle <- function(bundle,
-                                              type = c("subgroups", "interaction", "overall", "combined"),
+                                              type = c("subgroups", "interaction", "combined"),
                                               prob = 0.95,
                                               summary = TRUE,
                                               exponentiate = FALSE) {
@@ -497,20 +468,72 @@ comparison_shrinkage_effect_from_bundle <- function(bundle,
     components = comparison_shrinkage_components_list(bundle)
   )
   out$summary <- interactmeta_bayesmeta_maybe_fill_shrinkage(
-    bundle, fin$summary, type = "overall", prob = prob, exponentiate = exponentiate
+    bundle, fin$summary, type = "combined", prob = prob, exponentiate = exponentiate
   )
-  class(out) <- c("interactmeta_overall_effect", class(out))
+  class(out) <- c("interactmeta_combined_effect", class(out))
   out
 }
 
-#' Public shrinkage summaries keep the DIRECT-mixture equal-tail intervals.
-#' Native `$latent` convolve / shrink intervals stay available on the fit.
+#' Public shrinkage summaries use shortest DIRECT-mixture intervals.
+#' Native `$latent` convolve / shrink intervals remain available on the fit.
 #' @noRd
 interactmeta_bayesmeta_maybe_fill_shrinkage <- function(bundle,
                                                        summary,
                                                        type,
                                                        prob,
                                                        exponentiate) {
+  fit <- bundle$fit
+  if (is.null(summary) || !nrow(summary) ||
+      !identical(fit$engine, "bayesmeta") ||
+      !identical(bundle$evaluation %||% "trial", "trial") ||
+      is.null(fit$latent)) {
+    return(summary)
+  }
+  interval.type <- fit$interval.type %||% "shortest"
+  for (i in seq_len(nrow(summary))) {
+    tr <- as.character(summary$trial[[i]])
+    posterior <- if (identical(type, "subgroups")) {
+      subgroup <- as.character(summary$subgroup[[i]])
+      if (identical(subgroup, bundle$reference)) {
+        fit$latent$mu_A[[tr]]
+      } else if (identical(subgroup, bundle$nonref)) {
+        fit$latent$mu_B[[tr]]
+      } else {
+        NULL
+      }
+    } else if (identical(type, "interaction")) {
+      fit$latent$g[[tr]]
+    } else if (identical(type, "combined")) {
+      fit$latent$m[[tr]]
+    } else {
+      NULL
+    }
+    if (is.null(posterior)) {
+      next
+    }
+    sm <- interactmeta_posterior_1d_summary(
+      posterior,
+      prob = prob,
+      interval.type = interval.type
+    )
+    if (isTRUE(exponentiate)) {
+      summary$estimate[[i]] <- exp(sm$median)
+      summary$lci[[i]] <- exp(sm$lower)
+      summary$uci[[i]] <- exp(sm$upper)
+      if (!is.null(posterior$gm)) {
+        moments <- interactmeta_gm_lognormal_moments(posterior$gm)
+        summary$mean[[i]] <- moments$mean
+        summary$sd[[i]] <- moments$sd
+      }
+    } else {
+      summary$estimate[[i]] <- sm$median
+      summary$mean[[i]] <- sm$mean
+      summary$sd[[i]] <- sm$sd
+      summary$lci[[i]] <- sm$lower
+      summary$uci[[i]] <- sm$upper
+    }
+  }
+  attr(summary, "interval.type") <- interval.type
   summary
 }
 
@@ -632,6 +655,39 @@ comparison_overall_shrinkage_draws <- function(sg_draws,
   dplyr::bind_rows(rows)
 }
 
+#' Print the reporting information fraction stored on an effect summary
+#' @noRd
+comparison_print_reporting_ifrac <- function(x, digits = 2) {
+  oi <- x$overall_ifrac
+  if (is.null(oi) || !length(oi)) {
+    return(invisible(NULL))
+  }
+  summ <- attr(oi, "summary", exact = TRUE)
+  if (is.null(summ)) {
+    summ <- overall_ifrac_summary_df(oi, prob = x$prob %||% 0.95)
+  }
+  estimate <- as.numeric(summ$estimate[[1L]])
+  if (!is.finite(estimate)) {
+    return(invisible(NULL))
+  }
+  fmt <- function(value) {
+    formatC(value, format = "f", digits = digits)
+  }
+  lower <- as.numeric(summ$lci[[1L]])
+  upper <- as.numeric(summ$uci[[1L]])
+  if (is.finite(lower) && is.finite(upper)) {
+    level <- round(100 * (x$prob %||% summ$prob[[1L]] %||% 0.95))
+    cat(
+      "Reporting IF: ", fmt(estimate),
+      " (", level, "% CrI: ", fmt(lower), "\u2013", fmt(upper), ")\n",
+      sep = ""
+    )
+  } else {
+    cat("Reporting IF: ", fmt(estimate), "\n", sep = "")
+  }
+  invisible(NULL)
+}
+
 #' @export
 print.interactmeta_subgroup_effects <- function(x, digits = 2, ...) {
   opts <- comparison_print_digits_prob(x, digits = digits, ...)
@@ -644,12 +700,16 @@ print.interactmeta_subgroup_effects <- function(x, digits = 2, ...) {
     paste0(heading, " effects at overall information fraction")
   }
   if (!is.null(x$summary)) {
+    cat(title, "\n", sep = "")
+    if (!isTRUE(x$shrinkage)) {
+      comparison_print_reporting_ifrac(x, digits = opts$digits)
+    }
     comparison_print_effects_table(
       x$summary,
       digits = opts$digits,
       prob = opts$prob,
       id_cols = c("trial", "subgroup", "type"),
-      title = title,
+      title = NULL,
       style = interactmeta_interval_style(x)
     )
   } else {
@@ -659,7 +719,7 @@ print.interactmeta_subgroup_effects <- function(x, digits = 2, ...) {
 }
 
 #' @export
-print.interactmeta_overall_effect <- function(x, digits = 2, ...) {
+print.interactmeta_combined_effect <- function(x, digits = 2, ...) {
   opts <- comparison_print_digits_prob(x, digits = digits, ...)
   title <- if (isTRUE(x$shrinkage)) {
     "Combined-population shrinkage effects (study-specific)"
@@ -667,12 +727,16 @@ print.interactmeta_overall_effect <- function(x, digits = 2, ...) {
     "Combined-population treatment effect at the combined-population information fraction"
   }
   if (!is.null(x$summary)) {
+    cat(title, "\n", sep = "")
+    if (!isTRUE(x$shrinkage)) {
+      comparison_print_reporting_ifrac(x, digits = opts$digits)
+    }
     comparison_print_effects_table(
       x$summary,
       digits = opts$digits,
       prob = opts$prob,
       id_cols = c("trial", "type"),
-      title = title,
+      title = NULL,
       style = interactmeta_interval_style(x)
     )
   } else {
@@ -927,7 +991,7 @@ interactmeta_has_direct_weights <- function(weight, n) {
   any(is.finite(w) & w > 0)
 }
 
-#' Overall-block IF slope \eqn{\theta = \beta_{\mathrm{pkg}} + \gamma}
+#' Combined-block IF slope \eqn{\theta = \beta_{\mathrm{pkg}} + \gamma}
 #'
 #' Stored `b_ifrac_*` is the common subgroup slope
 #' \eqn{\beta_{\mathrm{pkg}}=\theta-\gamma}, not the slope of \eqn{M(\pi)}.
@@ -965,7 +1029,7 @@ comparison_marginal_overall_effect_draws <- function(post,
                                                omega,
                                                design,
                                                fit,
-                                               type = "Pooled") {
+                                               type = "Overall") {
   composite <- comparison_marginal_overall_composite(post, design, fit)
   lp <- post[["b_Intercept"]] + omega * composite
   if (identical(type, "Prediction")) {
@@ -984,7 +1048,7 @@ comparison_marginal_overall_effect_draws <- function(post,
 #' @param evaluation_if Scalar or length-`nrow(post)` IF at which to evaluate
 #'   (trial \eqn{\pi_j} for shrinkage; overall \eqn{\omega} for pooled /
 #'   prediction / standardized trial effects).
-#' @param re `"zero"` (Pooled), `"new"` (Prediction), or `"stored"` (Shrinkage /
+#' @param re `"zero"` (Overall), `"new"` (Prediction), or `"stored"` (Shrinkage /
 #'   Standardized).
 #' @param trial Required when `re = "stored"`.
 #' @noRd
@@ -1044,7 +1108,7 @@ comparison_effect_linpred_draws <- function(post,
 
 #' Posterior draws of the marginalized effect (linear predictor at overall IF)
 #'
-#' Thin wrapper around `comparison_effect_linpred_draws()` for Pooled / Prediction /
+#' Thin wrapper around `comparison_effect_linpred_draws()` for Overall / Prediction /
 #' Standardized (ω + stored RE). Study-specific shrinkage uses
 #' `comparison_shrinkage_rotation_bundle()` with `evaluation = "trial"` instead.
 #' @noRd
@@ -1058,13 +1122,13 @@ comparison_marginal_effect_draws <- function(post,
                                        trial = NULL) {
   re <- switch(
     type,
-    Pooled = "zero",
+    Overall = "zero",
     Prediction = "new",
     Standardized = "stored",
     Shrinkage = stop(
-      "`type = \"Shrinkage\"` is not evaluated at overall ω. Use ",
+      "`type = \"Shrinkage\"` is not evaluated at overall \u03c9. Use ",
       "`comparison_shrinkage_rotation_bundle()` / `shrinkage()` (pi_j) or ",
-      "`type = \"Standardized\"` (ω + stored RE).",
+      "`type = \"Standardized\"` (\u03c9 + stored RE).",
       call. = FALSE
     ),
     stop("Unknown marginal effect type `", type, "`.", call. = FALSE)
@@ -1313,8 +1377,8 @@ comparison_effects_summary <- function(draws, group_cols, prob = 0.95,
 #'   As in [subgroups()]. `contribution` / `ifrac` are unused for the
 #'   pooled interaction \eqn{\gamma}; they are retained for API compatibility
 #'   and are used when `shrinkage = TRUE`.
-#' @param type One or both of `"Pooled"` and `"Prediction"` when `shrinkage = FALSE`.
-#'   `"Pooled"` is the fixed interaction \eqn{\gamma}. `"Prediction"` is
+#' @param type One or both of `"Overall"` and `"Prediction"` when `shrinkage = FALSE`.
+#'   `"Overall"` is the fixed interaction \eqn{\gamma}. `"Prediction"` is
 #'   the interaction in a **new trial**: \eqn{\gamma} plus
 #'   trial-level slope heterogeneity `v * (ifrac2_nonref - ifrac2_ref)`
 #'   (intercept trial RE cancels within a study).
@@ -1328,7 +1392,7 @@ comparison_effects_summary <- function(draws, group_cols, prob = 0.95,
 interactions <- function(fit,
                                 contribution = NULL,
                                 ifrac = c("interaction", "overall"),
-                                type = c("Pooled", "Prediction"),
+                                type = c("Overall", "Prediction"),
                                 prob = 0.95,
                                 max_draws = NULL,
                                 summary = TRUE,
@@ -1355,7 +1419,7 @@ interactions <- function(fit,
       exponentiate = exponentiate
     ))
   }
-  type <- match.arg(type, c("Pooled", "Prediction"), several.ok = TRUE)
+  type <- match.arg(type, c("Overall", "Prediction"), several.ok = TRUE)
   ifrac <- match.arg(ifrac)
 
   prep <- comparison_prepare_marginal_draws(
@@ -1687,12 +1751,12 @@ comparison_with_seed <- function(seed, expr) {
 
 #' Posterior draws of a subgroup contrast at overall IF
 #'
-#' `"Pooled"`: fixed subgroup contrast only. `"Prediction"`: adds slope
+#' `"Overall"`: fixed subgroup contrast only. `"Prediction"`: adds slope
 #' heterogeneity for a new meta-analysis, `b_contrast + v * delta_ifrac2`.
 #' @noRd
 comparison_marginal_interaction_draws <- function(post,
                                             subgroup_coef,
-                                            type = "Pooled",
+                                            type = "Overall",
                                             fit = NULL,
                                             delta_ifrac2 = 1) {
   if (is.na(subgroup_coef) || !nzchar(subgroup_coef)) {
@@ -1742,9 +1806,9 @@ interactmeta_interaction_effects_shrinkage <- function(fit,
 
 #' Convert effect summary rows to `yi` / `vi` for forest plots
 #'
-#' Pooled / Prediction diamonds use the **mean** of posterior draws as `yi`
+#' Overall / Prediction diamonds use the **mean** of posterior draws as `yi`
 #' and `sd^2` as `vi` (bayesmeta-compatible). Shrinkage greys use the
-#' **median and equal-tail QI** of the reconstructed draws via
+#' **median and shortest posterior interval** of the reconstructed draws via
 #' `interactmeta_effects_merge_yivi()` (`use_posterior_qi = TRUE`).
 #' @noRd
 interactmeta_effects_summary_to_yivi <- function(summary, type = NULL) {
@@ -1766,7 +1830,7 @@ interactmeta_effects_summary_to_yivi <- function(summary, type = NULL) {
 #'
 #' @param use_posterior_qi If `TRUE` (shrinkage forest rows), set `yi` to the
 #'   median of reconstructed draws and attach `ci.lb` / `ci.ub` from the
-#'   equal-tail posterior QI. If `FALSE` (default), use mean / `sd^2`.
+#'   shortest posterior interval. If `FALSE` (default), use mean / `sd^2`.
 #' @noRd
 interactmeta_effects_merge_yivi <- function(template,
                                     summary,

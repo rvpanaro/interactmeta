@@ -39,7 +39,7 @@ test_that("ecological_slope = FALSE fits on public engines with beta = 0", {
   expect_s3_class(sg, "interactmeta_subgroup_effects")
   expect_true(nrow(sg$summary) >= 2L)
   het <- heterogeneity(fit_b)
-  expect_true(any(grepl("Overall", het$summary$parameter)))
+  expect_true(any(grepl("Combined", het$summary$parameter)))
   expect_true(any(grepl("Interaction", het$summary$parameter)))
 })
 
@@ -49,7 +49,7 @@ test_that("constrained joint moments recover alpha and gamma", {
   pi <- c(0.4, 0.5, 0.6)
   vm <- rep(0.04, 3)
   vg <- rep(0.05, 3)
-  mom <- interactmeta:::interactmeta_joint_alpha_gamma_moments(
+  mom <- interact:::interactmeta_joint_alpha_gamma_moments(
     m = m, vm = vm, pi = pi, g = g, vg = vg,
     tau_m = 0, tau_g = 0,
     prior_mean = c(0, 0),

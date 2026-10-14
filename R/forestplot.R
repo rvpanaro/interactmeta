@@ -3,17 +3,17 @@
 #' Draws a forest for a [cam()] fit using [bayesmeta::forestplot.bayesmeta]
 #' (single-block) or [forestplot::forestplot()] with the same conventions
 #' (multi-block): observed study estimates, optional grey **shrinkage**
-#' overlays, and **mean** / **prediction** / **Overall** summaries. An
+#' overlays, and **Overall** / **Prediction** / **Combined** summaries. An
 #' **information fraction** column shows each row's share of trial precision.
 #'
 #' For non-[interactmeta] input (e.g. [metafor::escalc]), arguments are forwarded
 #' to [forestplot::forestplot()], which dispatches to
-#' [bayesmeta::forestplot.escalc] when **bayesmeta** is loaded (interactmeta loads it
+#' [bayesmeta::forestplot.escalc] when **bayesmeta** is loaded (interact loads it
 #' on attach).
 #'
 #' By default (`type = "subgroups"`) the plot shows **subgroup** blocks
-#' (each with **Pooled** and **Prediction**), with overall-IF notes under the
-#' x-axis. Use `type = "interaction"` or `type = "overall"` / `"combined"` for those blocks.
+#' (each with **Overall** and **Prediction**), with overall-IF notes under the
+#' x-axis. Use `type = "interaction"` or `type = "combined"` for those blocks.
 #'
 #' @param x A CAMS fit from [cam()] (`interactmeta`), or another object handled by
 #'   [forestplot::forestplot()] (e.g. `escalc`).
@@ -24,27 +24,27 @@
 #' @param contrast_sep Separator between subgroup labels on interaction rows
 #'   (default `"-"`).
 #' @param model_names Optional character vector selecting marginal layers among
-#'   `"Shrinkage"`, `"Pooled"`, and `"Prediction"` (intersected with the
-#'   `include_*` flags). Prefer `include_shrinkage` / `include_pooled` /
+#'   `"Shrinkage"`, `"Overall"`, and `"Prediction"` (intersected with the
+#'   `include_*` flags). Prefer `include_shrinkage` / `include_overall` /
 #'   `include_prediction` for new code. When `NULL` or the default `"Model 1"`,
 #'   layers follow those flags alone.
-#' @param include_shrinkage,include_pooled,include_prediction,include_overall
-#'   Include shrinkage, pooled, prediction, and overall marginal rows.
-#'   Shrinkage, pooled, prediction, and overall default to `TRUE`. Grey
+#' @param include_shrinkage,include_overall,include_prediction,include_combined
+#'   Include shrinkage, overall-effect, prediction, and combined-population rows.
+#'   All four layers default to `TRUE`. Grey
 #'   shrinkage intervals appear alongside quoted estimates (bayesmeta style)
 #'   in the active `type` block. Set `include_shrinkage = FALSE` to omit them.
-#'   Switching off pooled or prediction keeps blank placeholder rows so the
+#'   Switching off overall or prediction keeps blank placeholder rows so the
 #'   figure height and spacing stay close to the full plot.
 #' @param type Which forest block(s) to draw. One of:
-#'   - `"subgroups"` (default): subgroup blocks only (each with **Pooled** and
-#'     **Prediction** when `include_pooled` / `include_prediction` are `TRUE`)
-#'   - `"interaction"`: Interaction block only (Pooled + Prediction)
-#'   - `"overall"` / `"combined"`: Combined-population block only (Pooled + Prediction)
+#'   - `"subgroups"` (default): subgroup blocks only (each with **Overall** and
+#'     **Prediction** when `include_overall` / `include_prediction` are `TRUE`)
+#'   - `"interaction"`: Interaction block only (Overall + Prediction)
+#'   - `"combined"`: Combined-population block only (Overall + Prediction)
 #'
 #'   Other features (favours, annotations, `include_shrinkage`, …) apply
 #'   within the selected type.
 #' @param ifrac How the overall information fraction ω is pooled via [ifrac()]
-#'   for **annotations** and for **Pooled / Prediction / Overall** diamonds:
+#'   for **annotations** and for **Overall / Prediction / Combined** diamonds:
 #'   `"interaction"` (default; τ_γ and subgroup sampling variances) or
 #'   `"overall"` (τ and design SEs). Shrinkage greys are the trial-specific
 #'   CAMS reconstructions from [shrinkage()] (shrunken \eqn{m_j,g_j} inverted
@@ -63,7 +63,7 @@
 #' @param annotation_digits Decimal places in annotation text (default `2`).
 #' @param favours Optional length-2 character labels placed under the x-axis
 #'   (left / right of the null). Default is `c("Control", "Experimental")`
-#'   for `type = "subgroups"` / `"overall"`. For `type = "interaction"`, the
+#'   for `type = "subgroups"` / `"combined"`. For `type = "interaction"`, the
 #'   default names the reference and non-reference subgroups (same left/right
 #'   roles). Set to `FALSE` to suppress.
 #' @param show_ci_text Logical; show estimate and CI text. Default `TRUE`.
@@ -139,9 +139,9 @@ forestplot <- function(x,
                        pooled = NULL,
                        model_names = "Model 1",
                        include_shrinkage = TRUE,
-                       include_pooled = TRUE,
-                       include_prediction = TRUE,
                        include_overall = TRUE,
+                       include_prediction = TRUE,
+                       include_combined = TRUE,
                        ifrac = c("interaction", "overall"),
                        xlab = NULL,
                        group = "subgroup",
@@ -167,7 +167,7 @@ forestplot <- function(x,
                        grouping = NULL,
                        panel.height = NULL,
                        estimates_only = FALSE,
-                       type = c("subgroups", "interaction", "overall", "combined"),
+                       type = c("subgroups", "interaction", "combined"),
                        which_panel = NULL,
                        ...) {
   if (is.character(modifier) && length(modifier) == 1L && nzchar(modifier)) {
@@ -213,9 +213,9 @@ forestplot <- function(x,
     prob = prob,
     contrast_sep = contrast_sep,
     include_shrinkage = include_shrinkage,
-    include_pooled = include_pooled,
-    include_prediction = include_prediction,
     include_overall = include_overall,
+    include_prediction = include_prediction,
+    include_combined = include_combined,
     exponentiate = exponentiate,
     ifrac = match.arg(ifrac),
     n_var = n_var,
@@ -324,7 +324,7 @@ forestplot_render <- function(resultsA,
                                          study_colour = NULL,
                                          grouping = NULL,
                                          estimates_only = FALSE,
-                                         type = c("subgroups", "interaction", "overall", "combined"),
+                                         type = c("subgroups", "interaction", "combined"),
                                          which_panel = NULL,
                                          xlim = NULL,
                                          xticks = NULL,
@@ -394,8 +394,8 @@ forestplot_render <- function(resultsA,
     include_prediction <- dots$include_prediction
     dots <- dots[!names(dots) %in% "include_prediction"]
   }
-  if ("include_pooled" %in% names(dots)) {
-    dots <- dots[!names(dots) %in% "include_pooled"]
+  if ("include_overall" %in% names(dots)) {
+    dots <- dots[!names(dots) %in% "include_overall"]
   }
   if ("include_prediction" %in% names(dots)) {
     dots <- dots[!names(dots) %in% "include_prediction"]
@@ -558,7 +558,7 @@ forestplot_render <- function(resultsA,
     resultsB$colour[is.na(resultsB$yi)] <- NA_character_
   }
 
-  layer_on <- interactmeta:::comparison_forest_layer_on
+  layer_on <- interact:::comparison_forest_layer_on
   has_shrinkage_rows <- layer_on(include_shrinkage) &&
     "row_kind" %in% names(resultsA) &&
     any(resultsA$row_kind == "shrinkage", na.rm = TRUE)
@@ -578,7 +578,7 @@ forestplot_render <- function(resultsA,
   }
 
   # Default chrome: black study squares. Summary diamond colours are applied
-  # after stacking once block headings (Younger / Older / Interaction / Overall)
+  # after stacking once block headings (Younger / Older / Interaction / Combined)
   # are final.
   styled <- forestplot_apply_default_colours(resultsA, resultsB)
   resultsA <- styled$resultsA
@@ -597,7 +597,7 @@ forestplot_render <- function(resultsA,
   n_study <- stacked$n_study
 
   has_marginal_rows <- "row_kind" %in% names(resultsA) &&
-    any(resultsA$row_kind %in% c("pooled", "prediction", "overall"), na.rm = TRUE)
+    any(resultsA$row_kind %in% c("overall", "prediction", "combined"), na.rm = TRUE)
   if (has_marginal_rows) {
     style_cols <- forestplot_style_colours()
     styled_marg <- comparison_forest_apply_effect_styles(
@@ -1079,7 +1079,7 @@ forestplot_col_left_headings <- function(panel_df, nonref_subgroup = NULL) {
 #' Blank IF cells that are not for the named subgroup
 #'
 #' When `subgroup` is set (interaction / overall forests), keep IF only on
-#' rows belonging to that subgroup; Interaction / Overall study rows already
+#' rows belonging to that subgroup; Interaction / Combined study rows already
 #' carry the non-ref IF and are retained. The IF column header itself stays
 #' fixed as `"IF"`.
 #' @noRd
@@ -1110,9 +1110,9 @@ forestplot_restrict_ifrac_to_subgroup <- function(resultsA,
   ifrac[is.na(ifrac)] <- ""
 
   keep <- colour == sg | heading == sg
-  # Interaction / Overall rows already store the quoted non-ref IF.
+  # Interaction / Combined rows already store the quoted non-ref IF.
   is_int_ov <- forestplot_heading_is_interaction(heading) |
-    forestplot_heading_is_overall(heading)
+    forestplot_heading_is_combined(heading)
   keep <- keep | (is_int_ov & nzchar(ifrac))
 
   resultsA$ifrac[!keep] <- ""
@@ -1139,11 +1139,11 @@ forestplot_resolve_nonref_subgroup <- function(row_labels,
     rk <- as.character(resultsA$row_kind)
     cl <- cl[rk == "study" | is.na(rk) | !nzchar(rk)]
   }
-  # Drop Interaction / Overall block tags so only subgroup levels remain.
+  # Drop Interaction / Combined block tags so only subgroup levels remain.
   cl <- cl[
     nzchar(cl) &
       !forestplot_heading_is_interaction(cl) &
-      !forestplot_heading_is_overall(cl)
+      !forestplot_heading_is_combined(cl)
   ]
   forestplot_nonref_subgroup(cl, ref = ref)
 }
@@ -1747,7 +1747,7 @@ forestplot_row_colour_label <- function(row_lab) {
   as.character(row_lab$label[[1L]])
 }
 
-#' Non-reference subgroup component used for Interaction / Overall rows
+#' Non-reference subgroup component used for Interaction / Combined rows
 #'
 #' @return A list with `ifrac` (plain percentage string) and `subgroup`
 #'   (non-reference label for block headers).
@@ -1802,7 +1802,7 @@ forestplot_nonref_ifrac_display <- function(ifrac_vals,
   forestplot_nonref_component(ifrac_vals, subgroup_vals, ref = ref)$ifrac
 }
 
-#' Non-reference subgroup label (for Interaction / Overall headers)
+#' Non-reference subgroup label (for Interaction / Combined headers)
 #' @noRd
 forestplot_nonref_subgroup <- function(subgroup_vals, ref = NULL) {
   forestplot_nonref_component(
@@ -1812,7 +1812,7 @@ forestplot_nonref_subgroup <- function(subgroup_vals, ref = NULL) {
   )$subgroup
 }
 
-#' Block heading with optional non-reference subgroup, e.g. `"Overall (Older)"`
+#' Block heading with optional non-reference subgroup, e.g. `"Combined (Older)"`
 #' @noRd
 forestplot_heading_with_nonref <- function(base, subgroup) {
   base <- as.character(base)[[1L]]
@@ -1830,17 +1830,17 @@ forestplot_heading_is_interaction <- function(heading) {
   grepl("^Interaction(\\s*\\(|$)", as.character(heading))
 }
 
-#' Whether a forest heading is an Overall block (possibly with subgroup)
+#' Whether a forest heading is a Combined block (possibly with subgroup)
 #' @noRd
-forestplot_heading_is_overall <- function(heading) {
-  grepl("^Overall(\\s*\\(|$)", as.character(heading))
+forestplot_heading_is_combined <- function(heading) {
+  grepl("^Combined(\\s*\\(|$)", as.character(heading))
 }
 
-#' Stack subgroup, interaction, and overall into one vertical forest panel
+#' Stack subgroup, interaction, and combined effects into one vertical forest panel
 #'
-#' Order: subgroup blocks (study / shrinkage / pooled / prediction), then an
+#' Order: subgroup blocks (study / shrinkage / overall / prediction), then an
 #' Interaction block (one row per trial + optional shrinkage + summaries), then
-#' Overall (trial-level overall study / optional shrinkage + overall diamonds).
+#' Combined (trial-level combined study / optional shrinkage + summary diamonds).
 #'
 #' @noRd
 forestplot_stack_panels <- function(resultsA,
@@ -1923,7 +1923,7 @@ forestplot_stack_panels <- function(resultsA,
     !is.na(resultsB$shape)
 
   sg_ix <- which(
-    rk %in% c("study", "shrinkage", "pooled", "prediction") & !is_int_shr
+    rk %in% c("study", "shrinkage", "overall", "prediction") & !is_int_shr
   )
   for (i in sg_ix) {
     # Keep NA pooled/prediction placeholders so switched-off layers reserve
@@ -1984,7 +1984,7 @@ forestplot_stack_panels <- function(resultsA,
         row$trial_size <- if (length(sizes)) sizes[[1L]] else ""
       }
       row$row_kind <- "study"
-      # Match Overall block aesthetics: filled study squares (not open circles).
+      # Match Combined block aesthetics: filled study squares (not open circles).
       row$shape <- 15L
       row$bold <- FALSE
       rl <- row_labels[i, , drop = FALSE]
@@ -2009,7 +2009,7 @@ forestplot_stack_panels <- function(resultsA,
         row$trial_size <- ""
       }
       row$row_kind <- "shrinkage"
-      # Match Overall shrinkage marker (filled square; grey fill applied earlier).
+      # Match Combined shrinkage marker (filled square; grey fill applied earlier).
       row$shape <- 15L
       if ("point_scale" %in% names(resultsB)) {
         row$point_scale <- resultsB$point_scale[[i]]
@@ -2027,7 +2027,7 @@ forestplot_stack_panels <- function(resultsA,
     }
   }
 
-  for (kind in c("pooled", "prediction")) {
+  for (kind in c("overall", "prediction")) {
     ii_finite <- which(rk == kind & is.finite(resultsB$yi))
     ii_any <- which(rk == kind)
     if (!length(ii_any)) {
@@ -2063,20 +2063,20 @@ forestplot_stack_panels <- function(resultsA,
     if ("subheading" %in% names(rl)) {
       rl$subheading <- NA_character_
     }
-    # Same labels as the Overall block (Pooled diamond, Prediction bar).
-    rl$label <- if (identical(kind, "pooled")) "Pooled" else "Prediction"
+    # Same labels as the Combined block (Overall diamond, Prediction bar).
+    rl$label <- if (identical(kind, "overall")) "Overall" else "Prediction"
     if ("colour_label" %in% names(rl)) {
       rl$colour_label <- int_header
     }
     push_row(row, rl)
   }
 
-  ov_header <- "Overall"
-  # Include NA Overall placeholders so omitted pooled/prediction keep space.
-  ov_ix <- which(rk == "overall")
-  ov_finite <- which(rk == "overall" & is.finite(resultsA$yi))
+  ov_header <- "Combined"
+  # Include NA Combined placeholders so omitted pooled/prediction keep space.
+  ov_ix <- which(rk == "combined")
+  ov_finite <- which(rk == "combined" & is.finite(resultsA$yi))
 
-  # Trial-level overall study (+ shrinkage) under Overall, parallel to the
+  # Trial-level overall study (+ shrinkage) under Combined, parallel to the
   # Interaction block: precision-weighted within-trial combination of subgroup
   # endpoints (and of subgroup shrinkage when present).
   if (length(ov_finite)) {
@@ -2331,7 +2331,7 @@ forestplot_footnote_as_plotmath <- function(txt) {
 forestplot_filter_type <- function(resultsA,
                                        resultsB,
                                        row_labels,
-                                       type = c("subgroups", "interaction", "overall", "combined")) {
+                                       type = c("subgroups", "interaction", "combined")) {
   type <- comparison_resolve_effect_type(match.arg(type))
   n <- nrow(resultsA)
   if (!n) {
@@ -2354,13 +2354,13 @@ forestplot_filter_type <- function(resultsA,
   }
 
   idx <- if (identical(type, "subgroups")) {
-    # Subgroup blocks only; Overall is type = "overall".
+    # Subgroup blocks only; Combined is type = "combined".
     !forestplot_heading_is_interaction(heading) &
-      !forestplot_heading_is_overall(heading)
+      !forestplot_heading_is_combined(heading)
   } else if (identical(type, "interaction")) {
     forestplot_heading_is_interaction(heading)
   } else {
-    forestplot_heading_is_overall(heading)
+    forestplot_heading_is_combined(heading)
   }
   if (!any(idx)) {
     stop(
@@ -2368,7 +2368,7 @@ forestplot_filter_type <- function(resultsA,
         "`type = \"%s\"` produced an empty forest. ",
         type
       ),
-      "Check `include_pooled` / `include_prediction` / `include_overall` ",
+      "Check `include_overall` / `include_prediction` / `include_combined` ",
       "and that the fit has rows for this type.",
       call. = FALSE
     )
@@ -2383,7 +2383,7 @@ forestplot_filter_type <- function(resultsA,
 #' Drop annotation notes that do not belong to the active type
 #' @noRd
 forestplot_filter_annotations_type <- function(annotations,
-                                                  type = c("subgroups", "interaction", "overall", "combined")) {
+                                                  type = c("subgroups", "interaction", "combined")) {
   type <- comparison_resolve_effect_type(match.arg(type))
   annotations <- forestplot_normalize_annotations(annotations)
   # `subgroups` keeps the full footnote stack (overall IF + both heterogeneity
@@ -2399,7 +2399,7 @@ forestplot_filter_annotations_type <- function(annotations,
   } else {
     # overall: keep overall het; IF notes are subgroup-specific — keep as
     # trailing unmatched notes (layout places them after remaining blocks).
-    het <- het[intersect(names(het), "overall")]
+    het <- het[intersect(names(het), "combined")]
   }
   annotations$heterogeneity <- het
   annotations$ifrac <- ifrac

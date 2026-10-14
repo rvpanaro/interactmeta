@@ -16,34 +16,40 @@
 #' in a label like `"g2-g1"`, `"g1"` is the reference subgroup.
 #'
 #' By default, components are the observed subgroup labels. When
-#' `include_overall = TRUE`, one precision-weighted overall row per trial is
-#' appended with `subgroup = "Overall"` (contribution-weighted mean $m_j$ on the
+#' `include_combined = TRUE`, one precision-weighted combined row per trial is
+#' appended with `subgroup = "Combined"` (contribution-weighted mean $m_j$ on the
 #' chosen scale). When `include_interaction = TRUE`, contrast rows are stacked
 #' below subgroup rows with `subgroup` labels like `"g2-g1"` (reference after
 #' `contrast_sep`), using `yi` and `vi` for the contrast estimate and variance.
 #' Wide columns `ifrac_<non-reference>` are filled
 #' on every row (no `NA`), plus `precision`, and a `reference` column (last
 #' column). For each non-reference subgroup `k`, `ifrac_k` is the trial-level
-#' information fraction. On overall
+#' information fraction. On combined
 #' and contrast rows, `precision` is the sum of subgroup precisions in the trial
 #' (or in that comparison for a single contrast).
 #'
-#' @param yi Either a numeric vector of subgroup effect estimates, or a data frame /
+#' @param x Effect estimates. A numeric vector, or a data frame or
 #'   [`escalc`](https://wviechtb.github.io/metafor/reference/escalc.html) object
-#'   containing columns `yi` and `vi`. When a data frame is supplied, `vi` must
-#'   not be passed separately; `trial` and `subgroup` name columns (defaults
-#'   `"trial"` and `"subgroup"`).
-#' @param vi Numeric vector. Variance of the subgroup estimate. Not used when `yi`
-#'   is a data frame or `escalc` object.
-#' @param trial Trial identifier. A vector (same length as `yi`), or when `yi` is
-#'   a data frame the name of the trial column (default `"trial"`).
-#' @param subgroup Subgroup identifier. A vector (same length as `yi`), or when
-#'   `yi` is a data frame the name of the subgroup column (default `"subgroup"`).
-#'   `modifier` is the column-name alias and overrides `subgroup` when set.
-#' @param big_var Positive number. Variance used to impute missing
-#'   `trial`-by-`subgroup` combinations when trials have an uneven set of
-#'   subgroups, and to replace `escalc` placeholder rows with `yi = 0` and
-#'   `vi = 8`. Defaults to `100^2`.
+#'   with columns `yi` and `vi`. If omitted, `yi` is used.
+#' @param yi Either a numeric vector of subgroup effect estimates, or a data frame /
+#'   `escalc` object containing columns `yi` and `vi`. When a data frame is
+#'   supplied as `x` or `yi`, `vi` must not be passed separately; `trial` and
+#'   `subgroup` name columns (defaults `"trial"` and `"subgroup"`).
+#' @param vi Numeric vector. Variance of the subgroup estimate. Not used when the
+#'   estimates are a data frame or `escalc` object.
+#' @param trial Trial identifier. A vector (same length as the estimates), or when
+#'   the estimates are a data frame the name of the trial column (default `"trial"`).
+#' @param modifier Column name for the subgroup levels when the estimates are a
+#'   data frame. A single string, supplied by name. Overrides `subgroup`. This is
+#'   not the vector of subgroup labels; pass that vector in `subgroup`.
+#' @param subgroup Subgroup identifier. A vector (same length as the estimates), or
+#'   when the estimates are a data frame the name of the subgroup column (default
+#'   `"subgroup"`).
+#' @param big_var Positive number. Variance used to impute a missing
+#'   `trial`-by-`subgroup` cell (`yi = 0`, `vi = big_var`). For an `escalc`
+#'   object, a row that already has the placeholder `yi = 0` and `vi = 8` keeps
+#'   that estimate, and `vi` is replaced by `big_var`. Defaults to `100^2`.
+#' @param ... Further arguments passed to methods.
 #' @param contrast Either `NULL` (subgroup rows only, wide `ifrac_<subgroup>`
 #'   columns), a character vector of length 2 giving the two subgroup labels to
 #'   contrast within each trial (computed as `label1 - label2`, where `label2` is
@@ -62,9 +68,9 @@
 #'   the imputed `yi=0` and `vi=big_var`.
 #' @param contrast_sep String used between subgroup labels in the contrast row
 #'   label. Defaults to `"-"`.
-#' @param include_overall Logical. If `FALSE` (default), return subgroup rows only.
-#'   If `TRUE`, append one precision-weighted overall row per trial with
-#'   `subgroup = "Overall"`.
+#' @param include_combined Logical. If `FALSE` (default), return subgroup rows only.
+#'   If `TRUE`, append one precision-weighted combined row per trial with
+#'   `subgroup = "Combined"`.
 #' @param include_interaction Logical. If `FALSE` (default), return subgroup rows
 #'   only while still using `contrast` to define the reference-centered
 #'   `ifrac_*` design columns. If `TRUE` and `contrast` is not
@@ -105,26 +111,36 @@
 #' subgroup <- c("g1", "g2", "g1", "g2")
 #'
 #' # Default: all non-reference vs reference contrasts (reference = first
-#' # factor level, or first sorted label for character subgroups)
-#' ifrac(yi, vi, trial, subgroup)
+#' # factor level, or first sorted label for character subgroups).
+#' # Name `subgroup`: the fourth positional argument is `modifier`.
+#' ifrac(yi = yi, vi = vi, trial = trial, subgroup = subgroup)
 #'
 #' # Subgroup rows only, wide ifrac_<subgroup> for every label
-#' ifrac(yi, vi, trial, subgroup, contrast = NULL)
+#' ifrac(yi = yi, vi = vi, trial = trial, subgroup = subgroup, contrast = NULL)
 #'
 #' # Single contrast (g1 - g2, reference g2)
-#' ifrac(yi, vi, trial, subgroup, contrast = c("g1", "g2"))
+#' ifrac(
+#'   yi = yi, vi = vi, trial = trial, subgroup = subgroup,
+#'   contrast = c("g1", "g2")
+#' )
 #'
 #' # Specify reference subgroup explicitly
-#' ifrac(yi, vi, trial, subgroup, reference = "g1")
+#' ifrac(yi = yi, vi = vi, trial = trial, subgroup = subgroup, reference = "g1")
 #'
-#' # Append overall rows (one per trial)
-#' ifrac(yi, vi, trial, subgroup, include_overall = TRUE)
+#' # Append combined rows (one per trial)
+#' ifrac(
+#'   yi = yi, vi = vi, trial = trial, subgroup = subgroup,
+#'   include_combined = TRUE
+#' )
 #'
 #' # Append interaction rows at the bottom
-#' ifrac(yi, vi, trial, subgroup, include_interaction = TRUE)
+#' ifrac(
+#'   yi = yi, vi = vi, trial = trial, subgroup = subgroup,
+#'   include_interaction = TRUE
+#' )
 #'
 #' \dontrun{
-#' library(interactmeta)
+#' library(interact)
 #' e <- escalc(measure = "IRR", yi = edss$yi, vi = edss$vi, data = edss)
 #' d <- ifrac(e, reference = "Lower", include_interaction = TRUE)
 #' fit <- cam(d, reference = "Lower")
@@ -158,7 +174,7 @@ ifrac.default <- function(x,
                           contrast = "all",
                           contrast_sep = "-",
                           reference = NULL,
-                          include_overall = FALSE,
+                          include_combined = FALSE,
                           include_interaction = FALSE,
                           yi = NULL,
                           ...) {
@@ -181,7 +197,7 @@ ifrac.default <- function(x,
     contrast = contrast,
     contrast_sep = contrast_sep,
     reference = reference,
-    include_overall = include_overall,
+    include_combined = include_combined,
     include_interaction = include_interaction
   )
 }
@@ -203,7 +219,7 @@ ifrac.data.frame <- function(x,
                              prob = 0.95,
                              big_var = 100^2,
                              contrast = "all",
-                             include_overall = FALSE,
+                             include_combined = FALSE,
                              include_interaction = FALSE,
                              yi = NULL,
                              ...) {
@@ -245,7 +261,7 @@ ifrac.data.frame <- function(x,
     contrast = contrast,
     contrast_sep = contrast_sep,
     reference = reference,
-    include_overall = include_overall,
+    include_combined = include_combined,
     include_interaction = include_interaction
   )
 }
@@ -267,7 +283,7 @@ ifrac_requests_pool <- function(x,
 }
 
 #' @noRd
-ifrac_design <- function(yi, vi = NULL, trial = NULL, subgroup = NULL, big_var = 100^2, contrast = "all", contrast_sep = "-", reference = NULL, include_overall = FALSE, include_interaction = FALSE) {
+ifrac_design <- function(yi, vi = NULL, trial = NULL, subgroup = NULL, big_var = 100^2, contrast = "all", contrast_sep = "-", reference = NULL, include_combined = FALSE, include_interaction = FALSE) {
   check_big_var(big_var)
   inputs <- coerce_ifrac_inputs(yi, vi, trial, subgroup, big_var = big_var)
   yi <- inputs$yi
@@ -281,7 +297,7 @@ ifrac_design <- function(yi, vi = NULL, trial = NULL, subgroup = NULL, big_var =
   check_contrast(contrast)
   check_contrast_sep(contrast_sep)
   check_reference(reference)
-  check_include_overall(include_overall)
+  check_include_combined(include_combined)
   check_include_interaction(include_interaction)
 
   # Prefer factor level order (first level = default reference); else sort.
@@ -443,8 +459,8 @@ ifrac_design <- function(yi, vi = NULL, trial = NULL, subgroup = NULL, big_var =
   out <- subgroup_out
   derived_out <- NULL
 
-  if (isTRUE(include_overall)) {
-    derived_out <- build_ifrac_overall_rows(dat_complete)
+  if (isTRUE(include_combined)) {
+    derived_out <- build_ifrac_combined_rows(dat_complete)
     if (!is.null(contrast) && nrow(derived_out) > 0L) {
       ifrac_k_cols <- grep("^ifrac_", names(subgroup_out), value = TRUE)
       ifrac_k_cols <- ifrac_k_cols[!grepl("^ifrac2_", ifrac_k_cols)]
@@ -511,8 +527,8 @@ ifrac_design <- function(yi, vi = NULL, trial = NULL, subgroup = NULL, big_var =
   coerce_ifrac_numeric_cols(out)
 }
 
-ifrac_overall_label <- function() {
-  "Overall"
+ifrac_combined_label <- function() {
+  "Combined"
 }
 
 #' @noRd
@@ -521,18 +537,18 @@ is_ifrac_contrast_row <- function(subgroup, contrast_sep = "-") {
 }
 
 #' @noRd
-is_ifrac_overall_row <- function(subgroup, overall_label = ifrac_overall_label()) {
-  as.character(subgroup) == overall_label
+is_ifrac_combined_row <- function(subgroup, combined_label = ifrac_combined_label()) {
+  as.character(subgroup) == combined_label
 }
 
 #' @noRd
-is_ifrac_component_row <- function(subgroup, contrast_sep = "-", overall_label = ifrac_overall_label()) {
+is_ifrac_component_row <- function(subgroup, contrast_sep = "-", combined_label = ifrac_combined_label()) {
   !is_ifrac_contrast_row(subgroup, contrast_sep) &
-    !is_ifrac_overall_row(subgroup, overall_label)
+    !is_ifrac_combined_row(subgroup, combined_label)
 }
 
 #' @noRd
-build_ifrac_overall_rows <- function(dat_complete, overall_label = ifrac_overall_label()) {
+build_ifrac_combined_rows <- function(dat_complete, combined_label = ifrac_combined_label()) {
   has_n <- "n" %in% names(dat_complete)
   ref <- if ("reference" %in% names(dat_complete)) {
     unique(as.character(dat_complete$reference))[[1L]]
@@ -546,7 +562,7 @@ build_ifrac_overall_rows <- function(dat_complete, overall_label = ifrac_overall
     reference = ref
   )
   out <- blocks$overall
-  out$subgroup <- overall_label
+  out$subgroup <- combined_label
   out$precision <- 1 / pmax(out$vi, 1e-12)
   if (has_n) {
     n_by_trial <- dat_complete |>
@@ -624,9 +640,9 @@ set_subgroup_factor <- function(out, ref_label, all_subgroups, contrast_sep) {
   out
 }
 
-check_include_overall <- function(include_overall) {
-  if (!is.logical(include_overall) || length(include_overall) != 1L || is.na(include_overall)) {
-    stop("`include_overall` must be `TRUE` or `FALSE`.", call. = FALSE)
+check_include_combined <- function(include_combined) {
+  if (!is.logical(include_combined) || length(include_combined) != 1L || is.na(include_combined)) {
+    stop("`include_combined` must be `TRUE` or `FALSE`.", call. = FALSE)
   }
 
   invisible(TRUE)

@@ -6,7 +6,7 @@
 \usage{
 observed_effects(
   object,
-  type = c("subgroups", "overall", "interaction"),
+  type = c("subgroups", "combined", "interaction"),
   contrast_sep = "-"
 )
 }
@@ -17,7 +17,7 @@ observed_effects(
 \itemize{
 \item \code{"subgroups"} (default; \code{"subgroup"} accepted): one entry per
 trial × subgroup row
-\item \code{"overall"} or \code{"combined"}: trial-specific combined-population
+\item \code{"combined"}: trial-specific combined-population
 effect \eqn{m_j} (inverse-variance combination within each trial)
 \item \code{"interaction"}: trial-specific treatment-by-subgroup interaction
 \eqn{g_j} (non-reference minus reference within each trial)
@@ -35,7 +35,7 @@ A list with:
 }
 
 For \code{type = "subgroups"}, names are \code{"<trial> / <subgroup>"}. For
-\code{"overall"} and \code{"interaction"}, names are trial IDs.
+\code{"combined"} and \code{"interaction"}, names are trial IDs.
 }
 \description{
 Stable extractor for the observed estimates used in CAMS post-fit analysis.
@@ -43,7 +43,7 @@ Prefer this over reading undocumented fields on \code{object$data}.
 }
 \examples{
 \dontrun{
-observed <- observed_effects(fit, type = "overall")
+observed <- observed_effects(fit, type = "combined")
 observed$estimate["RESPIRE1"]
 observed$variance["RESPIRE1"]
 }

@@ -7,7 +7,7 @@
 #' @param type Estimand:
 #'   - `"subgroups"` (default; `"subgroup"` accepted): one entry per
 #'     trial × subgroup row
-#'   - `"overall"` or `"combined"`: trial-specific combined-population
+#'   - `"combined"`: trial-specific combined-population
 #'     effect \eqn{m_j} (inverse-variance combination within each trial)
 #'   - `"interaction"`: trial-specific treatment-by-subgroup interaction
 #'     \eqn{g_j} (non-reference minus reference within each trial)
@@ -20,18 +20,18 @@
 #'   - `labels`: character vector of names (same order)
 #'
 #' For `type = "subgroups"`, names are `"<trial> / <subgroup>"`. For
-#' `"overall"` and `"interaction"`, names are trial IDs.
+#' `"combined"` and `"interaction"`, names are trial IDs.
 #'
 #' @seealso [shrinkage()], [fitted.interactmeta()]
 #' @examples
 #' \dontrun{
-#' observed <- observed_effects(fit, type = "overall")
+#' observed <- observed_effects(fit, type = "combined")
 #' observed$estimate["RESPIRE1"]
 #' observed$variance["RESPIRE1"]
 #' }
 #' @export
 observed_effects <- function(object,
-                             type = c("subgroups", "overall", "interaction"),
+                             type = c("subgroups", "combined", "interaction"),
                              contrast_sep = "-") {
   check_comparison_fit(object)
   type <- comparison_resolve_effect_type(type)
@@ -72,7 +72,7 @@ observed_effects <- function(object,
     nonref = if (length(nonrefs)) nonrefs[[1L]] else NULL
   )
 
-  if (identical(type, "overall")) {
+  if (identical(type, "combined")) {
     est <- stats::setNames(blocks$overall$yi, blocks$overall$trial)
     var <- stats::setNames(blocks$overall$vi, blocks$overall$trial)
     return(list(
@@ -94,20 +94,14 @@ observed_effects <- function(object,
   )
 }
 
-#' Resolve estimand `type`, accepting `combined` as an alias of `overall`
-#'
-#' Internals keep `"overall"` for trial-level combined-population quantities
-#' (`m_j`) and forest/shrinkage blocks. `"combined"` is the public synonym.
+#' Resolve the public estimand `type`
 #' @noRd
 comparison_resolve_effect_type <- function(type) {
   type <- as.character(type)[[1L]]
   if (identical(type, "subgroup")) {
     type <- "subgroups"
   }
-  if (type %in% c("combined", "combined_population")) {
-    type <- "overall"
-  }
-  match.arg(type, c("subgroups", "overall", "interaction"))
+  match.arg(type, c("subgroups", "combined", "interaction"))
 }
 
 #' @noRd

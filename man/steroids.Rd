@@ -35,6 +35,6 @@ prospective meta-analysis of systemic corticosteroids in critically ill
 patients with COVID-19. Some trials report only one ventilation subgroup
 (\code{n = 0} in the other); drop those empty rows before \code{\link[=escalc]{escalc()}} and
 let \code{\link[=ifrac]{ifrac()}} / \code{\link[=cam]{cam()}} complete the missing cells. See
-\code{vignette("single-subgroup-trials")}.
+\code{vignette("introduction-to-interact")}.
 }
 \keyword{datasets}

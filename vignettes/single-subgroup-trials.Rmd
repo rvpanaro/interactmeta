@@ -163,7 +163,7 @@ forestplot(
 )
 ```
 
-Pooled and Prediction at the overall mix.
+Overall and Prediction at the overall mix.
 
 ```{r steroids-forest-interaction, fig.height = 6, fig.width = 8}
 forestplot(
@@ -173,7 +173,7 @@ forestplot(
 )
 ```
 
-Pooled and Prediction at the interaction mix.
+Overall and Prediction at the interaction mix.
 
 ```{r steroids-sg-overall}
 subgroups(fit_cams_st, exponentiate = TRUE, ifrac = "overall")

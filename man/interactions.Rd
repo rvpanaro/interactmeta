@@ -8,7 +8,7 @@ interactions(
   fit,
   contribution = NULL,
   ifrac = c("interaction", "overall"),
-  type = c("Pooled", "Prediction"),
+  type = c("Overall", "Prediction"),
   prob = 0.95,
   max_draws = NULL,
   summary = TRUE,
@@ -24,8 +24,8 @@ interactions(
 pooled interaction \eqn{\gamma}; they are retained for API compatibility
 and are used when \code{shrinkage = TRUE}.}
 
-\item{type}{One or both of \code{"Pooled"} and \code{"Prediction"} when \code{shrinkage = FALSE}.
-\code{"Pooled"} is the fixed interaction \eqn{\gamma}. \code{"Prediction"} is
+\item{type}{One or both of \code{"Overall"} and \code{"Prediction"} when \code{shrinkage = FALSE}.
+\code{"Overall"} is the fixed interaction \eqn{\gamma}. \code{"Prediction"} is
 the interaction in a \strong{new trial}: \eqn{\gamma} plus
 trial-level slope heterogeneity \code{v * (ifrac2_nonref - ifrac2_ref)}
 (intercept trial RE cancels within a study).}

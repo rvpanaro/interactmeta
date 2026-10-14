@@ -9,21 +9,21 @@ cams_engine_example_data <- function() {
 
 test_that("method = bayes without engine selects bayesmeta", {
   expect_equal(
-    interactmeta:::interactmeta_engine_from_approach(
+    interact:::interactmeta_engine_from_approach(
       c("bayesmeta", "metafor"),
       "bayes"
     ),
     "bayesmeta"
   )
   expect_equal(
-    interactmeta:::interactmeta_engine_from_approach(
+    interact:::interactmeta_engine_from_approach(
       c("metafor", "bayesmeta"),
       "bayes"
     ),
     "bayesmeta"
   )
   expect_equal(
-    interactmeta:::interactmeta_engine_from_approach(
+    interact:::interactmeta_engine_from_approach(
       c("bayesmeta", "metafor"),
       NULL,
       approach = "bayes"
@@ -31,21 +31,21 @@ test_that("method = bayes without engine selects bayesmeta", {
     "bayesmeta"
   )
   expect_equal(
-    interactmeta:::interactmeta_engine_from_approach(
+    interact:::interactmeta_engine_from_approach(
       c("bayesmeta", "metafor"),
       "REML"
     ),
     "metafor"
   )
   expect_equal(
-    interactmeta:::interactmeta_engine_from_approach(
+    interact:::interactmeta_engine_from_approach(
       c("bayesmeta", "metafor"),
       "ML"
     ),
     "metafor"
   )
   expect_equal(
-    interactmeta:::interactmeta_engine_from_approach(
+    interact:::interactmeta_engine_from_approach(
       c("bayesmeta", "metafor"),
       NULL,
       approach = "REML"
@@ -53,7 +53,7 @@ test_that("method = bayes without engine selects bayesmeta", {
     "metafor"
   )
   expect_equal(
-    interactmeta:::interactmeta_engine_from_approach(
+    interact:::interactmeta_engine_from_approach(
       c("bayesmeta", "metafor"),
       NULL,
       approach = "frequentist"
@@ -61,7 +61,7 @@ test_that("method = bayes without engine selects bayesmeta", {
     "metafor"
   )
   expect_error(
-    interactmeta:::interactmeta_engine_from_approach(
+    interact:::interactmeta_engine_from_approach(
       "bayesmeta",
       "bayes",
       approach = "REML"
@@ -69,7 +69,7 @@ test_that("method = bayes without engine selects bayesmeta", {
     "metafor"
   )
   expect_error(
-    interactmeta:::interactmeta_engine_from_approach(
+    interact:::interactmeta_engine_from_approach(
       "metafor",
       "REML",
       approach = "bayes"
@@ -79,7 +79,7 @@ test_that("method = bayes without engine selects bayesmeta", {
 })
 
 test_that("public CAMS engines are bayesmeta and metafor", {
-  expect_equal(interactmeta:::interactmeta_engines(), c("bayesmeta", "metafor"))
+  expect_equal(interact:::interactmeta_engines(), c("bayesmeta", "metafor"))
   cap <- interactmeta_capability_matrix()
   expect_true(all(cap$engine[cap$analysis == "cam"] %in% c("bayesmeta", "metafor")))
 })
@@ -116,15 +116,15 @@ test_that("engine / method / algorithm metadata are stored on the fit", {
   expect_equal(attr(fit, "interactmeta")$algorithm, "quadrature")
   expect_s3_class(fit$priors, "cam_priors")
   expect_equal(fit$priors$tau$family, "uniform")
-  expect_true(interactmeta:::cam_prior_is_improper_uniform(fit$priors$tau))
-  expect_true(interactmeta:::cam_prior_is_improper_uniform(fit$priors$tau_interaction))
+  expect_true(interact:::cam_prior_is_improper_uniform(fit$priors$tau))
+  expect_true(interact:::cam_prior_is_improper_uniform(fit$priors$tau_interaction))
   expect_match(paste(utils::capture.output(print(fit)), collapse = "\n"), "improper uniform")
 })
 
 test_that("shared cam_prior objects are stored identically for bayesmeta", {
   skip_if_not_installed("bayesmeta")
   dat <- cams_engine_example_data()
-  p <- interactmeta:::cam_prior("half-normal", scale = 0.5)
+  p <- interact:::cam_prior("half-normal", scale = 0.5)
   fit <- suppressWarnings(cam(
     dat,
     reference = "Younger",
@@ -143,14 +143,14 @@ test_that("shared cam_prior objects are stored identically for bayesmeta", {
 })
 
 test_that("omitted method is REML for metafor and bayes for bayesmeta", {
-  expect_equal(interactmeta:::interactmeta_default_method("metafor"), "REML")
-  expect_equal(interactmeta:::interactmeta_default_method("bayesmeta"), "bayes")
+  expect_equal(interact:::interactmeta_default_method("metafor"), "REML")
+  expect_equal(interact:::interactmeta_default_method("bayesmeta"), "bayes")
   expect_equal(
-    interactmeta:::interactmeta_resolve_method("metafor", NULL),
+    interact:::interactmeta_resolve_method("metafor", NULL),
     "REML"
   )
   expect_equal(
-    interactmeta:::interactmeta_resolve_method("bayesmeta", NULL),
+    interact:::interactmeta_resolve_method("bayesmeta", NULL),
     "bayes"
   )
 })
@@ -178,7 +178,7 @@ test_that("engine = metafor is frequentist and warns on explicit Bayesian priors
       dat,
       reference = "Younger",
       engine = "metafor",
-      tau.prior = interactmeta:::cam_prior("half-normal", scale = 0.5),
+      tau.prior = interact:::cam_prior("half-normal", scale = 0.5),
       silent = 2
     ),
     "frequentist"
@@ -194,7 +194,7 @@ test_that("metafor CAMS fits a two-trial overall block", {
   expect_true(length(ifrac_cols) >= 1L)
   expect_true(all(vapply(fit$draws[ifrac_cols], function(x) is.finite(x[[1L]]), logical(1))))
   expect_equal(as.numeric(fit$metafor$overall$tau2), 0)
-  sg <- subgroups(fit, type = "Pooled")
+  sg <- subgroups(fit, type = "Overall")
   expect_true(all(is.finite(sg$summary$estimate)))
 })
 

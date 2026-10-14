@@ -48,7 +48,7 @@ Phase III RESPIRE 1 and RESPIRE 2 trials in non-CF bronchiectasis.
 Columns \code{hr}, \code{ci_lower}, \code{ci_upper}, and \code{ci_level} are the original
 published values. \code{yi}, \code{sei}, and \code{vi} are derived by \code{\link[=log_hr_from_ci]{log_hr_from_ci()}};
 RESPIRE 1 uses 97.5\% intervals and RESPIRE 2 uses 95.1\% intervals.
-See \code{vignette("consistent-interactions")}.
+See \code{vignette("introduction-to-interact")}.
 }
 \seealso{
 \link{respire_sex}, \code{\link[=log_hr_from_ci]{log_hr_from_ci()}}

@@ -49,7 +49,7 @@
 #' }
 #'
 #' @seealso [heterogeneity()], [bayesmeta::plot.bayesmeta],
-#'   [metafor::profile.rma], `vignette("further")`
+#'   [metafor::profile.rma], `vignette("introduction-to-interact")`
 #' @export
 plot_heterogeneity <- function(x,
                                which = c("both", "overall", "interaction", "combined"),
@@ -125,7 +125,7 @@ heterogeneity_native_tau_objects <- function(het, which = "both") {
   }
   objs <- list()
   if (which %in% c("both", "overall") && !is.null(bm$overall)) {
-    objs$Overall <- bm$overall
+    objs$Combined <- bm$overall
   }
   if (which %in% c("both", "interaction") && !is.null(bm$interaction)) {
     objs$Interaction <- bm$interaction
@@ -150,7 +150,7 @@ heterogeneity_native_rma_objects <- function(het, which = "both") {
   }
   objs <- list()
   if (which %in% c("both", "overall") && !is.null(mf$overall)) {
-    objs$Overall <- mf$overall
+    objs$Combined <- mf$overall
   }
   if (which %in% c("both", "interaction") && !is.null(mf$interaction)) {
     objs$Interaction <- mf$interaction
@@ -198,7 +198,7 @@ heterogeneity_plot_bayesmeta_ylim <- function(panels) {
 heterogeneity_tau_xlab <- function(nm) {
   switch(
     as.character(nm)[[1L]],
-    Overall = expression("heterogeneity " * tau),
+    Combined = expression("heterogeneity " * tau),
     Interaction = expression("heterogeneity " * tau[gamma]),
     expression("heterogeneity " * tau)
   )
@@ -296,7 +296,7 @@ heterogeneity_bayesmeta_tau_prep <- function(x, prior = FALSE) {
     indi = indi,
     pdens = pdens,
     prior = isTRUE(prior),
-    xlab = heterogeneity_tau_xlab("Overall")
+    xlab = heterogeneity_tau_xlab("Combined")
   )
 }
 
@@ -338,7 +338,7 @@ heterogeneity_plot_bayesmeta_tau_draw <- function(d, ylim = NULL) {
   }
   xlab <- d$xlab
   if (is.null(xlab)) {
-    xlab <- heterogeneity_tau_xlab("Overall")
+    xlab <- heterogeneity_tau_xlab("Combined")
   }
   graphics::mtext(
     side = 1,
@@ -445,7 +445,7 @@ heterogeneity_metafor_tau_prep <- function(x, steps = 20L) {
     xlim = xlim,
     ylim = ylim,
     ylab = heterogeneity_metafor_profile_ylab(pr$method %||% x$method),
-    xlab = heterogeneity_tau_xlab("Overall")
+    xlab = heterogeneity_tau_xlab("Combined")
   )
 }
 
@@ -511,7 +511,7 @@ heterogeneity_plot_metafor_tau_draw <- function(d, ylim = NULL) {
   graphics::abline(v = 0, col = grDevices::grey(0.4))
   xlab <- d$xlab
   if (is.null(xlab)) {
-    xlab <- heterogeneity_tau_xlab("Overall")
+    xlab <- heterogeneity_tau_xlab("Combined")
   }
   graphics::mtext(
     side = 1,
@@ -756,7 +756,7 @@ plot_heterogeneity_colours <- function(colours = NULL) {
 #' @noRd
 plot_heterogeneity_prior_label <- function(type) {
   if (identical(type, "intercept")) {
-    "Overall"
+    "Combined"
   } else {
     "Interaction"
   }
@@ -779,7 +779,7 @@ plot_heterogeneity_pieces <- function(het, which = "both") {
     ii <- draws$type == "intercept"
     vals <- draws$value[ii]
     pieces[[length(pieces) + 1L]] <- list(
-      panel = "Overall",
+      panel = "Combined",
       type = "intercept",
       values = vals,
       weight = plot_heterogeneity_piece_weight(draws, ii, length(vals)),
@@ -865,7 +865,7 @@ plot_heterogeneity_is_discrete <- function(values, bins = 40L) {
 
 #' @noRd
 plot_heterogeneity_hist <- function(values,
-                                    panel = "Overall",
+                                    panel = "Combined",
                                     bins = 40L,
                                     fill = "grey",
                                     weight = NULL) {
@@ -954,7 +954,7 @@ plot_heterogeneity_safe_density <- function(values, n = 512L, weight = NULL) {
 
 #' @noRd
 plot_heterogeneity_density <- function(values,
-                                       panel = "Overall",
+                                       panel = "Combined",
                                        colour = "black",
                                        n = 512L,
                                        weight = NULL) {
@@ -992,7 +992,7 @@ plot_heterogeneity_weighted_quantile <- function(values, weight, probs) {
 
 #' @noRd
 plot_heterogeneity_annotations <- function(values,
-                                           panel = "Overall",
+                                           panel = "Combined",
                                            probs = c(0.5, 0.75, 0.9),
                                            digits = 2,
                                            colour = "black",

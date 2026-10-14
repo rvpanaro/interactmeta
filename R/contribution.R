@@ -12,13 +12,10 @@
 #' \eqn{\theta=\beta+\gamma}. Subgroup lines are parallel with vertical
 #' gap \eqn{\gamma}.
 #'
-#' Pointwise `estimate` / `lower` / `upper` are **equal-tail** quantiles of the
+#' Pointwise `estimate` / `lower` / `upper` use shortest intervals from the
 #' DIRECT-node Gaussian mixture (weights `.weight`, within-node SDs
-#' `.cond_*`). That is the fast public rule for [plot_contribution()] and
-#' extractors. Native bayesmeta `$post.interval` / `bayesmeta::convolve()`
-#' intervals remain on `$latent` as the engine-native concept; they are not
-#' recomputed on the IF grid. Alpha and theta stay on the joint overall-block
-#' support (never convolved with each other).
+#' `.cond_*`). Alpha and theta stay on the joint overall-block support
+#' (never convolved with each other).
 #'
 #' @param fit A [`interactmeta`] from [cams()].
 #' @param if_grid Numeric information-fraction grid. If `NULL`, spans the
@@ -87,7 +84,7 @@ predict_cams_by_if <- function(fit,
       omega = pi,
       design = design,
       fit = fit,
-      type = "Pooled"
+      type = "Overall"
     )
     m_qi <- predict_cam_if_qi(
       x = m_draws,
@@ -137,7 +134,7 @@ predict_cams_by_if <- function(fit,
   attr(out, "reference") <- ref
   attr(out, "ifrac_var") <- ifrac_var
   if (identical(fit$engine, "bayesmeta")) {
-    attr(out, "interval.rule") <- "mixture_equal_tail"
+    attr(out, "interval.rule") <- "mixture_shortest"
   }
   class(out) <- c("interactmeta_cam_if_pred", "interactmeta_cams_if_pred", "data.frame")
   out
@@ -149,9 +146,8 @@ predict_cam_by_if <- predict_cams_by_if
 
 #' Pointwise CAMS interval at one information fraction.
 #'
-#' Public rule: equal-tail quantiles of the DIRECT-node mixture (weights and
-#' within-node SDs). Native `$post.interval` / `convolve()` live on `$latent`
-#' and are not used here. Alpha and theta stay jointly paired.
+#' Public rule: shortest intervals of the DIRECT-node mixture (weights and
+#' within-node SDs). Alpha and theta stay jointly paired.
 #' @noRd
 predict_cam_if_qi <- function(x, post, a_alpha, a_theta, a_gamma, level, exponentiate,
                                fit = NULL) {
@@ -225,7 +221,7 @@ predict_cam_if_qi <- function(x, post, a_alpha, a_theta, a_gamma, level, exponen
 plot_contribution <- function(fit,
                                     ifrac_var = NULL,
                                     prob = 0.95,
-                                    type = "Pooled",
+                                    type = "Overall",
                                     max_draws = NULL,
                                     contrast_sep = "-",
                                     exponentiate = FALSE,
@@ -292,7 +288,7 @@ plot_contribution <- function(fit,
 build_contribution_plot <- function(fit,
                                           ifrac_var = NULL,
                                           prob = 0.95,
-                                          type = "Pooled",
+                                          type = "Overall",
                                           max_draws = NULL,
                                           contrast_sep = "-",
                                           exponentiate = FALSE,

@@ -14,7 +14,7 @@ prepare_ifrac_input <- function(x,
                                 contrast = "all",
                                 contrast_sep = "-",
                                 big_var = 100^2,
-                                include_overall = FALSE,
+                                include_combined = FALSE,
                                 include_interaction = FALSE) {
   if (is_ifrac_output(x)) {
     out <- tibble::as_tibble(x)
@@ -55,7 +55,7 @@ prepare_ifrac_input <- function(x,
     contrast = contrast,
     contrast_sep = contrast_sep,
     big_var = big_var,
-    include_overall = include_overall,
+    include_combined = include_combined,
     include_interaction = include_interaction
   )
   level_col <- if ("subgroup" %in% names(designed)) "subgroup" else subgroup

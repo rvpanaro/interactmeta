@@ -12,13 +12,12 @@
 #'
 #' Published **engine-native** intervals on `$latent` use one rule
 #' (`interval.type`, default `"shortest"`): margins from `$post.interval`,
-#' independent-block sums from `bayesmeta::convolve()`. Public extractors and
-#' [predict_cams_by_if()] / [plot_contribution()] instead use **equal-tail**
-#' quantiles of the DIRECT-node mixture (fast). The mixture is not a second
-#' native interval on `$latent`. `$draws` is the Cartesian product of DIRECT
-#' tau-nodes with `.weight = w_i * v_k` (conditional means; within-node
-#' variance is in `.cond_*` and `$latent`). `$mu` remains the **fixed-effect**
-#' linear predictor. No `rposterior()` calls.
+#' independent-block sums from `bayesmeta::convolve()`. Public extractors,
+#' [predict_cams_by_if()], and [plot_contribution()] use the same shortest
+#' rule on the DIRECT-node Gaussian mixture. `$draws` is the Cartesian product
+#' of DIRECT tau-nodes with `.weight = w_i * v_k` (conditional means;
+#' within-node variance is in `.cond_*` and `$latent`). `$mu` remains the
+#' **fixed-effect** linear predictor. No `rposterior()` calls.
 #'
 #' @noRd
 .interactmeta_fit_bayesmeta <- function(data_fit,
@@ -345,10 +344,10 @@ interactmeta_bayesmeta_grid <- function(overall_fit, interaction_fit) {
     stop("Fitted bayesmeta objects are missing `$delta` or `$epsilon`.", call. = FALSE)
   }
   if (!is.null(interaction_fit$delta) && !isTRUE(all.equal(delta, interaction_fit$delta))) {
-    stop("Overall and interaction fits stored different `$delta` values.", call. = FALSE)
+    stop("Combined and interaction fits stored different `$delta` values.", call. = FALSE)
   }
   if (!is.null(interaction_fit$epsilon) && !isTRUE(all.equal(epsilon, interaction_fit$epsilon))) {
-    stop("Overall and interaction fits stored different `$epsilon` values.", call. = FALSE)
+    stop("Combined and interaction fits stored different `$epsilon` values.", call. = FALSE)
   }
   tol <- overall_fit$tol.uniroot %||% interaction_fit$tol.uniroot %||%
     (2^16 * .Machine$double.eps)
@@ -517,7 +516,7 @@ interactmeta_bayesmeta_latent <- function(overall_fit,
     epsilon = grid$epsilon,
     tol.uniroot = grid$tol.uniroot,
     note = paste(
-      "Marginal posteriors only. Overall and interaction blocks are independent.",
+      "Marginal posteriors only. Combined and interaction blocks are independent.",
       "Trials within a block share hyperparameters and are not mutually independent.",
       "Published intervals on one stored fit use that object's $post.interval",
       "(or bmr$shrink.interval). Published intervals for independent-block sums",
@@ -996,7 +995,7 @@ interactmeta_bayesmeta_population_location <- function(fit,
 #' Replace effect bounds with native bayesmeta / convolve intervals.
 #'
 #' Engine-native path kept for `$latent` / diagnostics. Public extractors use
-#' equal-tail mixture summaries instead (`interactmeta_summarize_effects`).
+#' shortest mixture summaries (`interactmeta_summarize_effects`).
 #' Interaction uses `$post.interval`. Combined `M*` uses `bmr$pred.interval`
 #' on the joint `(alpha, theta)` support. Subgroup effects convolve that
 #' linear predictor with the independent gamma block. Alpha and theta are
@@ -1020,7 +1019,7 @@ interactmeta_bayesmeta_fill_effect_summary <- function(fit,
   st <- attr(fit, "interactmeta", exact = TRUE)
   ref <- as.character(st$reference %||% "")[[1L]]
   for (i in seq_len(nrow(summary))) {
-    ty <- if ("type" %in% names(summary)) as.character(summary$type[[i]]) else "Pooled"
+    ty <- if ("type" %in% names(summary)) as.character(summary$type[[i]]) else "Overall"
     predictive <- identical(ty, "Prediction")
     loc <- NULL
     if (identical(quantity, "interaction")) {
@@ -1097,7 +1096,7 @@ interactmeta_bayesmeta_fill_shrinkage_summary <- function(fit,
       if (identical(sg, ref)) fit$latent$mu_A[[tr]] else fit$latent$mu_B[[tr]]
     } else if (identical(type, "interaction")) {
       fit$latent$g[[tr]]
-    } else if (identical(type, "overall")) {
+    } else if (identical(type, "combined")) {
       fit$latent$m[[tr]]
     } else {
       NULL

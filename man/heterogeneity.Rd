@@ -41,7 +41,7 @@ it uses the stored \code{rma} heterogeneity estimates.
 }
 \examples{
 \dontrun{
-library(interactmeta)
+library(interact)
 fit <- cam(es, reference = "Younger")
 heterogeneity(fit)
 heterogeneity(fit, component = "intercept")

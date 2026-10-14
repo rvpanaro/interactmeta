@@ -1,4 +1,4 @@
-test_that("overall() returns summary per type", {
+test_that("combined() returns summary per type", {
   skip_if_not_installed("bayesmeta")
 
   dat <- data.frame(
@@ -11,16 +11,15 @@ test_that("overall() returns summary per type", {
     ifrac2_Older = c(-0.3, 0.7, -0.55, 0.45)
   )
   fit <- cam(dat, engine = "bayesmeta", reference = "Younger")
-  me <- overall(fit)
-  expect_s3_class(me, "interactmeta_overall_effect")
+  me <- combined(fit)
   expect_s3_class(me, "interactmeta_combined_effect")
   expect_equal(nrow(me$summary), 2L)
-  expect_true(all(c("Pooled", "Prediction") %in% me$summary$type))
+  expect_true(all(c("Overall", "Prediction") %in% me$summary$type))
   expect_true(all(is.finite(me$summary$estimate)))
   expect_true(all(is.finite(me$summary$mean)))
 })
 
-test_that("Prediction intervals are wider than Pooled in overall()", {
+test_that("Prediction intervals are wider than Overall in combined()", {
   skip_if_not_installed("bayesmeta")
 
   dat <- data.frame(
@@ -33,15 +32,15 @@ test_that("Prediction intervals are wider than Pooled in overall()", {
     ifrac2_Older = c(-0.3, 0.7, -0.55, 0.45)
   )
   fit <- cam(dat, engine = "bayesmeta", reference = "Younger")
-  me <- overall(fit)
+  me <- combined(fit)
   w <- function(type) {
     row <- me$summary[me$summary$type == type, , drop = FALSE]
     row$uci - row$lci
   }
-  expect_gt(w("Prediction"), w("Pooled"))
+  expect_gt(w("Prediction"), w("Overall"))
 })
 
-test_that("overall() differs from reference subgroup pooled effect", {
+test_that("combined() differs from reference subgroup pooled effect", {
   skip_if_not_installed("bayesmeta")
 
   dat <- data.frame(
@@ -54,15 +53,15 @@ test_that("overall() differs from reference subgroup pooled effect", {
     ifrac2_Older = c(-0.3, 0.7, -0.55, 0.45)
   )
   fit <- cam(dat, engine = "bayesmeta", reference = "Younger")
-  ov <- overall(fit, type = "Pooled", summary = FALSE)
+  ov <- combined(fit, type = "Overall", summary = FALSE)
   expect_true(nrow(ov$draws) > 0L)
   expect_true("effect" %in% names(ov$draws))
-  sg <- subgroups(fit, type = "Pooled", summary = FALSE)
+  sg <- subgroups(fit, type = "Overall", summary = FALSE)
   ref_eff <- sg$draws$effect[sg$draws$subgroup == "Younger"]
   expect_false(isTRUE(all.equal(ov$draws$effect, ref_eff)))
 })
 
-test_that("overall(weight = interaction) uses interaction-weighted IF", {
+test_that("combined(weight = interaction) uses interaction-weighted IF", {
   skip_if_not_installed("bayesmeta")
 
   dat <- data.frame(
@@ -75,11 +74,11 @@ test_that("overall(weight = interaction) uses interaction-weighted IF", {
     ifrac2_Older = c(-0.3, 0.7, -0.4, 0.6)
   )
   fit <- cam(dat, engine = "bayesmeta", reference = "Younger")
-  me_overall <- overall(fit, ifrac = "overall", type = "Pooled", exponentiate = TRUE, summary = FALSE)
-  me_int <- overall(
+  me_overall <- combined(fit, ifrac = "overall", type = "Overall", exponentiate = TRUE, summary = FALSE)
+  me_int <- combined(
     fit,
     ifrac = "interaction",
-    type = "Pooled",
+    type = "Overall",
     exponentiate = TRUE,
     summary = FALSE
   )
@@ -88,7 +87,7 @@ test_that("overall(weight = interaction) uses interaction-weighted IF", {
   expect_false(isTRUE(all.equal(me_overall$draws$effect, me_int$draws$effect)))
 })
 
-test_that("overall(exponentiate = TRUE) transforms draws", {
+test_that("combined(exponentiate = TRUE) transforms draws", {
   skip_if_not_installed("bayesmeta")
 
   dat <- data.frame(
@@ -101,8 +100,8 @@ test_that("overall(exponentiate = TRUE) transforms draws", {
     ifrac2_Older = c(-0.3, 0.7, -0.55, 0.45)
   )
   fit <- cam(dat, engine = "bayesmeta", reference = "Younger")
-  log <- overall(fit, type = "Pooled", summary = FALSE)
-  rat <- overall(fit, type = "Pooled", exponentiate = TRUE, summary = FALSE)
+  log <- combined(fit, type = "Overall", summary = FALSE)
+  rat <- combined(fit, type = "Overall", exponentiate = TRUE, summary = FALSE)
   expect_true(rat$exponentiate)
   expect_equal(rat$draws$effect, exp(log$draws$effect))
 })

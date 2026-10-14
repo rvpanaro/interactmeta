@@ -177,7 +177,7 @@ forestplot_figure_inches <- function(x) {
     # stays stable across `favours` / `type` toggles.
     force(has_favours)
     chrome <- 2.3
-    # +1 row of slack so the last Overall / Prediction diamond is not clipped.
+    # +1 row of slack so the last Combined / Prediction diamond is not clipped.
     height <- row_pitch * (n_rows + 1L) + foot_pitch * n_footnotes + chrome
     height <- max(3.8, min(28, height))
     formula <- sprintf(
@@ -235,7 +235,7 @@ forestplot_n_panels <- function(x) {
 #'
 #' Counts panel data rows plus unique non-empty headings (and a table header
 #' row). Prefer this over the legacy metafor ylim span so bayesmeta forests
-#' size correctly when Overall includes both Pooled and Prediction.
+#' size correctly when Combined includes both Overall and Prediction.
 #'
 #' @noRd
 forestplot_n_layout_rows <- function(x) {

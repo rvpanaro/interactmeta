@@ -2,27 +2,13 @@
 % Please edit documentation in R/marginal_effects.R
 \name{combined}
 \alias{combined}
-\alias{overall}
 \title{Combined-population treatment effect}
 \usage{
 combined(
   fit,
   contribution = NULL,
   ifrac = c("interaction", "overall"),
-  type = c("Pooled", "Prediction"),
-  prob = 0.95,
-  max_draws = NULL,
-  summary = TRUE,
-  contrast_sep = "-",
-  exponentiate = FALSE,
-  shrinkage = FALSE
-)
-
-overall(
-  fit,
-  contribution = NULL,
-  ifrac = c("interaction", "overall"),
-  type = c("Pooled", "Prediction"),
+  type = c("Overall", "Prediction"),
   prob = 0.95,
   max_draws = NULL,
   summary = TRUE,
@@ -41,18 +27,17 @@ to evaluate at; see \code{\link[=subgroups]{subgroups()}}.}
 (default) or \code{"overall"} for overall-block pooling of trial
 information fractions.}
 
-\item{type}{One or both of \code{"Pooled"} and \code{"Prediction"} (new-trial random
+\item{type}{One or both of \code{"Overall"} and \code{"Prediction"} (new-trial random
 effect; see \code{\link[=subgroups]{subgroups()}}).}
 
 \item{prob, max_draws, summary, contrast_sep, exponentiate, shrinkage}{As in
 \code{\link[=subgroups]{subgroups()}}.}
 }
 \value{
-A \code{interactmeta_overall_effect} object (list with \code{draws}, \code{summary},
-\code{overall_ifrac}, \code{overall_ifrac_source}, \code{ifrac}, \code{reference}, \code{prob}).
-Also inherits class \code{interactmeta_combined_effect}. Draws are indexed by
-\code{type}. \code{summary} includes \code{estimate} (median), \code{mean}, \code{sd}, \code{lci}, and
-\code{uci}.
+An \code{interactmeta_combined_effect} object (list with \code{draws},
+\code{summary}, \code{overall_ifrac}, \code{overall_ifrac_source}, \code{ifrac}, \code{reference},
+\code{prob}). Draws are indexed by \code{type}. \code{summary} includes \code{estimate}
+(median), \code{mean}, \code{sd}, \code{lci}, and \code{uci}.
 }
 \description{
 Evaluates the CAMS \strong{combined-population treatment effect} at the pooled
@@ -71,8 +56,6 @@ precision-weighted across trials, and on log HR / log OR a mixture of
 subgroup effects is not collapsible. Trial-specific combined-population
 effects are the transformed quantities
 \eqn{m_j = (1-\pi_j)y_{Aj}+\pi_j y_{Bj}}.
-
-Prefer \code{\link[=combined]{combined()}} in new code. \code{\link[=overall]{overall()}} is a backward-compatible alias.
 }
 \seealso{
 \code{\link[=subgroups]{subgroups()}}, \code{\link[=interactions]{interactions()}}, \code{\link[=ifrac]{ifrac()}}

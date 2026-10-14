@@ -33,7 +33,7 @@ test_that("shrinkage() type matches forestplot labels (no 'all')", {
 
   expect_s3_class(shrinkage(fit, type = "subgroups"), "interactmeta_subgroup_effects")
   expect_s3_class(shrinkage(fit, type = "interaction"), "interactmeta_interaction_effects")
-  expect_s3_class(shrinkage(fit, type = "overall"), "interactmeta_overall_effect")
+  expect_s3_class(shrinkage(fit, type = "combined"), "interactmeta_combined_effect")
   expect_error(shrinkage(fit, type = "all"), "not supported")
 })
 
@@ -105,7 +105,7 @@ test_that("shrinkage() works when ifrac_data includes derived rows", {
   d <- ifrac(
     e,
     reference = "Lower",
-    include_overall = TRUE,
+    include_combined = TRUE,
     include_interaction = TRUE
   )
   fit <- cam(
@@ -135,9 +135,9 @@ test_that("overall shrinkage is one draw vector per trial (like interaction)", {
   n_draw <- nrow(as.data.frame(fit))
   sg <- shrinkage(fit, type = "subgroups", summary = FALSE)
   int <- shrinkage(fit, type = "interaction", summary = FALSE)
-  ov <- shrinkage(fit, type = "overall", summary = FALSE)
+  ov <- shrinkage(fit, type = "combined", summary = FALSE)
 
-  expect_s3_class(ov, "interactmeta_overall_effect")
+  expect_s3_class(ov, "interactmeta_combined_effect")
   expect_true(ov$shrinkage)
   expect_true("trial" %in% names(ov$draws))
   expect_false("subgroup" %in% names(ov$draws))
@@ -148,7 +148,7 @@ test_that("overall shrinkage is one draw vector per trial (like interaction)", {
 
   # Legacy helper: mix at a fixed omega still works
   omega <- rep(0.35, n_draw)
-  got <- interactmeta:::comparison_overall_shrinkage_draws(
+  got <- interact:::comparison_overall_shrinkage_draws(
     sg_draws = sg$draws,
     omega = omega,
     reference = "Younger",

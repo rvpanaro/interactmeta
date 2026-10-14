@@ -31,7 +31,7 @@ test_that("cam() matches cams() on the same data", {
   )
 })
 
-test_that("combined() is a numerical alias of overall()", {
+test_that("combined() returns only the combined-effect class", {
   skip_if_not_installed("bayesmeta")
   dat <- data.frame(
     trial = rep(c("A", "B", "C"), each = 2),
@@ -40,18 +40,13 @@ test_that("combined() is a numerical alias of overall()", {
     vi = c(0.04, 0.05, 0.03, 0.04, 0.05, 0.06)
   )
   fit <- cam(dat, reference = "Younger", engine = "bayesmeta", silent = 2)
-  ov <- overall(fit, type = "Pooled", summary = TRUE)
-  cb <- combined(fit, type = "Pooled", summary = TRUE)
+  cb <- combined(fit, type = "Overall", summary = TRUE)
   expect_s3_class(cb, "interactmeta_combined_effect")
-  expect_s3_class(cb, "interactmeta_overall_effect")
-  expect_s3_class(ov, "interactmeta_combined_effect")
-  expect_equal(ov$summary$estimate, cb$summary$estimate, tolerance = 1e-12)
-  expect_equal(ov$summary$lci, cb$summary$lci, tolerance = 1e-12)
-  expect_equal(ov$summary$uci, cb$summary$uci, tolerance = 1e-12)
-  expect_equal(ov$draws$effect, cb$draws$effect, tolerance = 1e-12)
+  expect_false(inherits(cb, "interactmeta_overall_effect"))
+  expect_true(all(cb$summary$type %in% "Overall"))
 })
 
-test_that("type = 'combined' matches type = 'overall' for observed effects", {
+test_that("removed overall aliases are rejected", {
   skip_if_not_installed("bayesmeta")
   dat <- data.frame(
     trial = rep(c("A", "B"), each = 2),
@@ -60,12 +55,9 @@ test_that("type = 'combined' matches type = 'overall' for observed effects", {
     vi = c(0.04, 0.05, 0.03, 0.04)
   )
   fit <- cam(dat, reference = "Younger", engine = "bayesmeta", silent = 2)
-  a <- observed_effects(fit, type = "overall")
-  b <- observed_effects(fit, type = "combined")
-  expect_equal(a$estimate, b$estimate, tolerance = 1e-12)
-  expect_equal(a$variance, b$variance, tolerance = 1e-12)
-  expect_equal(a$type, "overall")
-  expect_equal(b$type, "overall")
+  expect_false(exists("overall", envir = asNamespace("interact"), inherits = FALSE))
+  expect_error(observed_effects(fit, type = "overall"), "arg")
+  expect_equal(observed_effects(fit, type = "combined")$type, "combined")
 })
 
 test_that("method = REML without engine uses metafor", {
@@ -191,7 +183,7 @@ test_that("modifier names the column and aliases the extractors", {
   expect_equal(attr(fit, "interactmeta")$modifier, "dose")
   expect_equal(attr(fit, "interactmeta")$subgroup_var, "subgroup")
   out <- paste(utils::capture.output(print(fit)), collapse = "\n")
-  expect_match(out, "Dose:", fixed = TRUE)
+  expect_match(out, "Dose levels:", fixed = TRUE)
   expect_match(out, "Low", fixed = TRUE)
   expect_match(out, "High", fixed = TRUE)
   expect_false(grepl("subgroup effects", out, fixed = TRUE))

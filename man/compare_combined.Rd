@@ -4,7 +4,7 @@
 \alias{compare_combined}
 \title{Side-by-side combined-population effects}
 \usage{
-compare_combined(..., exponentiate = TRUE, type = "Pooled")
+compare_combined(..., exponentiate = TRUE, type = "Overall")
 }
 \arguments{
 \item{...}{Two or more \code{\link[=cam]{cam()}} fits.}
@@ -12,7 +12,7 @@ compare_combined(..., exponentiate = TRUE, type = "Pooled")
 \item{exponentiate}{If \code{TRUE} (default), report on the exponentiated
 (ratio) scale.}
 
-\item{type}{CAMS layer (\code{"Pooled"} default).}
+\item{type}{CAMS layer (\code{"Overall"} default).}
 }
 \value{
 A tibble with class \code{interactmeta_compare_combined}. Print the

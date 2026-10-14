@@ -17,25 +17,25 @@ test_that("heterogeneity() extracts trial SD parameters", {
   h <- heterogeneity(fit)
   expect_s3_class(h, "interactmeta_heterogeneity")
   expect_equal(nrow(h$summary), 2L)
-  expect_true("Overall" %in% h$summary$parameter)
+  expect_true("Combined" %in% h$summary$parameter)
   expect_true("Interaction_Older" %in% h$summary$parameter)
   expect_true(all(h$draws$value >= 0, na.rm = TRUE))
 
   h_int <- heterogeneity(fit, component = "intercept")
   expect_equal(nrow(h_int$summary), 1L)
-  expect_equal(h_int$summary$parameter, "Overall")
+  expect_equal(h_int$summary$parameter, "Combined")
 
   tau_med <- as.numeric(fit$bayesmeta$overall$qposterior(tau.p = 0.5))
   expect_equal(
-    h$summary$estimate[h$summary$parameter == "Overall"],
+    h$summary$estimate[h$summary$parameter == "Combined"],
     tau_med,
     tolerance = 1e-6
   )
   tau_ci <- fit$bayesmeta$overall$post.interval(tau.level = 0.95, method = "shortest")
   expect_equal(
     unname(c(
-      h$summary$lci[h$summary$parameter == "Overall"],
-      h$summary$uci[h$summary$parameter == "Overall"]
+      h$summary$lci[h$summary$parameter == "Combined"],
+      h$summary$uci[h$summary$parameter == "Combined"]
     )),
     unname(as.numeric(tau_ci)),
     tolerance = 1e-6
@@ -60,7 +60,7 @@ test_that("heterogeneity() extracts trial SD parameters", {
 
 test_that("interaction heterogeneity footnote omits the contrast label", {
   expect_equal(
-    interactmeta:::comparison_heterogeneity_interaction_label("ifrac2_Older", "Younger"),
+    interact:::comparison_heterogeneity_interaction_label("ifrac2_Older", "Younger"),
     "Interaction heterogeneity (\u03c4_\u03b3)"
   )
 })
@@ -70,7 +70,7 @@ test_that("plot_heterogeneity() builds a side-by-side ggplot", {
   set.seed(1)
   het <- list(
     draws = data.frame(
-      parameter = c(rep("Overall", 400), rep("Interaction_Older", 400)),
+      parameter = c(rep("Combined", 400), rep("Interaction_Older", 400)),
       type = c(rep("intercept", 400), rep("slope", 400)),
       value = c(abs(stats::rnorm(400, 0, 0.5)), abs(stats::rnorm(400, 0, 0.1))),
       stringsAsFactors = FALSE
@@ -123,7 +123,7 @@ test_that("plot_heterogeneity() uses one bar per discrete tau node", {
   # Product-grid repetition like bayesmeta $draws
   het <- list(
     draws = data.frame(
-      parameter = rep("Overall", length(tau) * 4L),
+      parameter = rep("Combined", length(tau) * 4L),
       type = "intercept",
       value = rep(tau, each = 4L),
       .weight = rep(w / 4, each = 4L),
@@ -132,8 +132,8 @@ test_that("plot_heterogeneity() uses one bar per discrete tau node", {
     summary = data.frame()
   )
   class(het) <- c("interactmeta_heterogeneity", "list")
-  expect_true(interactmeta:::plot_heterogeneity_is_discrete(het$draws$value))
-  bars <- interactmeta:::plot_heterogeneity_hist(
+  expect_true(interact:::plot_heterogeneity_is_discrete(het$draws$value))
+  bars <- interact:::plot_heterogeneity_hist(
     het$draws$value,
     weight = het$draws$.weight,
     bins = 40L
@@ -148,7 +148,7 @@ test_that("plot_heterogeneity() accepts a single MLE draw", {
   skip_if_not_installed("ggplot2")
   het <- list(
     draws = data.frame(
-      parameter = c("Overall", "Interaction_Older"),
+      parameter = c("Combined", "Interaction_Older"),
       type = c("intercept", "slope"),
       value = c(0.22, 0.04),
       stringsAsFactors = FALSE
@@ -174,15 +174,15 @@ test_that("plot(het) uses bayesmeta tau plots on the default engine", {
   het <- heterogeneity(fit)
   expect_false(is.null(attr(het, "interactmeta")))
   expect_equal(
-    names(interactmeta:::heterogeneity_native_tau_objects(het)),
-    c("Overall", "Interaction")
+    names(interact:::heterogeneity_native_tau_objects(het)),
+    c("Combined", "Interaction")
   )
   expect_equal(
-    as.character(interactmeta:::heterogeneity_tau_xlab("Overall")),
+    as.character(interact:::heterogeneity_tau_xlab("Combined")),
     as.character(expression("heterogeneity " * tau))
   )
   expect_equal(
-    as.character(interactmeta:::heterogeneity_tau_xlab("Interaction")),
+    as.character(interact:::heterogeneity_tau_xlab("Interaction")),
     as.character(expression("heterogeneity " * tau[gamma]))
   )
   grDevices::pdf(NULL)
@@ -192,11 +192,11 @@ test_that("plot(het) uses bayesmeta tau plots on the default engine", {
   expect_silent(plot_heterogeneity(het, which = "combined"))
   expect_silent(plot_heterogeneity(het))
   expect_identical(plot_heterogeneity(het, which = "overall"), het)
-  objs <- interactmeta:::heterogeneity_native_tau_objects(het)
-  d_ov <- interactmeta:::heterogeneity_bayesmeta_tau_prep(objs$Overall)
-  d_int <- interactmeta:::heterogeneity_bayesmeta_tau_prep(objs$Interaction)
+  objs <- interact:::heterogeneity_native_tau_objects(het)
+  d_ov <- interact:::heterogeneity_bayesmeta_tau_prep(objs$Combined)
+  d_int <- interact:::heterogeneity_bayesmeta_tau_prep(objs$Interaction)
   expect_equal(
-    interactmeta:::heterogeneity_plot_bayesmeta_ylim(list(d_ov, d_int)),
+    interact:::heterogeneity_plot_bayesmeta_ylim(list(d_ov, d_int)),
     c(0, max(d_ov$maxdens, d_int$maxdens))
   )
 })
@@ -212,14 +212,14 @@ test_that("plot_heterogeneity() profiles tau on metafor CAMS", {
   )
   het <- heterogeneity(fit)
   expect_equal(
-    names(interactmeta:::heterogeneity_native_rma_objects(het)),
-    c("Overall", "Interaction")
+    names(interact:::heterogeneity_native_rma_objects(het)),
+    c("Combined", "Interaction")
   )
-  d_ov <- interactmeta:::heterogeneity_metafor_tau_prep(
+  d_ov <- interact:::heterogeneity_metafor_tau_prep(
     fit$metafor$overall,
     steps = 8L
   )
-  d_int <- interactmeta:::heterogeneity_metafor_tau_prep(
+  d_int <- interact:::heterogeneity_metafor_tau_prep(
     fit$metafor$interaction,
     steps = 8L
   )
@@ -231,7 +231,7 @@ test_that("plot_heterogeneity() profiles tau on metafor CAMS", {
     sqrt(max(as.numeric(fit$metafor$overall$tau2), 0)),
     tolerance = 1e-8
   )
-  ylim <- interactmeta:::heterogeneity_plot_metafor_ylim(list(d_ov, d_int))
+  ylim <- interact:::heterogeneity_plot_metafor_ylim(list(d_ov, d_int))
   expect_equal(ylim[[1L]], min(d_ov$ylim[[1L]], d_int$ylim[[1L]]))
   expect_equal(ylim[[2L]], max(d_ov$ylim[[2L]], d_int$ylim[[2L]]))
   grDevices::pdf(NULL)

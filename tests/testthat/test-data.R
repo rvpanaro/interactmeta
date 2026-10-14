@@ -1,5 +1,5 @@
 test_that("package datasets are documented and accessible", {
-  items <- utils::data(package = "interactmeta")$results[, "Item"]
+  items <- utils::data(package = "interact")$results[, "Item"]
   expect_true(all(c("edss", "age", "il6", "steroids", "respire_age", "respire_sex") %in% items))
 
   expect_s3_class(edss, "data.frame")

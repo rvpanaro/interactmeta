@@ -1,4 +1,4 @@
-#' Default base font size for interactmeta ggplot figures
+#' Default base font size for interact ggplot figures
 #'
 #' @param override User-supplied `base_size`; when non-`NULL`, returned as-is.
 #' @param default Fallback when `override` is `NULL` and no option is set.
@@ -8,7 +8,7 @@
 #' default with `options(interactmeta.base_size = 11)`.
 #'
 #' Forest plots use a separate default from `interactmeta_forest_base_size()`;
-#' see the *Plot typography* section in [interactmeta-package].
+#' see the *Plot typography* section in [interact-package].
 #' @noRd
 interactmeta_base_size <- function(override = NULL, default = 11L) {
   if (!is.null(override)) {
@@ -17,7 +17,7 @@ interactmeta_base_size <- function(override = NULL, default = 11L) {
   getOption("interactmeta.base_size", default)
 }
 
-#' Default sans-serif family for interactmeta ggplot figures
+#' Default sans-serif family for interact ggplot figures
 #' @noRd
 interactmeta_base_family <- function(override = NULL) {
   if (!is.null(override) && nzchar(as.character(override)[[1L]])) {
@@ -66,7 +66,7 @@ interactmeta_effects_legend_point_size <- function(base_size = interactmeta_base
   base_size * (3.5 / 12)
 }
 
-#' Shared visual constants for interactmeta figures
+#' Shared visual constants for interact figures
 #'
 #' Subgroup identity (reference / non-reference) stays in
 #' [interactmeta_palette()] / [subgroup_colour_map()]. Everything else —
@@ -153,7 +153,7 @@ interactmeta_approach_colours <- function(palette = NULL, approaches = NULL) {
   out
 }
 
-#' Report / dashboard theme for interactmeta ggplot figures
+#' Report / dashboard theme for interact ggplot figures
 #'
 #' Consistent sans-serif typography, muted greys, light horizontal gridlines
 #' only, and a right-hand legend with comfortable padding. Use this (or
@@ -317,7 +317,7 @@ interactmeta_theme_report <- function(base_size = interactmeta_base_size(default
 #' @export
 subgroupmeta_theme_report <- interactmeta_theme_report
 
-#' Unified **ggplot2** theme for interactmeta figures
+#' Unified **ggplot2** theme for interact figures
 #'
 #' Alias of [interactmeta_theme_report()] kept for internal call sites.
 #' @noRd

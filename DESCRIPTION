@@ -1,4 +1,4 @@
-Package: interactmeta
+Package: interact
 Title: Effect modification in meta-analysis
 Version: 0.0.1
 Authors@R: c(

@@ -9,7 +9,7 @@ subgroups(
   fit,
   contribution = NULL,
   ifrac = c("interaction", "overall"),
-  type = c("Pooled", "Prediction"),
+  type = c("Overall", "Prediction"),
   prob = 0.95,
   max_draws = NULL,
   summary = TRUE,
@@ -22,7 +22,7 @@ modifiers(
   fit,
   contribution = NULL,
   ifrac = c("interaction", "overall"),
-  type = c("Pooled", "Prediction"),
+  type = c("Overall", "Prediction"),
   prob = 0.95,
   max_draws = NULL,
   summary = TRUE,
@@ -43,7 +43,7 @@ a scalar (e.g. \code{contribution = 0.5}) is a plug-in at every draw.}
 (default; interaction-weighted pooling of trial-level \eqn{\pi_j}) or
 \code{"overall"} for overall-block precision weights.}
 
-\item{type}{One or both of \code{"Pooled"} and \code{"Prediction"}. \code{"Pooled"} uses fixed
+\item{type}{One or both of \code{"Overall"} and \code{"Prediction"}. \code{"Overall"} uses fixed
 effects only; \code{"Prediction"} adds a new-trial random effect drawn from the
 posterior trial SDs at the combined-population IF (effect in a new \strong{study}).}
 
@@ -62,7 +62,7 @@ summarizing (e.g. log rate ratios to ratios).}
 
 \item{shrinkage}{If \code{TRUE}, delegate to \code{\link[=shrinkage]{shrinkage()}} with
 \code{type = "subgroups"} (trial-specific reconstruction at each study's
-\eqn{\pi_j}). If \code{FALSE} (default), return only Pooled / Prediction at the
+\eqn{\pi_j}). If \code{FALSE} (default), return only Overall / Prediction at the
 combined-population information fraction.}
 }
 \value{
@@ -70,8 +70,8 @@ A \code{interactmeta_subgroup_effects} object (list with \code{draws}, \code{sum
 \code{overall_ifrac}, \code{overall_ifrac_source} (\code{"fit"} or \code{"user"}), \code{reference},
 \code{prob}, \code{exponentiate}). Draws are indexed by \code{subgroup} and \code{type}.
 \code{summary} includes \code{estimate} (median), \code{mean}, \code{sd}, \code{lci}, and \code{uci}.
-For Bayesian CAMS, \code{lci}/\code{uci} are equal-tail mixture quantiles from the
-DIRECT-node table; native \verb{$post.interval} / \code{convolve()} stay on \verb{$latent}.
+For Bayesian CAMS, \code{lci}/\code{uci} are shortest posterior intervals from the
+DIRECT-node mixture.
 }
 \description{
 \code{subgroups()} is the name to use. \code{modifiers()} is another name for the same extractor.

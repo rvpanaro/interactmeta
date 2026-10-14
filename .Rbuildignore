@@ -1,4 +1,10 @@
-^interactmeta\.Rproj$
+^interact\.Rproj$
+^vignettes-archive
+^vignettes/archive
+^vignettes/convolution\.html$
+^vignettes/engine-comparison\.html$
+^vignettes/further\.html$
+^vignettes/single-subgroup-trials\.html$
 ^\.Rproj\.user$
 ^LICENSE\.md$
 ^README\.Rmd$

@@ -1,6 +1,6 @@
 #' Meta-analysis of treatment-by-subgroup interactions using subgroup-level aggregate data
 #'
-#' **interactmeta** implements **contribution-adjusted meta-analysis
+#' **interact** implements **contribution-adjusted meta-analysis
 #' (CAMS)** for treatment-by-subgroup interactions from
 #' subgroup-level aggregate data (Panaro, Röver & Friede 2025). The
 #' methodological map is
@@ -13,7 +13,7 @@
 #' CAMS can be fitted using Bayesian or frequentist inference. Bayesian CAMS
 #' is implemented using **bayesmeta**/DIRECT quadrature on the two
 #' orthogonal blocks; frequentist CAMS is implemented using **metafor**.
-#' Those packages fit random-effects series. interactmeta constructs the
+#' Those packages fit random-effects series. interact constructs the
 #' information fraction \eqn{\pi_j}, rotates the observations, reconstructs
 #' contribution-adjusted estimands, and preserves
 #' \eqn{\mu_B(\pi)-\mu_A(\pi)=\gamma} and
@@ -37,19 +37,18 @@
 #' 3. The overall block is a meta-regression of \eqn{m_j} on \eqn{\pi_j}; the
 #'    interaction block is a random-effects analysis of \eqn{g_j}.
 #' 4. Extractors return the interaction [interactions()], subgroup effects
-#'    [subgroups()], and combined-population effect [combined()]
-#'    ([overall()] is an alias) at a reporting \eqn{\pi}.
+#'    [subgroups()], and combined-population effect [combined()] at a reporting \eqn{\pi}.
 #' 5. [plot_contribution()] / [predict_cams_by_if()] evaluate
 #'    \eqn{\mu_A(\pi)}, \eqn{\mu_B(\pi)}, and \eqn{M(\pi)} across \eqn{\pi}.
 #'    Trial-level reconstruction \eqn{\mu_{Aj}=m_j-\pi_j g_j} is stored on
-#'    `fit$latent` (see `vignette("convolution")`).
+#'    `fit$latent` (see `vignette("introduction-to-interact")`).
 #'
 #' @section Inference:
 #'
 #' CAMS can be fitted using Bayesian or frequentist inference. These are
 #' not two different scientific models. The approaches are **bayesmeta**
 #' (DIRECT, the default) and **metafor** (REML or ML). See
-#' `vignette("engine-comparison")`.
+#' `vignette("introduction-to-interact")`.
 #'
 #' Default Bayesian heterogeneity priors match [bayesmeta::bayesmeta()]:
 #' improper uniform on \eqn{\tau_m} and \eqn{\tau_g}. Fixed effects use
@@ -106,12 +105,8 @@
 #'
 #' @seealso [cams()], [bayescams()], [ifrac()], [interactions()], [subgroups()],
 #'   [combined()], [plot_contribution()], [predict_cams_by_if()], [da()], [ad()],
-#'   [swada()], `vignette("cams", package = "interactmeta")`,
-#'   `vignette("consistent-interactions", package = "interactmeta")`,
-#'   `vignette("single-subgroup-trials", package = "interactmeta")`,
-#'   `vignette("further", package = "interactmeta")`,
-#'   `vignette("convolution", package = "interactmeta")`,
-#'   `vignette("engine-comparison", package = "interactmeta")`
+#'   [swada()], `vignette("introduction-to-interact", package = "interact")`,
+#'   `vignette("trial-specific-effects-and-shrinkage", package = "interact")`
 #'
-#' @aliases interactmeta
+#' @aliases interact interact-package interactmeta
 "_PACKAGE"

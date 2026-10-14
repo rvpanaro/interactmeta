@@ -34,6 +34,6 @@ prospective meta-analysis of IL-6 antagonists in patients hospitalized
 for COVID-19. Some trials report only one corticosteroid subgroup
 (\code{n = 0} in the other); drop those empty rows before \code{\link[=escalc]{escalc()}} and
 let \code{\link[=ifrac]{ifrac()}} / \code{\link[=cam]{cam()}} complete the missing cells. See
-\code{vignette("single-subgroup-trials")}.
+\code{vignette("introduction-to-interact")}.
 }
 \keyword{datasets}

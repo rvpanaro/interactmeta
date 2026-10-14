@@ -23,12 +23,14 @@ comparison_tidy_draws <- function(fit) {
   post
 }
 
-#' Median + equal-tail interval for a numeric vector
+#' Median + posterior interval for a numeric vector
 #'
-#' Canonical moments (median / mean / sd / equal-tail QI).
+#' Canonical moments (median / mean / sd / shortest or central interval).
 #' @noRd
 comparison_draw_moments <- function(x, prob = 0.95, weight = NULL, cond_sd = NULL,
-                                    exponentiate = FALSE) {
+                                    exponentiate = FALSE,
+                                    interval.type = "shortest") {
+  interval.type <- interactmeta_match_interval_type(interval.type)
   x <- as.numeric(x)
   n_raw <- length(x)
   has_w <- !is.null(weight) && length(weight) == n_raw &&
@@ -40,7 +42,8 @@ comparison_draw_moments <- function(x, prob = 0.95, weight = NULL, cond_sd = NUL
       weight = weight,
       cond_sd = cond_sd,
       prob = prob,
-      exponentiate = exponentiate
+      exponentiate = exponentiate,
+      interval.type = interval.type
     ))
   }
   if (isTRUE(exponentiate)) {
@@ -71,7 +74,11 @@ comparison_draw_moments <- function(x, prob = 0.95, weight = NULL, cond_sd = NUL
       prob = prob
     ))
   }
-  qi <- comparison_median_qi_core(x, prob = prob)
+  qi <- comparison_median_qi_core(
+    x,
+    prob = prob,
+    interval.type = interval.type
+  )
   list(
     median = qi$estimate,
     mean = mean(x),
@@ -83,32 +90,57 @@ comparison_draw_moments <- function(x, prob = 0.95, weight = NULL, cond_sd = NUL
   )
 }
 
-#' Equal-tail median + QI
+#' Median with a shortest or central interval
 #' @noRd
-comparison_median_qi_core <- function(x, prob = 0.95) {
+comparison_median_qi_core <- function(x, prob = 0.95,
+                                      interval.type = "shortest") {
+  interval.type <- interactmeta_match_interval_type(interval.type)
   x <- as.numeric(x)
   x <- x[is.finite(x)]
-  alpha <- (1 - prob) / 2
-  qs <- stats::quantile(x, probs = c(0.5, alpha, 1 - alpha), names = FALSE, type = 7)
+  estimate <- stats::median(x)
+  if (identical(interval.type, "central")) {
+    alpha <- (1 - prob) / 2
+    bounds <- stats::quantile(
+      x,
+      probs = c(alpha, 1 - alpha),
+      names = FALSE,
+      type = 7
+    )
+  } else {
+    sx <- sort(x)
+    width_n <- max(1L, ceiling(prob * length(sx)))
+    starts <- seq_len(length(sx) - width_n + 1L)
+    ends <- starts + width_n - 1L
+    best <- which.min(sx[ends] - sx[starts])
+    bounds <- c(sx[starts[[best]]], sx[ends[[best]]])
+  }
   list(
-    estimate = qs[[1L]],
-    lci = qs[[2L]],
-    uci = qs[[3L]],
-    prob = prob
+    estimate = estimate,
+    lci = bounds[[1L]],
+    uci = bounds[[2L]],
+    prob = prob,
+    interval.type = interval.type
   )
 }
 
 #' @return list(estimate, lci, uci, prob)
 #' @noRd
-comparison_median_qi_vec <- function(x, prob = 0.95) {
-  comparison_median_qi_core(x, prob = prob)
+comparison_median_qi_vec <- function(x, prob = 0.95,
+                                     interval.type = "shortest") {
+  comparison_median_qi_core(
+    x,
+    prob = prob,
+    interval.type = interval.type
+  )
 }
 
-#' Grouped median / mean / sd / equal-tail interval summary
+#' Grouped median / mean / sd / posterior interval summary
 #' @noRd
 comparison_median_qi_grouped <- function(draws, value_col, group_cols, prob = 0.95,
-                                         exponentiate = FALSE) {
-  draws |>
+                                         exponentiate = FALSE,
+                                         interval.type = "shortest") {
+  interval.type <- interactmeta_match_interval_type(interval.type)
+  out <- draws |>
     dplyr::group_by(dplyr::across(dplyr::all_of(group_cols))) |>
     dplyr::group_modify(function(d, ...) {
       w <- if (".weight" %in% names(d)) d$.weight else NULL
@@ -118,7 +150,8 @@ comparison_median_qi_grouped <- function(draws, value_col, group_cols, prob = 0.
         prob = prob,
         weight = w,
         cond_sd = s,
-        exponentiate = exponentiate
+        exponentiate = exponentiate,
+        interval.type = interval.type
       )
       tibble::tibble(
         estimate = mom$estimate,
@@ -130,4 +163,6 @@ comparison_median_qi_grouped <- function(draws, value_col, group_cols, prob = 0.
       )
     }) |>
     dplyr::ungroup()
+  attr(out, "interval.type") <- interval.type
+  out
 }

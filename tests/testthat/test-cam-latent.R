@@ -20,7 +20,7 @@ test_that("trial-effect blocks match the CAMS IV rotation and are orthogonal", {
     vi = c(vA, vB),
     ifrac_Older = pi
   )
-  blocks <- interactmeta:::comparison_trial_effect_blocks(
+  blocks <- interact:::comparison_trial_effect_blocks(
     data = dat,
     reference = "Younger",
     nonref = "Older",
@@ -39,8 +39,8 @@ test_that("inverse CAMS transformation recovers subgroup effects", {
   m <- 1.2
   g <- -0.4
   pi <- 0.35
-  mu_A <- interactmeta:::interactmeta_muA_from_mg(m, g, pi)
-  mu_B <- interactmeta:::interactmeta_muB_from_mg(m, g, pi)
+  mu_A <- interact:::interactmeta_muA_from_mg(m, g, pi)
+  mu_B <- interact:::interactmeta_muB_from_mg(m, g, pi)
   expect_equal((1 - pi) * mu_A + pi * mu_B, m, tolerance = 1e-12)
   expect_equal(mu_B - mu_A, g, tolerance = 1e-12)
   expect_equal(mu_A, m - pi * g, tolerance = 1e-12)
@@ -52,19 +52,19 @@ test_that("normal-normal latent conditional handles tau = 0, small, and large", 
   sigma2 <- 0.25
   mu0 <- 0.2
 
-  z <- interactmeta:::interactmeta_normal_normal_shrink(y, sigma2, mu0, tau = 0)
+  z <- interact:::interactmeta_normal_normal_shrink(y, sigma2, mu0, tau = 0)
   expect_equal(unname(z[, "mean"]), mu0)
   expect_equal(unname(z[, "sd"]), 0)
 
-  tiny <- interactmeta:::interactmeta_normal_normal_shrink(y, sigma2, mu0, tau = 1e-8)
+  tiny <- interact:::interactmeta_normal_normal_shrink(y, sigma2, mu0, tau = 1e-8)
   expect_equal(unname(tiny[, "mean"]), mu0, tolerance = 1e-6)
   expect_lt(unname(tiny[, "sd"]), 1e-7)
 
-  huge <- interactmeta:::interactmeta_normal_normal_shrink(y, sigma2, mu0, tau = 1e6)
+  huge <- interact:::interactmeta_normal_normal_shrink(y, sigma2, mu0, tau = 1e6)
   expect_equal(unname(huge[, "mean"]), y, tolerance = 1e-8)
   expect_equal(unname(huge[, "sd"]), sqrt(sigma2), tolerance = 1e-8)
 
-  mid <- interactmeta:::interactmeta_normal_normal_shrink(y, sigma2, mu0, tau = 0.5)
+  mid <- interact:::interactmeta_normal_normal_shrink(y, sigma2, mu0, tau = 0.5)
   prec_y <- 1 / sigma2
   prec_0 <- 1 / 0.5^2
   expect_equal(unname(mid[, "mean"]), (prec_y * y + prec_0 * mu0) / (prec_y + prec_0))
@@ -82,24 +82,24 @@ test_that("CDF pairing induces comonotonic dependence unlike the product", {
     engine = "bayesmeta",
     silent = 2
   ))
-  ov <- interactmeta:::interactmeta_bmr_support_table(fit$bayesmeta$overall)
-  int <- interactmeta:::interactmeta_bayesmeta_support_table(fit$bayesmeta$interaction)
-  idx <- interactmeta:::interactmeta_support_pair_indices(ov$weight, int$weight)
+  ov <- interact:::interactmeta_bmr_support_table(fit$bayesmeta$overall)
+  int <- interact:::interactmeta_bayesmeta_support_table(fit$bayesmeta$interaction)
+  idx <- interact:::interactmeta_support_pair_indices(ov$weight, int$weight)
   w <- as.numeric(ov$weight)
   w <- w / sum(w)
-  corr_pair <- interactmeta:::interactmeta_weighted_cor(ov$ifrac, int$mu[idx], w)
+  corr_pair <- interact:::interactmeta_weighted_cor(ov$ifrac, int$mu[idx], w)
 
   i <- rep(seq_len(nrow(ov)), each = nrow(int))
   k <- rep(seq_len(nrow(int)), times = nrow(ov))
   wp <- as.numeric(ov$weight[i]) * as.numeric(int$weight[k])
-  corr_prod <- interactmeta:::interactmeta_weighted_cor(ov$ifrac[i], int$mu[k], wp)
+  corr_prod <- interact:::interactmeta_weighted_cor(ov$ifrac[i], int$mu[k], wp)
 
   expect_lt(abs(corr_prod), 1e-10)
   expect_gt(corr_pair, 0.2)
 
   beta_pair <- ov$ifrac - int$mu[idx]
   sd_pair <- sqrt(sum(w * (beta_pair - sum(w * beta_pair))^2))
-  sd_mix <- sqrt(interactmeta:::interactmeta_gm_var(fit$latent$beta$gm))
+  sd_mix <- sqrt(interact:::interactmeta_gm_var(fit$latent$beta$gm))
   expect_lt(sd_pair, sd_mix)
 })
 
@@ -123,9 +123,9 @@ test_that("bayesmeta latent posteriors exist and beta matches convolve", {
   expect_equal(fit$latent$independence, "cross_block")
   expect_true(grepl("Marginal posteriors only", fit$latent$note, fixed = TRUE))
 
-  sm_mix <- interactmeta:::interactmeta_posterior_1d_summary(fit$latent$beta)
+  sm_mix <- interact:::interactmeta_posterior_1d_summary(fit$latent$beta)
   expect_true(!is.null(fit$latent$beta$convolve))
-  bounds <- interactmeta:::interactmeta_interval_from_distribution(
+  bounds <- interact:::interactmeta_interval_from_distribution(
     fit$latent$beta$convolve$quantile,
     fit$latent$beta$convolve$cdf,
     prob = 0.95,
@@ -142,13 +142,13 @@ test_that("bayesmeta latent posteriors exist and beta matches convolve", {
   qs <- c(0.025, 0.5, 0.975)
   expect_equal(
     as.numeric(fit$latent$beta$convolve$quantile(qs)),
-    interactmeta:::interactmeta_gm_quantile(fit$latent$beta$gm, qs),
+    interact:::interactmeta_gm_quantile(fit$latent$beta$gm, qs),
     tolerance = 0.05
   )
   expect_equal(
     sm_mix$mean,
-    interactmeta:::interactmeta_gm_mean(fit$latent$theta$gm) -
-      interactmeta:::interactmeta_gm_mean(fit$latent$gamma$gm),
+    interact:::interactmeta_gm_mean(fit$latent$theta$gm) -
+      interact:::interactmeta_gm_mean(fit$latent$gamma$gm),
     tolerance = 1e-10
   )
 
@@ -156,10 +156,10 @@ test_that("bayesmeta latent posteriors exist and beta matches convolve", {
   expect_equal(sort(names(fit$latent$m)), sort(trials))
   for (tr in trials) {
     pij <- fit$latent$pi[[tr]]
-    sm_m <- interactmeta:::interactmeta_posterior_1d_summary(fit$latent$m[[tr]])
-    sm_g <- interactmeta:::interactmeta_posterior_1d_summary(fit$latent$g[[tr]])
-    sm_A <- interactmeta:::interactmeta_posterior_1d_summary(fit$latent$mu_A[[tr]])
-    sm_B <- interactmeta:::interactmeta_posterior_1d_summary(fit$latent$mu_B[[tr]])
+    sm_m <- interact:::interactmeta_posterior_1d_summary(fit$latent$m[[tr]])
+    sm_g <- interact:::interactmeta_posterior_1d_summary(fit$latent$g[[tr]])
+    sm_A <- interact:::interactmeta_posterior_1d_summary(fit$latent$mu_A[[tr]])
+    sm_B <- interact:::interactmeta_posterior_1d_summary(fit$latent$mu_B[[tr]])
     expect_equal(sm_A$mean, sm_m$mean - pij * sm_g$mean, tolerance = 1e-8)
     expect_equal(sm_B$mean, sm_m$mean + (1 - pij) * sm_g$mean, tolerance = 1e-8)
     if (!is.null(fit$latent$mu_A[[tr]]$convolve)) {
@@ -174,7 +174,7 @@ test_that("bayesmeta latent posteriors exist and beta matches convolve", {
   # $mu stays the fixed-effect linpred, not the shrunken trial posterior
   mu_mean <- colSums(fit$draws$.weight * fit$mu)
   tr1 <- trials[[1L]]
-  sm_A1 <- interactmeta:::interactmeta_posterior_1d_summary(fit$latent$mu_A[[tr1]])
+  sm_A1 <- interact:::interactmeta_posterior_1d_summary(fit$latent$mu_A[[tr1]])
   expect_gt(abs(mu_mean[[1L]] - sm_A1$mean), 1e-4)
 
   expect_lt(ov_n * int_n, 10000)
@@ -192,7 +192,7 @@ test_that("subgroups() at fixed pi* uses joint (alpha, theta) plus independent g
     silent = 2
   ))
   pi_star <- 0.35
-  sg <- subgroups(fit, contribution = pi_star, type = "Pooled")
+  sg <- subgroups(fit, contribution = pi_star, type = "Overall")
   post <- as.data.frame(fit$draws)
   post <- post[order(post$.draw), , drop = FALSE]
   gamma_col <- grep("^b_subgroup", names(post), value = TRUE)
@@ -207,15 +207,15 @@ test_that("subgroups() at fixed pi* uses joint (alpha, theta) plus independent g
   M_star <- post$b_Intercept + pi_star * theta
   mu_A <- M_star - pi_star * post[[gamma_col]]
   mu_B <- M_star + (1 - pi_star) * post[[gamma_col]]
-  dA <- sg$draws[sg$draws$subgroup == "Younger" & sg$draws$type == "Pooled", ]
-  dB <- sg$draws[sg$draws$subgroup == "Older" & sg$draws$type == "Pooled", ]
+  dA <- sg$draws[sg$draws$subgroup == "Younger" & sg$draws$type == "Overall", ]
+  dB <- sg$draws[sg$draws$subgroup == "Older" & sg$draws$type == "Overall", ]
   dA <- dA[order(dA$.draw), , drop = FALSE]
   dB <- dB[order(dB$.draw), , drop = FALSE]
   expect_equal(unname(dA$effect), unname(mu_A), tolerance = 1e-10)
   expect_equal(unname(dB$effect), unname(mu_B), tolerance = 1e-10)
 
   expect_error(
-    interactmeta:::interactmeta_gm_linear_sum(
+    interact:::interactmeta_gm_linear_sum(
       fit$latent$alpha$gm,
       1,
       fit$latent$theta$gm,
@@ -247,10 +247,10 @@ test_that("subgroups() at fixed pi* uses joint (alpha, theta) plus independent g
   Cov <- sum(w * cat) + sum(w * (a - mu_a) * (th - mu_th))
   expect_equal(var_joint, V_a + (pi_star^2) * V_th + 2 * pi_star * Cov, tolerance = 1e-10)
 
-  gm_a <- interactmeta:::interactmeta_gm(a, sqrt(pmax(va, 0)), w)
-  gm_th <- interactmeta:::interactmeta_gm(th, sqrt(pmax(vt, 0)), w)
-  var_ind <- interactmeta:::interactmeta_gm_var(
-    interactmeta:::interactmeta_gm_linear_sum(gm_a, 1, gm_th, pi_star)
+  gm_a <- interact:::interactmeta_gm(a, sqrt(pmax(va, 0)), w)
+  gm_th <- interact:::interactmeta_gm(th, sqrt(pmax(vt, 0)), w)
+  var_ind <- interact:::interactmeta_gm_var(
+    interact:::interactmeta_gm_linear_sum(gm_a, 1, gm_th, pi_star)
   )
   if (abs(Cov) > 1e-8) {
     expect_gt(abs(var_ind - var_joint), 1e-8)
@@ -270,17 +270,17 @@ test_that("engine-native latent intervals follow bayesmeta post.interval and con
   expect_equal(fit$interval.type, "shortest")
   prob <- 0.95
 
-  # Public extractors use mixture equal-tail; native lives on $latent / param summary.
+  # Public extractors and native summaries both use shortest intervals.
   int <- interactions(fit, prob = prob)
-  pooled <- int$summary[int$summary$type == "Pooled", ]
+  pooled <- int$summary[int$summary$type == "Overall", ]
   native_g <- fit$bayesmeta$interaction$post.interval(
     mu.level = prob,
     method = "shortest"
   )
-  # Public extractor intervals follow the mixture, not necessarily native shortest.
+  # Public extractor intervals follow the shortest interval of the mixture.
   post <- as.data.frame(fit$draws)
   g_col <- grep("^b_subgroup", names(post), value = TRUE)[[1L]]
-  qi_g <- interactmeta:::comparison_draw_moments(
+  qi_g <- interact:::comparison_draw_moments(
     post[[g_col]],
     prob = prob,
     weight = post$.weight,
@@ -290,10 +290,10 @@ test_that("engine-native latent intervals follow bayesmeta post.interval and con
   expect_equal(pooled$uci, qi_g$uci, tolerance = 1e-8)
   expect_true(is.numeric(native_g) && length(native_g) == 2L)
 
-  pars <- interactmeta:::interactmeta_bayesmeta_param_summary(fit, prob = prob)
+  pars <- interact:::interactmeta_bayesmeta_param_summary(fit, prob = prob)
   ov <- fit$bayesmeta$overall
   which_a <- match(
-    interactmeta:::interactmeta_bmr_coef_name(ov, "intercept"),
+    interact:::interactmeta_bmr_coef_name(ov, "intercept"),
     colnames(ov$support$mean)
   )
   native_a <- ov$post.interval(
@@ -308,7 +308,7 @@ test_that("engine-native latent intervals follow bayesmeta post.interval and con
   )
 
   eco <- grep("^Ecological_", colnames(pars), value = TRUE)
-  eco_bounds <- interactmeta:::interactmeta_interval_from_distribution(
+  eco_bounds <- interact:::interactmeta_interval_from_distribution(
     fit$latent$beta$convolve$quantile,
     fit$latent$beta$convolve$cdf,
     prob = prob,
@@ -349,7 +349,7 @@ test_that("engine-native latent intervals follow bayesmeta post.interval and con
   beta_col <- grep("^b_ifrac", names(fit$draws), value = TRUE)
   beta_col <- beta_col[!grepl("ifrac2", beta_col)]
   expect_length(beta_col, 1L)
-  wq <- interactmeta:::interactmeta_weighted_quantile(
+  wq <- interact:::interactmeta_weighted_quantile(
     fit$draws[[beta_col]], fit$draws$.weight, c(0.025, 0.975)
   )
   expect_gt(max(abs(eco_bounds - wq)), 1e-4)

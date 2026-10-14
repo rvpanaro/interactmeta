@@ -32,14 +32,14 @@ interactmeta_abort_non_cams <- function(object, feature) {
 #' `$interaction` ([bayesmeta::bayesmeta()] of \eqn{g_j}), and `$trial_blocks`.
 #' Those objects are the `bayesmeta` / DIRECT backend, not CAMS estimands.
 #' Plot them with the native `bayesmeta` methods
-#' (`vignette("further")`). For frequentist CAMS the
+#' (`vignette("introduction-to-interact")`). For frequentist CAMS the
 #' analogue is `$metafor`.
 #'
 #' @param fit A [cam()] / [da()] / [ad()] / [swada()] / [conventional()] object.
 #' @return For Bayesian CAMS, the list with `$overall`, `$interaction`, and
 #'   `$trial_blocks`. For frequentist CAMS, `fit$metafor`. For DA / AD /
 #'   SWADA / conventional, the stored `$fits` list. `NULL` if none is stored.
-#' @seealso [traceplot.interactmeta()], `vignette("further")`
+#' @seealso [traceplot.interactmeta()], `vignette("introduction-to-interact")`
 #' @keywords internal
 #' @export
 native_fit <- function(fit) {
@@ -138,9 +138,8 @@ interactmeta_ifrac_is_plugin <- function(x) {
 interactmeta_default_uncertainty <- function(engine, method) {
   if (identical(engine, "bayesmeta")) {
     return(paste(
-      "equal-tail interval from the DIRECT-node Gaussian mixture",
-      "(.weight and within-node .cond_*); native post.interval / convolve",
-      "remain on $latent"
+      "shortest interval from the DIRECT-node Gaussian mixture",
+      "(.weight and within-node .cond_*)"
     ))
   }
   if (identical(engine, "metafor")) {
@@ -164,7 +163,9 @@ interactmeta_mixture_moments <- function(mean,
                                          weight = NULL,
                                          cond_sd = NULL,
                                          prob = 0.95,
-                                         exponentiate = FALSE) {
+                                         exponentiate = FALSE,
+                                         interval.type = "shortest") {
+  interval.type <- interactmeta_match_interval_type(interval.type)
   mean <- as.numeric(mean)
   n <- length(mean)
   empty <- list(
@@ -223,11 +224,19 @@ interactmeta_mixture_moments <- function(mean,
     if (isTRUE(exponentiate)) {
       mean <- exp(mean)
     }
-    return(comparison_draw_moments(mean, prob = prob))
+    return(comparison_draw_moments(
+      mean,
+      prob = prob,
+      interval.type = interval.type
+    ))
   }
 
   gm <- interactmeta_gm(mean = mean, sd = s, weight = w)
-  sm <- interactmeta_gm_summary(gm, prob = prob)
+  sm <- interactmeta_gm_summary(
+    gm,
+    prob = prob,
+    interval.type = interval.type
+  )
   if (isTRUE(exponentiate)) {
     ln <- interactmeta_gm_lognormal_moments(gm)
     return(list(
@@ -454,7 +463,7 @@ interactmeta_metafor_fill_effects <- function(fit,
     ty <- if ("type" %in% names(summary)) {
       as.character(summary$type[[i]])
     } else {
-      "Pooled"
+      "Overall"
     }
     pred <- identical(ty, "Prediction")
     lin <- NULL
@@ -533,8 +542,7 @@ interactmeta_summarize_effects <- function(draws,
                                            delta_ifrac2 = 1) {
   mix <- is.data.frame(draws) && ".cond_sd" %in% names(draws)
   if (mix) {
-    # Public Bayesian intervals: equal-tail mixture on DIRECT nodes (fast).
-    # Native post.interval / convolve stay on $latent only.
+    # Public Bayesian intervals: shortest mixture interval on DIRECT nodes.
     summ <- comparison_effects_summary(
       draws,
       group_cols = group_cols,

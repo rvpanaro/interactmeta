@@ -5,7 +5,7 @@
 #' for COVID-19. Some trials report only one corticosteroid subgroup
 #' (`n = 0` in the other); drop those empty rows before [escalc()] and
 #' let [ifrac()] / [cam()] complete the missing cells. See
-#' `vignette("single-subgroup-trials")`.
+#' `vignette("introduction-to-interact")`.
 #'
 #' @format A data frame with 30 rows and 7 variables:
 #' \describe{

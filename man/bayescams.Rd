@@ -16,7 +16,7 @@ bayescams(
   contrast = "all",
   contrast_sep = "-",
   big_var = 100^2,
-  include_overall = FALSE,
+  include_combined = FALSE,
   include_interaction = FALSE,
   ecological_slope = TRUE,
   engine = "bayesmeta",
@@ -36,7 +36,7 @@ bayescam(
   contrast = "all",
   contrast_sep = "-",
   big_var = 100^2,
-  include_overall = FALSE,
+  include_combined = FALSE,
   include_interaction = FALSE,
   ecological_slope = TRUE,
   engine = "bayesmeta",
@@ -66,7 +66,7 @@ accepted; \code{modifier} is the name to use.}
 \item{trial_var, subgroup_var}{Column names used in the model (defaults
 match \code{trial} and \code{subgroup}). \code{subgroup_var} remains accepted.}
 
-\item{contrast, contrast_sep, big_var, include_overall, include_interaction}{Passed
+\item{contrast, contrast_sep, big_var, include_combined, include_interaction}{Passed
 to \code{\link[=ifrac]{ifrac()}} when information fractions are computed inside \code{cam()}.}
 
 \item{ecological_slope}{Logical; if \code{TRUE} (default), include the ecological /
@@ -99,7 +99,7 @@ Frequentist CAMS uses \code{cams(..., engine = "metafor")}.
 }
 \examples{
 \dontrun{
-library(interactmeta)
+library(interact)
 es <- escalc(measure = "IRR", yi = age$yi, vi = age$vi, data = age)
 fit <- bayescams(es, reference = "Younger")
 }

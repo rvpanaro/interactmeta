@@ -182,7 +182,7 @@ interactmeta_compare_extractor <- function(fits,
 #' @noRd
 interactmeta_compare_interactions_fits <- function(fits,
                                                    exponentiate = FALSE,
-                                                   type = "Pooled") {
+                                                   type = "Overall") {
   type <- as.character(type)[[1L]]
   xlab <- if (isTRUE(exponentiate)) "Treatment effect" else "Log treatment effect"
   interactmeta_compare_extractor(
@@ -210,7 +210,7 @@ interactmeta_compare_interactions_fits <- function(fits,
 #' @noRd
 interactmeta_compare_subgroups_fits <- function(fits,
                                                 exponentiate = TRUE,
-                                                type = "Pooled") {
+                                                type = "Overall") {
   type <- as.character(type)[[1L]]
   xlab <- if (isTRUE(exponentiate)) "Treatment effect" else "Log treatment effect"
   interactmeta_compare_extractor(
@@ -241,12 +241,12 @@ interactmeta_compare_subgroups_fits <- function(fits,
 #' @param ... Two or more [cam()] fits.
 #' @param exponentiate If `TRUE` (default), report on the exponentiated
 #'   (ratio) scale.
-#' @param type CAMS layer (`"Pooled"` default).
+#' @param type CAMS layer (`"Overall"` default).
 #' @return A tibble with class `interactmeta_compare_combined`. Print the
 #'   table; [plot()] draws a forest of the compared estimates.
 #' @seealso [compare_interactions()], [compare_subgroups()], [combined()]
 #' @export
-compare_combined <- function(..., exponentiate = TRUE, type = "Pooled") {
+compare_combined <- function(..., exponentiate = TRUE, type = "Overall") {
   fits <- interactmeta_compact_fits(...)
   if (!interactmeta_all_cams(fits)) {
     stop(
@@ -365,7 +365,7 @@ compare_ifrac <- function(..., ifrac = "interaction") {
     class_name = "interactmeta_compare_ifrac",
     caller = "compare_ifrac",
     exponentiate = FALSE,
-    xlab = "Pooled information fraction",
+    xlab = "Overall information fraction",
     id_cols = "ifrac"
   )
 }

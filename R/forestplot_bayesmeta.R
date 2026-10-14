@@ -1,7 +1,7 @@
 #' Draw a bayesmeta / forestplot-backed forest on the active device
 #'
 #' CAMS forests always use [forestplot::forestplot()] so every `type`
-#' (`"subgroups"`, `"interaction"`, `"overall"`) shares the same aesthetics:
+#' (`"subgroups"`, `"interaction"`, `"combined"`) shares the same aesthetics:
 #' black study boxes; blue summary diamonds for every block;
 #' prediction bars; optional grey shrinkage overlays; and IF columns.
 #' (Standalone [as_bayesmeta()] objects can still be drawn with
@@ -314,13 +314,13 @@ forestplot_bayesmeta_add_graph_separator <- function(fp, graph.pos) {
   do.call(forestplot::fp_add_lines, args)
 }
 
-#' `Pooled` / `Prediction` labels with a subgroup / block heading in parentheses
+#' `Overall` / `Prediction` labels with a subgroup / block heading in parentheses
 #'
 #' Used when the heading is not drawn alone (summary-only subgroup blocks or
 #' `group = "trial"`), so the block remains identifiable on the summary row.
 #'
-#' @param allow_block_headings If `TRUE`, also attach Interaction / Overall
-#'   headings (e.g. `"Pooled (Overall)"`). Default skips those block names.
+#' @param allow_block_headings If `TRUE`, also attach Interaction / Combined
+#'   headings (e.g. `"Overall (Combined)"`). Default skips those block names.
 #' @noRd
 forestplot_summary_group_label <- function(label,
                                            heading,
@@ -331,7 +331,7 @@ forestplot_summary_group_label <- function(label,
     return(lab)
   }
   if (
-    !identical(lab, "Pooled") &&
+    !identical(lab, "Overall") &&
       !identical(lab, "Prediction")
   ) {
     return(lab)
@@ -343,7 +343,7 @@ forestplot_summary_group_label <- function(label,
   if (
     !isTRUE(allow_block_headings) &&
       (forestplot_heading_is_interaction(hdr) ||
-         forestplot_heading_is_overall(hdr))
+         forestplot_heading_is_combined(hdr))
   ) {
     return(lab)
   }
@@ -865,7 +865,7 @@ forestplot_bayesmeta_blocks <- function(panel, row_labels, estimate_col = "yi") 
 
   # Unique headings in order of first appearance.
   heads <- heading
-  heads[!nzchar(heads)] <- "(Overall)"
+  heads[!nzchar(heads)] <- "(Combined)"
   uniq <- unique(heads)
 
   lapply(uniq, function(h) {
@@ -964,10 +964,10 @@ forestplot_bayesmeta_blocks <- function(panel, row_labels, estimate_col = "yi") 
       )
     }
 
-    # All summary diamonds/bars in panel order (keeps Overall Pooled + Prediction).
+    # All summary diamonds/bars in panel order (keeps Combined Overall + Prediction).
     summaries <- list()
     for (idx in seq_along(kind_i)) {
-      if (kind_i[[idx]] %in% c("pooled", "prediction", "overall")) {
+      if (kind_i[[idx]] %in% c("overall", "prediction", "combined")) {
         summaries[[length(summaries) + 1L]] <- as_sum_at(idx)
       }
     }
@@ -980,18 +980,18 @@ forestplot_bayesmeta_blocks <- function(panel, row_labels, estimate_col = "yi") 
       lab_l <- tolower(s$label %||% "")
       if (isTRUE(s$bar) || identical(lab_l, "prediction")) {
         if (is.null(prediction)) prediction <- s
-      } else if (identical(lab_l, "pooled") || identical(lab_l, "mean")) {
+      } else if (identical(lab_l, "overall") || identical(lab_l, "mean")) {
         if (is.null(pooled)) pooled <- s
       } else {
         if (is.null(overall)) overall <- s
-        if (is.null(pooled) && !grepl("overall", lab_l, fixed = TRUE)) {
+        if (is.null(pooled) && !grepl("combined", lab_l, fixed = TRUE)) {
           pooled <- s
         }
       }
     }
     # Subgroup blocks: kinds are pooled/prediction without relying on labels.
     if (is.null(pooled)) {
-      hit <- which(kind_i == "pooled")
+      hit <- which(kind_i == "overall")
       if (length(hit)) pooled <- as_sum_at(hit[[1L]])
     }
     if (is.null(prediction)) {
@@ -999,12 +999,12 @@ forestplot_bayesmeta_blocks <- function(panel, row_labels, estimate_col = "yi") 
       if (length(hit)) prediction <- as_sum_at(hit[[1L]])
     }
     if (is.null(overall)) {
-      hit <- which(kind_i == "overall")
+      hit <- which(kind_i == "combined")
       if (length(hit)) overall <- as_sum_at(hit[[1L]])
     }
 
     list(
-      heading = if (identical(h, "(Overall)")) "" else h,
+      heading = if (identical(h, "(Combined)")) "" else h,
       studies = studies_df,
       shrinkage = shr_df,
       summaries = summaries,
@@ -1048,7 +1048,7 @@ forestplot_bayesmeta_se <- function(studies) {
 #' `rows = which(!is.summary)[1]:n`. When every row is a summary (header,
 #' spacers, diamonds), that start is `NA` and print fails with
 #' `NA/NaN argument`. Flip the first empty spacer (or the first row)
-#' so Pooled / Prediction-only forests still draw.
+#' so Overall / Prediction-only forests still draw.
 #'
 #' @noRd
 forestplot_ensure_nonsummary_row <- function(is_summary, mean_m) {
@@ -1151,7 +1151,7 @@ forestplot_bayesmeta_forestplot_args <- function(blocks, specs) {
   subgroup_levels <- subgroup_levels[
     nzchar(subgroup_levels) &
       !forestplot_heading_is_interaction(subgroup_levels) &
-      !forestplot_heading_is_overall(subgroup_levels)
+      !forestplot_heading_is_combined(subgroup_levels)
   ]
 
   label_cols <- list()
@@ -1200,7 +1200,7 @@ forestplot_bayesmeta_forestplot_args <- function(blocks, specs) {
     h <- as.character(h %||% "")[[1L]]
     nzchar(h) &&
       !forestplot_heading_is_interaction(h) &&
-      !forestplot_heading_is_overall(h)
+      !forestplot_heading_is_combined(h)
   }
 
   # Header row — Study (+ IF / N) and a single Effect column (estimate [CI]).
@@ -1257,13 +1257,13 @@ forestplot_bayesmeta_forestplot_args <- function(blocks, specs) {
     bl <- blocks[[bi]]
     n_st <- nrow(bl$studies)
     is_int_ov <- forestplot_heading_is_interaction(bl$heading) ||
-      forestplot_heading_is_overall(bl$heading)
+      forestplot_heading_is_combined(bl$heading)
     # Summary-only subgroup blocks: drop the alone heading and put the name
-    # on Pooled / Prediction instead, e.g. "Pooled (Younger)".
+    # on Overall / Prediction instead, e.g. "Overall (Younger)".
     skip_heading <- nzchar(bl$heading) && identical(n_st, 0L) && !is_int_ov
     attach_heading <- identical(group, "trial") || skip_heading
 
-    # Empty row above Interaction / Overall when they follow other blocks
+    # Empty row above Interaction / Combined when they follow other blocks
     # (the post-header spacer already covers the case when they lead).
     if (bi > 1L && is_int_ov) {
       push_spacer_row()
@@ -1360,7 +1360,7 @@ forestplot_bayesmeta_forestplot_args <- function(blocks, specs) {
       } else {
         "mean"
       }
-      # Put the block heading on Pooled / Prediction when it is not drawn alone.
+      # Put the block heading on Overall / Prediction when it is not drawn alone.
       lab[[1L]] <- forestplot_summary_group_label(
         lab[[1L]],
         heading = bl$heading,
@@ -1396,9 +1396,9 @@ forestplot_bayesmeta_forestplot_args <- function(blocks, specs) {
         add_summary(sm)
       }
     } else {
-      add_summary(bl$pooled, "Pooled", bar = FALSE)
+      add_summary(bl$pooled, "Overall", bar = FALSE)
       add_summary(bl$prediction, "Prediction", bar = TRUE)
-      add_summary(bl$overall, "Overall", bar = FALSE)
+      add_summary(bl$overall, "Combined", bar = FALSE)
     }
 
     # Empty row between consecutive subgroup blocks (group = "subgroup"),
@@ -1429,7 +1429,7 @@ forestplot_bayesmeta_forestplot_args <- function(blocks, specs) {
 
   # forestplot::getVerticaLines() uses
   # `which(is.summary == FALSE)[1]:number_of_rows`. Summary-only
-  # forests (Pooled / Prediction with estimates_only) have no study
+  # forests (Overall / Prediction with estimates_only) have no study
   # row, so that start is NA unless a spacer is marked non-summary.
   is_summary <- forestplot_ensure_nonsummary_row(is_summary, mean_m)
 

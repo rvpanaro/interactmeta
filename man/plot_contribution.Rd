@@ -8,7 +8,7 @@ plot_contribution(
   fit,
   ifrac_var = NULL,
   prob = 0.95,
-  type = "Pooled",
+  type = "Overall",
   max_draws = NULL,
   contrast_sep = "-",
   exponentiate = FALSE,

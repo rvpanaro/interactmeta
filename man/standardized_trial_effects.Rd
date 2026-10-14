@@ -6,7 +6,7 @@
 \usage{
 standardized_trial_effects(
   fit,
-  type = c("subgroups", "interaction", "overall", "combined"),
+  type = c("subgroups", "interaction", "combined"),
   format = c("list", "summary"),
   prob = 0.95,
   max_draws = NULL,
@@ -21,7 +21,7 @@ standardized_trial_effects(
 \arguments{
 \item{fit}{A \code{\link{interactmeta}} from \code{\link[=cam]{cam()}}.}
 
-\item{type}{Which estimand: \code{"subgroups"}, \code{"interaction"}, or \code{"overall"}.}
+\item{type}{Which estimand: \code{"subgroups"}, \code{"interaction"}, or \code{"combined"}.}
 
 \item{format}{Output representation (same choices as \code{\link[=shrinkage]{shrinkage()}}).}
 

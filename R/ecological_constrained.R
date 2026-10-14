@@ -191,7 +191,7 @@ interactmeta_metafor_fit_constrained <- function(blocks,
 #' Bayesian constrained CAMS (beta = 0, theta = gamma)
 #'
 #' Interaction block is still a univariate bayesmeta fit (gives \eqn{\tau_g}
-#' DIRECT support). Overall \eqn{\tau_m} support comes from bayesmeta on
+#' DIRECT support). Combined \eqn{\tau_m} support comes from bayesmeta on
 #' offset-adjusted overall effects \eqn{m_j - \pi_j\hat\gamma}. At each
 #' product node, \eqn{(\alpha,\gamma)} is the joint Gaussian posterior under
 #' the stacked likelihood with free \eqn{\tau_m} and \eqn{\tau_g}. Setting

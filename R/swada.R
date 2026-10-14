@@ -251,7 +251,7 @@ interactmeta_as_ad <- function(x, from_conventional = NULL) {
 #'   are already CAMS fits.
 #' @param exponentiate If `TRUE` (default), report on the exponentiated
 #'   (ratio) scale. Use `FALSE` for the fitted log scale.
-#' @param type CAMS layer (`"Pooled"` default).
+#' @param type CAMS layer (`"Overall"` default).
 #' @return A tibble with one row per approach × subgroup and class
 #'   `interactmeta_compare_subgroups` (plottable).
 #' @export
@@ -259,7 +259,7 @@ compare_subgroups <- function(da,
                                         swada,
                                         cam = NULL,
                                         exponentiate = TRUE,
-                                        type = "Pooled") {
+                                        type = "Overall") {
   cams_fits <- interactmeta_compact_fits(da, swada, cam)
   if (interactmeta_all_cams(cams_fits)) {
     return(interactmeta_compare_subgroups_fits(
@@ -364,7 +364,7 @@ compare_interactions <- function(da,
                                            swada = NULL,
                                            cam = NULL,
                                            exponentiate = FALSE,
-                                           type = "Pooled") {
+                                           type = "Overall") {
   cams_fits <- interactmeta_compact_fits(da, ad, swada, cam)
   if (interactmeta_all_cams(cams_fits)) {
     return(interactmeta_compare_interactions_fits(
@@ -624,7 +624,7 @@ plot_subgroups <- function(da,
                                      swada,
                                      cam,
                                      exponentiate = TRUE,
-                                     type = "Pooled",
+                                     type = "Overall",
                                      include_observed = TRUE,
                                      xlim = NULL) {
   da_fit <- interactmeta_as_da(da)

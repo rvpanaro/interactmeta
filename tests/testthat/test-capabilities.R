@@ -64,10 +64,10 @@ test_that("Bayesian DA uses only its selected bayesmeta DA fit", {
   expect_s3_class(da_fit$fits$nonref, "bayesmeta")
   expect_true(is.list(da_fit$posterior$interaction))
 
-  gm_ref <- interactmeta:::interactmeta_gm_from_bayesmeta(da_fit$fits$reference)
-  gm_non <- interactmeta:::interactmeta_gm_from_bayesmeta(da_fit$fits$nonref)
-  gm_da <- interactmeta:::interactmeta_gm_linear_sum(gm_non, 1, gm_ref, -1)
-  sm <- interactmeta:::interactmeta_gm_summary(gm_da)
+  gm_ref <- interact:::interactmeta_gm_from_bayesmeta(da_fit$fits$reference)
+  gm_non <- interact:::interactmeta_gm_from_bayesmeta(da_fit$fits$nonref)
+  gm_da <- interact:::interactmeta_gm_linear_sum(gm_non, 1, gm_ref, -1)
+  sm <- interact:::interactmeta_gm_summary(gm_da)
   expect_equal(
     da_fit$interaction$estimate,
     as.numeric(da_fit$posterior$interaction$convolve$quantile(0.5)),
@@ -76,12 +76,12 @@ test_that("Bayesian DA uses only its selected bayesmeta DA fit", {
   expect_equal(da_fit$interaction$se, sm$sd, tolerance = 1e-8)
   expect_equal(
     sm$mean,
-    interactmeta:::interactmeta_gm_mean(gm_non) - interactmeta:::interactmeta_gm_mean(gm_ref),
+    interact:::interactmeta_gm_mean(gm_non) - interact:::interactmeta_gm_mean(gm_ref),
     tolerance = 1e-10
   )
   expect_equal(
     sm$sd^2,
-    interactmeta:::interactmeta_gm_var(gm_non) + interactmeta:::interactmeta_gm_var(gm_ref),
+    interact:::interactmeta_gm_var(gm_non) + interact:::interactmeta_gm_var(gm_ref),
     tolerance = 1e-8
   )
 
@@ -110,13 +110,13 @@ test_that("Bayesian AD uses only its selected bayesmeta AD fit", {
   expect_s3_class(ad_fit$fits$interaction, "bayesmeta")
   expect_true(is.list(ad_fit$posterior$interaction))
 
-  loc <- interactmeta:::interactmeta_native_location(
+  loc <- interact:::interactmeta_native_location(
     ad_fit$fits$interaction, prob = 0.95, interval.type = "shortest"
   )
   expect_equal(ad_fit$interaction$estimate, loc$median, tolerance = 1e-8)
   expect_equal(ad_fit$interaction$ci.lb, loc$lower, tolerance = 1e-8)
   expect_equal(ad_fit$interaction$ci.ub, loc$upper, tolerance = 1e-8)
-  expect_equal(ad_fit$interaction$tau2, interactmeta:::interactmeta_bayesmeta_tau2_mean(ad_fit$fits$interaction), tolerance = 1e-10)
+  expect_equal(ad_fit$interaction$tau2, interact:::interactmeta_bayesmeta_tau2_mean(ad_fit$fits$interaction), tolerance = 1e-10)
 
   int <- interactions(ad_fit)
   expect_equal(int$engine, "bayesmeta")
@@ -163,7 +163,7 @@ test_that("downstream DA/AD accessors do not silently invoke CAMS or the other c
     ad = function(...) {
       stop("must not refit AD")
     },
-    .package = "interactmeta"
+    .package = "interact"
   )
   testthat::with_mocked_bindings(
     {
@@ -207,7 +207,7 @@ test_that("CAMS accessors do not silently invoke DA or AD", {
       ad_calls <<- ad_calls + 1L
       stop("must not call ad() from CAMS")
     },
-    .package = "interactmeta"
+    .package = "interact"
   )
   expect_equal(da_calls, 0L)
   expect_equal(ad_calls, 0L)

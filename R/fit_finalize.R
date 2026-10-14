@@ -4,11 +4,11 @@
 #' (`Ecological_*`, `Interaction_*`, `tau`, …).
 #'
 #' \describe{
-#'   \item{`alpha`}{Overall intercept; population mean at information fraction 0 for the reference subgroup.}
+#'   \item{`alpha`}{Combined intercept; population mean at information fraction 0 for the reference subgroup.}
 #'   \item{`beta`}{Ecological / composition slope (`b_ifrac`).}
 #'   \item{`gamma`}{Interaction / subgroup offset (`b_subgroup`).}
-#'   \item{`theta`}{Overall information-fraction slope; CAMS identity `theta = beta + gamma`.}
-#'   \item{`tau_m`}{Overall-block heterogeneity SD (`sd_trial__Intercept`).}
+#'   \item{`theta`}{Combined information-fraction slope; CAMS identity `theta = beta + gamma`.}
+#'   \item{`tau_m`}{Combined-block heterogeneity SD (`sd_trial__Intercept`).}
 #'   \item{`tau_g`}{Interaction-block heterogeneity SD (`sd_trial__ifrac2_*`).}
 #'   \item{`pi_j`}{Trial information fraction of the non-reference subgroup.}
 #'   \item{`m_j`}{Trial overall (IV-pooled) effect.}

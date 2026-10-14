@@ -11,7 +11,7 @@ test_that("subgroups() defaults to ifrac(fit) draws", {
     ifrac2_Older = c(-0.3, 0.7, -0.55, 0.45)
   )
   fit <- cam(dat, engine = "bayesmeta", reference = "Younger")
-  me <- subgroups(fit, type = "Pooled", summary = FALSE)
+  me <- subgroups(fit, type = "Overall", summary = FALSE)
   expect_equal(me$overall_ifrac_source, "fit")
   expect_equal(length(me$overall_ifrac), length(ifrac(fit)))
 })
@@ -30,13 +30,13 @@ test_that("subgroups() accepts a custom scalar contribution", {
   )
   fit <- cam(dat, engine = "bayesmeta", reference = "Younger")
   oi <- 0.35
-  me <- subgroups(fit, contribution = oi, type = "Pooled", summary = FALSE)
+  me <- subgroups(fit, contribution = oi, type = "Overall", summary = FALSE)
   expect_equal(me$overall_ifrac_source, "user")
   expect_gt(nrow(me$draws), 1L)
   expect_gt(length(unique(me$draws$.draw)), 1L)
 })
 
-test_that("overall() accepts explicit contribution from ifrac()", {
+test_that("combined() accepts explicit contribution from ifrac()", {
   skip_if_not_installed("bayesmeta")
 
   dat <- data.frame(
@@ -50,7 +50,7 @@ test_that("overall() accepts explicit contribution from ifrac()", {
   )
   fit <- cam(dat, engine = "bayesmeta", reference = "Younger")
   oi <- ifrac(fit)
-  me <- overall(fit, contribution = oi, type = "Pooled", summary = FALSE)
+  me <- combined(fit, contribution = oi, type = "Overall", summary = FALSE)
   expect_equal(me$overall_ifrac_source, "user")
 })
 
@@ -76,11 +76,11 @@ test_that("max_draws cannot thin a weighted DIRECT support", {
   set.seed(1L)
   want <- sample.int(10L, 4L)
   expect_identical(
-    interactmeta:::comparison_marginal_draw_index(10L, max_draws = 4L),
+    interact:::comparison_marginal_draw_index(10L, max_draws = 4L),
     want
   )
   expect_error(
-    interactmeta:::comparison_marginal_draw_index(
+    interact:::comparison_marginal_draw_index(
       n,
       max_draws = 5L,
       weight = fit$draws$.weight

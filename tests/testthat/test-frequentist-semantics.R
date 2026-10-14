@@ -31,7 +31,7 @@ test_that("metafor print uses CI, not CrI or posterior median", {
   expect_false(grepl("credible", out, ignore.case = TRUE))
   expect_false(grepl("marginal posterior summary", out, fixed = TRUE))
 
-  int_out <- paste(capture.output(print(interactions(fit, type = "Pooled"))), collapse = "\n")
+  int_out <- paste(capture.output(print(interactions(fit, type = "Overall"))), collapse = "\n")
   expect_match(int_out, "Treatment-by-subgroup interaction", fixed = TRUE)
   expect_false(grepl("at overall information fraction", int_out, fixed = TRUE))
   expect_match(int_out, "estimate", fixed = TRUE)
@@ -40,12 +40,14 @@ test_that("metafor print uses CI, not CrI or posterior median", {
   expect_false(grepl("CrI", int_out, fixed = TRUE))
   expect_false(grepl("credible", int_out, ignore.case = TRUE))
 
-  sg_out <- paste(capture.output(print(subgroups(fit, type = "Pooled"))), collapse = "\n")
+  sg_out <- paste(capture.output(print(subgroups(fit, type = "Overall"))), collapse = "\n")
+  expect_match(sg_out, "Reporting IF:", fixed = TRUE)
   expect_match(sg_out, "95% CI", fixed = TRUE)
   expect_false(grepl("CrI", sg_out, fixed = TRUE))
   expect_false(grepl("median", sg_out))
 
-  comb_out <- paste(capture.output(print(combined(fit, type = "Pooled"))), collapse = "\n")
+  comb_out <- paste(capture.output(print(combined(fit, type = "Overall"))), collapse = "\n")
+  expect_match(comb_out, "Reporting IF:", fixed = TRUE)
   expect_match(comb_out, "95% CI", fixed = TRUE)
   expect_false(grepl("CrI", comb_out, fixed = TRUE))
 
@@ -75,7 +77,7 @@ test_that("frequentist IF is a plug-in at fitted tau / tau_gamma", {
   expect_length(as.numeric(oi), 1L)
   expect_equal(
     as.numeric(oi),
-    interactmeta:::overall_ifrac_compute(
+    interact:::overall_ifrac_compute(
       data = d,
       trial_var = st$trial_var,
       subgroup_var = st$subgroup_var,
@@ -90,7 +92,7 @@ test_that("frequentist IF is a plug-in at fitted tau / tau_gamma", {
   expect_length(as.numeric(oi_g), 1L)
   expect_equal(
     as.numeric(oi_g),
-    interactmeta:::interaction_ifrac_compute(
+    interact:::interaction_ifrac_compute(
       data = d,
       trial_var = st$trial_var,
       subgroup_var = st$subgroup_var,
@@ -143,15 +145,15 @@ test_that("frequentist M(pi), mu_A, mu_B use the rma covariance including Cov(al
   var_b <- var_m + ((1 - pi)^2) * vg
   z <- stats::qnorm(0.975)
 
-  sg <- subgroups(fit, type = "Pooled", contribution = pi)
-  comb <- combined(fit, type = "Pooled", contribution = pi)
-  intn <- interactions(fit, type = "Pooled")
+  sg <- subgroups(fit, type = "Overall", contribution = pi)
+  comb <- combined(fit, type = "Overall", contribution = pi)
+  intn <- interactions(fit, type = "Overall")
   ref <- sg$summary$subgroup == "Younger"
   non <- sg$summary$subgroup == "Older"
   expect_equal(sg$summary$estimate[ref], mu_a, tolerance = 1e-8)
   expect_equal(sg$summary$estimate[non], mu_b, tolerance = 1e-8)
   expect_equal(comb$summary$estimate[[1L]], m, tolerance = 1e-8)
-  expect_equal(intn$summary$estimate[intn$summary$type == "Pooled"], gamma, tolerance = 1e-8)
+  expect_equal(intn$summary$estimate[intn$summary$type == "Overall"], gamma, tolerance = 1e-8)
   expect_equal(sg$summary$sd[ref], sqrt(var_a), tolerance = 1e-8)
   expect_equal(sg$summary$sd[non], sqrt(var_b), tolerance = 1e-8)
   expect_equal(comb$summary$sd[[1L]], sqrt(var_m), tolerance = 1e-8)
@@ -161,9 +163,9 @@ test_that("frequentist M(pi), mu_A, mu_B use the rma covariance including Cov(al
 
 test_that("exponentiate keeps frequentist CI interpretation", {
   fit <- fit_metafor_freq()
-  raw <- interactions(fit, type = "Pooled", exponentiate = FALSE)
-  expd <- interactions(fit, type = "Pooled", exponentiate = TRUE)
-  pooled <- raw$summary$type == "Pooled"
+  raw <- interactions(fit, type = "Overall", exponentiate = FALSE)
+  expd <- interactions(fit, type = "Overall", exponentiate = TRUE)
+  pooled <- raw$summary$type == "Overall"
   expect_equal(
     expd$summary$estimate[pooled],
     exp(raw$summary$estimate[pooled]),
@@ -186,7 +188,7 @@ test_that("exponentiate keeps frequentist CI interpretation", {
 
 test_that("bayesmeta print keeps CrI and posterior summaries", {
   fit <- fit_bayesmeta_freq()
-  int_out <- paste(capture.output(print(interactions(fit, type = "Pooled"))), collapse = "\n")
+  int_out <- paste(capture.output(print(interactions(fit, type = "Overall"))), collapse = "\n")
   expect_match(int_out, "Treatment-by-subgroup interaction", fixed = TRUE)
   expect_match(int_out, "median", fixed = TRUE)
   expect_match(int_out, "95% CrI", fixed = TRUE)
@@ -203,13 +205,13 @@ test_that("bayesmeta print keeps CrI and posterior summaries", {
 test_that("CAMS identities hold for both inferential approaches", {
   pi_star <- 0.35
   check_ids <- function(fit, exact) {
-    sg <- subgroups(fit, type = "Pooled", contribution = pi_star)
-    comb <- combined(fit, type = "Pooled", contribution = pi_star)
-    intn <- interactions(fit, type = "Pooled")
+    sg <- subgroups(fit, type = "Overall", contribution = pi_star)
+    comb <- combined(fit, type = "Overall", contribution = pi_star)
+    intn <- interactions(fit, type = "Overall")
     mu_a <- sg$summary$estimate[sg$summary$subgroup == "Younger"]
     mu_b <- sg$summary$estimate[sg$summary$subgroup == "Older"]
     m <- comb$summary$estimate[[1L]]
-    g <- intn$summary$estimate[intn$summary$type == "Pooled"][[1L]]
+    g <- intn$summary$estimate[intn$summary$type == "Overall"][[1L]]
     tol <- if (isTRUE(exact)) 1e-10 else 1e-6
     expect_equal(as.numeric(mu_b - mu_a), as.numeric(g), tolerance = tol)
     expect_equal(
@@ -221,11 +223,11 @@ test_that("CAMS identities hold for both inferential approaches", {
   check_ids(fit_metafor_freq(), exact = TRUE)
 
   fit_b <- fit_bayesmeta_freq()
-  sg <- subgroups(fit_b, type = "Pooled", contribution = pi_star, summary = TRUE)
+  sg <- subgroups(fit_b, type = "Overall", contribution = pi_star, summary = TRUE)
   dA <- sg$draws$effect[sg$draws$subgroup == "Younger"]
   dB <- sg$draws$effect[sg$draws$subgroup == "Older"]
-  dM <- combined(fit_b, type = "Pooled", contribution = pi_star, summary = TRUE)$draws$effect
-  dG <- interactions(fit_b, type = "Pooled", summary = TRUE)$draws$effect
+  dM <- combined(fit_b, type = "Overall", contribution = pi_star, summary = TRUE)$draws$effect
+  dG <- interactions(fit_b, type = "Overall", summary = TRUE)$draws$effect
   expect_equal(length(dA), length(dB))
   expect_equal(length(dA), length(dG))
   expect_equal(dB - dA, dG, tolerance = 1e-10)

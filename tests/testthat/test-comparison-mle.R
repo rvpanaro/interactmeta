@@ -39,6 +39,6 @@ test_that("bayescam() uses bayesmeta DIRECT", {
   ))
   expect_equal(fit$method, "bayes")
   expect_equal(fit$algorithm, "quadrature")
-  expect_false(interactmeta:::comparison_is_mle(fit))
+  expect_false(interact:::comparison_is_mle(fit))
   expect_gt(nrow(fit$draws), 1L)
 })

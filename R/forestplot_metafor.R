@@ -580,7 +580,7 @@ forestplot_metafor_one_panel <- function(panel,
         efac = forestplot_default_poly_efac(),
         col = poly$col,
         border = poly$col,
-        # Bold left labels (Pooled / Prediction / …) and right CI text.
+        # Bold left labels (Overall / Prediction / …) and right CI text.
         fonts = forestplot_default_poly_fonts()
       )
       if (!is.null(atransf)) {
@@ -599,7 +599,7 @@ forestplot_metafor_one_panel <- function(panel,
       )
       suppressWarnings(do.call(metafor::addpoly, poly_args))
     }
-    # Bold summary labels (Pooled / Prediction / …) without clip.
+    # Bold summary labels (Overall / Prediction / …) without clip.
     op_lab <- graphics::par(cex = cex, font = 2, xpd = NA)
     on.exit(graphics::par(op_lab), add = TRUE)
     for (poly in layout$polys) {
@@ -720,12 +720,12 @@ forestplot_annotation_footnote_rows <- function(annotations) {
   het <- annotations$heterogeneity
   if (length(het)) {
     if (!is.null(names(het))) {
-      for (nm in c("overall", "interaction")) {
+      for (nm in c("combined", "interaction")) {
         if (nm %in% names(het)) {
           het_cells <- c(het_cells, clean(het[[nm]][[1L]]))
         }
       }
-      extra <- setdiff(names(het), c("overall", "interaction"))
+      extra <- setdiff(names(het), c("combined", "interaction"))
       if (length(extra)) {
         het_cells <- c(het_cells, clean(unname(het[extra])))
       }
@@ -940,27 +940,27 @@ forestplot_metafor_subgroup_layout <- function(panel,
   psize <- pmax(0.4, pmin(1.5, pscale))
 
   is_point <- row_kind %in% c("study", "shrinkage")
-  is_poly <- row_kind %in% c("pooled", "prediction")
-  is_overall <- row_kind == "overall"
+  is_poly <- row_kind %in% c("overall", "prediction")
+  is_combined <- row_kind == "combined"
 
   # Study / shrinkage blocks in first-seen heading order
   point_idx <- which(is_point)
   block_order <- unique(heading[point_idx])
   if (!length(block_order)) {
-    # summaries only — Overall is drawn separately via overall_idx
+    # summaries only — Combined is drawn separately via combined_idx
     block_order <- unique(heading[is_poly])
   }
   block_order <- block_order[nzchar(block_order) & !is.na(block_order)]
-  # Overall study / shrinkage are drawn with the Overall diamonds below.
-  overall_point_idx <- point_idx[heading[point_idx] == "Overall"]
-  block_order <- setdiff(block_order, "Overall")
+  # Combined study / shrinkage are drawn with the Combined diamonds below.
+  combined_point_idx <- point_idx[heading[point_idx] == "Combined"]
+  block_order <- setdiff(block_order, "Combined")
 
   # When group = "trial", study headings are trials but subgroup pooled /
   # prediction rows keep subgroup headings. Append those summary-only blocks
   # (with both pooled and prediction) after trial blocks and before Interaction.
   poly_headings <- unique(heading[is_poly])
   poly_headings <- poly_headings[nzchar(poly_headings) & !is.na(poly_headings)]
-  extra_sg <- setdiff(poly_headings, c(block_order, "Interaction", "Overall"))
+  extra_sg <- setdiff(poly_headings, c(block_order, "Interaction", "Combined"))
   if (length(extra_sg)) {
     # Preserve subgroup order from the poly rows as they appear in the panel.
     extra_sg <- unique(heading[is_poly][heading[is_poly] %in% extra_sg])
@@ -981,7 +981,7 @@ forestplot_metafor_subgroup_layout <- function(panel,
   }
 
   poly_by_hdr <- split(which(is_poly), heading[is_poly])
-  overall_idx <- which(is_overall)
+  combined_idx <- which(is_combined)
 
   headers <- list(label = character(), row = numeric())
   notes <- list(label = character(), row = numeric())
@@ -993,11 +993,11 @@ forestplot_metafor_subgroup_layout <- function(panel,
   show_favours <- !is.null(favours) && length(favours) >= 2L
   has_interaction_pred <- "Interaction" %in% names(poly_by_hdr) &&
     any(row_kind[poly_by_hdr[["Interaction"]]] == "prediction", na.rm = TRUE)
-  has_overall_pred <- length(overall_idx) > 0L &&
-    any(tolower(label[overall_idx]) == "prediction", na.rm = TRUE)
+  has_combined_pred <- length(combined_idx) > 0L &&
+    any(tolower(label[combined_idx]) == "prediction", na.rm = TRUE)
 
-  # Last subgroup block that has a prediction diamond (for favours when Int/Overall absent).
-  sg_blocks <- setdiff(block_order, c("Interaction", "Overall"))
+  # Last subgroup block that has a prediction diamond (for favours when Int/Combined absent).
+  sg_blocks <- setdiff(block_order, c("Interaction", "Combined"))
   sg_pred_blocks <- sg_blocks[
     vapply(sg_blocks, function(h) {
       ix <- poly_by_hdr[[h]]
@@ -1016,8 +1016,8 @@ forestplot_metafor_subgroup_layout <- function(panel,
   } else {
     NA_character_
   }
-  het_overall <- if ("overall" %in% names(het)) {
-    as.character(het[["overall"]])
+  het_overall <- if ("combined" %in% names(het)) {
+    as.character(het[["combined"]])
   } else {
     NA_character_
   }
@@ -1038,7 +1038,7 @@ forestplot_metafor_subgroup_layout <- function(panel,
       return(idx)
     }
     rk <- row_kind[idx]
-    idx[order(match(rk, c("pooled", "prediction"), nomatch = 99L))]
+    idx[order(match(rk, c("overall", "prediction"), nomatch = 99L))]
   }
 
   add_poly <- function(j, hdr) {
@@ -1048,7 +1048,7 @@ forestplot_metafor_subgroup_layout <- function(panel,
     } else {
       NA_character_
     }
-    if (identical(row_kind[[j]], "overall")) {
+    if (identical(row_kind[[j]], "combined")) {
       sg <- if (!is.na(colour_lab) && nzchar(colour_lab)) {
         colour_lab
       } else if (nzchar(mlab)) {
@@ -1056,7 +1056,7 @@ forestplot_metafor_subgroup_layout <- function(panel,
       } else {
         ""
       }
-      mlab <- if (nzchar(sg)) paste("Overall:", sg) else "Overall"
+      mlab <- if (nzchar(sg)) paste("Combined:", sg) else "Combined"
     } else {
       if (!nzchar(mlab)) {
         mlab <- paste0(
@@ -1091,7 +1091,7 @@ forestplot_metafor_subgroup_layout <- function(panel,
   # Estimate height (top padding + blocks + overall + in-plot notes + bottom)
   # Extra full rows:
   # - after the column header / before first content (all group modes)
-  # - before Interaction / Overall headers when they follow other blocks
+  # - before Interaction / Combined headers when they follow other blocks
   # - when group = "subgroup": between consecutive subgroup blocks
   # Summary-only subgroup blocks omit the alone heading (name stays on mlab).
   subgroup_block_gap <- if (identical(group, "subgroup")) 1 else 0
@@ -1101,7 +1101,7 @@ forestplot_metafor_subgroup_layout <- function(panel,
     n_pt <- sum(heading[point_idx] == hdr)
     n_py <- length(poly_by_hdr[[hdr]])
     is_int_ov <- forestplot_heading_is_interaction(hdr) ||
-      forestplot_heading_is_overall(hdr)
+      forestplot_heading_is_combined(hdr)
     skip_heading <- !is_int_ov && identical(n_pt, 0L)
     if (
       i_hdr > 1L &&
@@ -1109,7 +1109,7 @@ forestplot_metafor_subgroup_layout <- function(panel,
     ) {
       height <- height + 1L
     }
-    # Header row only when studies (or Interaction / Overall) need it.
+    # Header row only when studies (or Interaction / Combined) need it.
     height <- height + if (skip_heading) 0L else 1L
     height <- height + n_pt + (if (n_py > 0) n_py + 0.25 else 0) + 0.40
     if (hdr %in% names(ifrac_notes)) {
@@ -1124,7 +1124,7 @@ forestplot_metafor_subgroup_layout <- function(panel,
     if (
       show_favours &&
         !has_interaction_pred &&
-        !has_overall_pred &&
+        !has_combined_pred &&
         identical(hdr, last_subgroup_pred_hdr)
     ) {
       height <- height + 1L
@@ -1133,26 +1133,26 @@ forestplot_metafor_subgroup_layout <- function(panel,
       subgroup_block_gap > 0 &&
         i_hdr < length(block_order) &&
         !forestplot_heading_is_interaction(hdr) &&
-        !forestplot_heading_is_overall(hdr)
+        !forestplot_heading_is_combined(hdr)
     ) {
       nxt <- block_order[[i_hdr + 1L]]
       if (
         !forestplot_heading_is_interaction(nxt) &&
-          !forestplot_heading_is_overall(nxt)
+          !forestplot_heading_is_combined(nxt)
       ) {
         height <- height + subgroup_block_gap
       }
     }
   }
-  if (length(overall_idx) || length(overall_point_idx)) {
-    # Spacer before Overall header + header + points + polys + trailing.
-    # If Overall is the only content (no block_order), the post-header gap
-    # already covers the lead-in — still add the mid-plot Overall spacer when
+  if (length(combined_idx) || length(combined_point_idx)) {
+    # Spacer before Combined header + header + points + polys + trailing.
+    # If Combined is the only content (no block_order), the post-header gap
+    # already covers the lead-in — still add the mid-plot Combined spacer when
     # subgroup / interaction blocks precede it.
     ov_spacer <- if (length(block_order)) 1L else 0L
-    height <- height + ov_spacer + 1L + length(overall_point_idx) + length(overall_idx) + 0.25
+    height <- height + ov_spacer + 1L + length(combined_point_idx) + length(combined_idx) + 0.25
   }
-  if (show_favours && has_overall_pred) {
+  if (show_favours && has_combined_pred) {
     height <- height + 1L
   }
   if (has_het_overall) {
@@ -1174,7 +1174,7 @@ forestplot_metafor_subgroup_layout <- function(panel,
     hdr <- block_order[[i_hdr]]
     n_pt <- sum(heading[point_idx] == hdr)
     is_int_ov <- forestplot_heading_is_interaction(hdr) ||
-      forestplot_heading_is_overall(hdr)
+      forestplot_heading_is_combined(hdr)
     skip_heading <- !is_int_ov && identical(n_pt, 0L)
     if (i_hdr > 1L && is_int_ov) {
       y <- y - 1
@@ -1216,19 +1216,19 @@ forestplot_metafor_subgroup_layout <- function(panel,
       y <- y - 1
     }
 
-    # Subgroups-only (or any plot without Interaction/Overall): favours under
+    # Subgroups-only (or any plot without Interaction/Combined): favours under
     # the last subgroup prediction block so the feature still appears.
     if (
       show_favours &&
         !has_interaction_pred &&
-        !has_overall_pred &&
+        !has_combined_pred &&
         identical(hdr, last_subgroup_pred_hdr)
     ) {
       favours_rows <- c(favours_rows, y)
       y <- y - 1
     }
 
-    # Overall IF for this subgroup sits after its prediction (IF) diamond.
+    # Combined IF for this subgroup sits after its prediction (IF) diamond.
     if (hdr %in% names(ifrac_remaining)) {
       notes$label <- c(notes$label, ifrac_remaining[[hdr]])
       notes$row <- c(notes$row, y)
@@ -1250,43 +1250,43 @@ forestplot_metafor_subgroup_layout <- function(panel,
       subgroup_block_gap > 0 &&
         i_hdr < length(block_order) &&
         !forestplot_heading_is_interaction(hdr) &&
-        !forestplot_heading_is_overall(hdr)
+        !forestplot_heading_is_combined(hdr)
     ) {
       nxt <- block_order[[i_hdr + 1L]]
       if (
         !forestplot_heading_is_interaction(nxt) &&
-          !forestplot_heading_is_overall(nxt)
+          !forestplot_heading_is_combined(nxt)
       ) {
         y <- y - subgroup_block_gap
       }
     }
   }
 
-  if (length(overall_idx) || length(overall_point_idx)) {
+  if (length(combined_idx) || length(combined_point_idx)) {
     if (length(block_order)) {
       y <- y - 1
     }
-    headers$label <- c(headers$label, "Overall")
+    headers$label <- c(headers$label, "Combined")
     headers$row <- c(headers$row, y)
     y <- y - 1
 
-    if (length(overall_point_idx)) {
+    if (length(combined_point_idx)) {
       # Preserve input order (study then its shrinkage per trial).
-      for (j in overall_point_idx) {
+      for (j in combined_point_idx) {
         study_idx <- c(study_idx, j)
         study_rows <- c(study_rows, y)
         y <- y - 1
       }
     }
 
-    if (length(overall_idx)) {
-      ov_ordered <- overall_idx[order(match(
-        label[overall_idx],
-        c("Pooled", "Prediction"),
+    if (length(combined_idx)) {
+      ov_ordered <- combined_idx[order(match(
+        label[combined_idx],
+        c("Overall", "Prediction"),
         nomatch = 99L
       ))]
       for (j in ov_ordered) {
-        p <- add_poly(j, "Overall")
+        p <- add_poly(j, "Combined")
         if (!is.null(p)) {
           p$row <- y
           polys[[length(polys) + 1L]] <- p
@@ -1297,13 +1297,13 @@ forestplot_metafor_subgroup_layout <- function(panel,
     y <- y - 0.25
   }
 
-  # Favours left/right under Overall prediction.
-  if (show_favours && has_overall_pred) {
+  # Favours left/right under Combined prediction.
+  if (show_favours && has_combined_pred) {
     favours_rows <- c(favours_rows, y)
     y <- y - 1
   }
 
-  # Overall treatment-effect heterogeneity after Overall prediction (or at end).
+  # Combined treatment-effect heterogeneity after Combined prediction (or at end).
   if (has_het_overall) {
     notes$label <- c(notes$label, het_overall)
     notes$row <- c(notes$row, y)
@@ -1382,7 +1382,7 @@ forestplot_metafor_subgroup_layout <- function(panel,
 
 #' Draw “Favours …” labels left/right of the null line
 #'
-#' Labels sit in the plot region on reserved rows (Interaction / Overall
+#' Labels sit in the plot region on reserved rows (Interaction / Combined
 #' prediction), centered between the null line and each axis limit.
 #'
 #' @noRd

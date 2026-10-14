@@ -62,13 +62,10 @@ Stored \code{b_Intercept} is \eqn{\alpha}, stored \code{b_ifrac} is
 gap \eqn{\gamma}.
 }
 \details{
-Pointwise \code{estimate} / \code{lower} / \code{upper} are \strong{equal-tail} quantiles of the
+Pointwise \code{estimate} / \code{lower} / \code{upper} use shortest intervals from the
 DIRECT-node Gaussian mixture (weights \code{.weight}, within-node SDs
-\verb{.cond_*}). That is the fast public rule for \code{\link[=plot_contribution]{plot_contribution()}} and
-extractors. Native bayesmeta \verb{$post.interval} / \code{bayesmeta::convolve()}
-intervals remain on \verb{$latent} as the engine-native concept; they are not
-recomputed on the IF grid. Alpha and theta stay on the joint overall-block
-support (never convolved with each other).
+\verb{.cond_*}). Alpha and theta stay on the joint overall-block support
+(never convolved with each other).
 }
 \seealso{
 \code{\link[=subgroups]{subgroups()}}, \code{\link[=combined]{combined()}}, \code{\link[=plot_contribution]{plot_contribution()}}

@@ -1,3 +1,17 @@
+test_that("documented ifrac() example matches named subgroup labels", {
+  yi <- c(0.2, 0.1, 0.3, 0.15)
+  vi <- c(0.01, 0.04, 0.0225, 0.09)
+  trial <- c("A", "A", "B", "B")
+  subgroup <- c("g1", "g2", "g1", "g2")
+
+  res <- ifrac(yi = yi, vi = vi, trial = trial, subgroup = subgroup)
+
+  expect_equal(nrow(res), 4L)
+  expect_equal(unique(as.character(res$reference)), "g1")
+  expect_true("ifrac_g2" %in% names(res))
+  expect_equal(res$ifrac_g2[[1L]], 0.2)
+})
+
 test_that("ifrac() returns numeric yi, vi, precision, and ifrac_* columns", {
   res <- ifrac(
     yi = c("0.2", "0.1"),
@@ -16,7 +30,7 @@ test_that("ifrac() preserves patient counts in column n", {
   expect_true("n" %in% names(res))
   define <- res[res$trial == "DEFINE" & as.character(res$subgroup) == "Lower", , drop = FALSE]
   expect_equal(define$n[[1L]], 336)
-  lookup <- interactmeta:::forestplot_trial_n_lookup(res, n_var = "n", contrast_sep = "-")
+  lookup <- interact:::forestplot_trial_n_lookup(res, n_var = "n", contrast_sep = "-")
   expect_equal(lookup[["DEFINE"]], 336 + 73)
 })
 
@@ -40,7 +54,13 @@ test_that("ifrac() accepts escalc / data.frame input", {
   dat <- edss
   e <- metafor::escalc(measure = "IRR", yi = dat$yi, vi = dat$vi, data = dat)
 
-  res_vec <- ifrac(dat$yi, dat$vi, dat$trial, dat$subgroup, reference = "Lower")
+  res_vec <- ifrac(
+    yi = dat$yi,
+    vi = dat$vi,
+    trial = dat$trial,
+    subgroup = dat$subgroup,
+    reference = "Lower"
+  )
   res_df <- ifrac(e, reference = "Lower")
 
   expect_equal(res_df$trial, res_vec$trial)
@@ -142,23 +162,23 @@ test_that("ifrac() omits overall rows by default", {
   res <- ifrac(yi = yi, vi = vi, trial = trial, subgroup = subgroup, reference = "g1")
 
   expect_equal(nrow(res), 4L)
-  expect_false("Overall" %in% res$subgroup)
+  expect_false("Combined" %in% res$subgroup)
 })
 
-test_that("ifrac() can append overall rows with include_overall = TRUE", {
+test_that("ifrac() can append overall rows with include_combined = TRUE", {
   yi <- c(0.2, 0.1, 0.3, 0.15)
   vi <- c(0.01, 0.04, 0.0225, 0.09)
   trial <- c("A", "A", "B", "B")
   subgroup <- c("g1", "g2", "g1", "g2")
 
-  res <- ifrac(yi = yi, vi = vi, trial = trial, subgroup = subgroup, reference = "g1", include_overall = TRUE)
+  res <- ifrac(yi = yi, vi = vi, trial = trial, subgroup = subgroup, reference = "g1", include_combined = TRUE)
 
   expect_equal(nrow(res), 6L)
-  expect_true(all(c("Overall") %in% res$subgroup))
+  expect_true(all(c("Combined") %in% res$subgroup))
   expect_true(all(c("ifrac_g2") %in% names(res)))
   expect_false(any(grepl("^ifrac2_", names(res))))
 
-  row_a <- res[res$trial == "A" & res$subgroup == "Overall", , drop = FALSE]
+  row_a <- res[res$trial == "A" & res$subgroup == "Combined", , drop = FALSE]
   expect_equal(row_a$yi, (0.2 * 100 + 0.1 * 25) / 125, tolerance = 1e-12)
   expect_equal(row_a$vi, 1 / 125, tolerance = 1e-12)
   expect_equal(row_a$precision, 125, tolerance = 1e-12)
@@ -176,12 +196,12 @@ test_that("ifrac() can append overall and interaction rows together", {
     vi = vi,
     trial = trial,
     subgroup = subgroup,
-    include_overall = TRUE,
+    include_combined = TRUE,
     include_interaction = TRUE
   )
 
   expect_equal(nrow(res), 6L)
-  expect_true(all(c("Overall", "g2-g1", "g3-g1") %in% res$subgroup))
+  expect_true(all(c("Combined", "g2-g1", "g3-g1") %in% res$subgroup))
 })
 
 test_that("ifrac() omits interaction rows by default", {

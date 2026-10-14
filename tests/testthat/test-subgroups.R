@@ -9,11 +9,11 @@ test_that("new-trial Prediction RE draws are reproducible", {
     ifrac2_var = "ifrac2_Older",
     ifrac2_vars_std = "ifrac2_Older"
   )
-  a <- interactmeta:::comparison_new_trial_re_draws(fit, ifrac = 0.4, post = post)
-  b <- interactmeta:::comparison_new_trial_re_draws(fit, ifrac = 0.4, post = post)
+  a <- interact:::comparison_new_trial_re_draws(fit, ifrac = 0.4, post = post)
+  b <- interact:::comparison_new_trial_re_draws(fit, ifrac = 0.4, post = post)
   expect_equal(a, b)
-  c <- interactmeta:::comparison_new_trial_slope_re_draws(fit, post = post)
-  d <- interactmeta:::comparison_new_trial_slope_re_draws(fit, post = post)
+  c <- interact:::comparison_new_trial_slope_re_draws(fit, post = post)
+  d <- interact:::comparison_new_trial_slope_re_draws(fit, post = post)
   expect_equal(c, d)
 })
 
@@ -34,7 +34,7 @@ test_that("subgroups() returns summary per subgroup", {
   expect_s3_class(me, "interactmeta_subgroup_effects")
   expect_equal(nrow(me$summary), 4L)
   expect_true(all(c("Younger", "Older") %in% me$summary$subgroup))
-  expect_true(all(c("Pooled", "Prediction") %in% me$summary$type))
+  expect_true(all(c("Overall", "Prediction") %in% me$summary$type))
   expect_true(all(is.finite(me$summary$estimate)))
   expect_true(all(is.finite(me$summary$mean)))
 })
@@ -57,7 +57,7 @@ test_that("subgroups(type = 'Prediction') returns new-trial draws only", {
   expect_equal(nrow(me$summary), 2L)
 })
 
-test_that("Prediction intervals are wider than Pooled in subgroups()", {
+test_that("Prediction intervals are wider than Overall in subgroups()", {
   skip_if_not_installed("bayesmeta")
 
   dat <- data.frame(
@@ -72,7 +72,7 @@ test_that("Prediction intervals are wider than Pooled in subgroups()", {
   fit <- cam(dat, engine = "bayesmeta", reference = "Younger")
   me <- subgroups(fit)
   for (sg in c("Younger", "Older")) {
-    pooled <- me$summary[me$summary$subgroup == sg & me$summary$type == "Pooled", , drop = FALSE]
+    pooled <- me$summary[me$summary$subgroup == sg & me$summary$type == "Overall", , drop = FALSE]
     pred <- me$summary[me$summary$subgroup == sg & me$summary$type == "Prediction", , drop = FALSE]
     expect_gt(pred$uci - pred$lci, pooled$uci - pooled$lci)
   }
@@ -91,11 +91,11 @@ test_that("subgroups(weight = interaction) uses interaction-weighted IF", {
     ifrac2_Older = c(-0.3, 0.7, -0.4, 0.6)
   )
   fit <- cam(dat, engine = "bayesmeta", reference = "Younger")
-  me_overall <- subgroups(fit, ifrac = "overall", type = "Pooled", exponentiate = TRUE, summary = FALSE)
+  me_overall <- subgroups(fit, ifrac = "overall", type = "Overall", exponentiate = TRUE, summary = FALSE)
   me_int <- subgroups(
     fit,
     ifrac = "interaction",
-    type = "Pooled",
+    type = "Overall",
     exponentiate = TRUE,
     summary = FALSE
   )
@@ -117,8 +117,8 @@ test_that("subgroups(exponentiate = TRUE) transforms draws", {
     ifrac2_Older = c(-0.3, 0.7, -0.55, 0.45)
   )
   fit <- cam(dat, engine = "bayesmeta", reference = "Younger")
-  log <- subgroups(fit, type = "Pooled", summary = FALSE)
-  rat <- subgroups(fit, type = "Pooled", exponentiate = TRUE, summary = FALSE)
+  log <- subgroups(fit, type = "Overall", summary = FALSE)
+  rat <- subgroups(fit, type = "Overall", exponentiate = TRUE, summary = FALSE)
   expect_true(rat$exponentiate)
   expect_equal(rat$draws$effect, exp(log$draws$effect))
 })

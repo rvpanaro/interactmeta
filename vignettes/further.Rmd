@@ -116,10 +116,8 @@ bayesmeta-style coefficient table.
 summary(fit)
 ```
 
-`overall()` is an alias of `combined()`.
-
 ```{r overall}
-overall(fit, exponentiate = TRUE)
+combined(fit, exponentiate = TRUE)
 ```
 
 ## Heterogeneity
@@ -152,7 +150,7 @@ plot_heterogeneity(fit_reml)
 ## Forest variants
 
 Default `forestplot()` is the subgroup table
-(`vignette("cams")`). `type = "interaction"` and `type = "overall"`
+(`vignette("cams")`). `type = "interaction"` and `type = "combined"`
 are the CAMS blocks.
 
 ```{r forest-int, fig.height = 5.5}
@@ -160,7 +158,7 @@ fp_int <- forestplot(fit, type = "interaction", exponentiate = TRUE)
 ```
 
 ```{r forest-ov, fig.height = 5.5}
-forestplot(fit, type = "overall", exponentiate = TRUE)
+forestplot(fit, type = "combined", exponentiate = TRUE)
 ```
 
 `forestplot_height()` sizes a stored forest for export.
@@ -344,7 +342,7 @@ hr_ci_from_log(yi = r1$yi, sei = r1$sei, ci_level = r1$ci_level)
 `bayescams()`, `predict_cams_by_if()`, and `cams_trial_quantities()` are the
 names to use. `bayescam()`, `predict_cam_by_if()`, and `cam_trial_quantities()`
 are other names for those functions.
-`overall()` and `modifiers()` call `combined()` and `subgroups()`.
+`combined()` and `modifiers()` return combined-population and subgroup effects.
 
 ## References
 
