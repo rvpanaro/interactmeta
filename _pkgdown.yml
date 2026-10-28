@@ -36,8 +36,11 @@ reference:
   - swada
   - conventional
 
-- title: Comparison functions
+- title: Comparison and sensitivity
   contents:
+  - sensitivity
+  - compare
+  - compare_forestplots
   - compare_interactions
   - compare_modifiers
   - compare_combined
@@ -52,12 +55,14 @@ reference:
   - standardized_trial_effects
   - cams_trial_quantities
   - shrinkage_diagnostics
+  - subgroup_long
 
 - title: Additional plots
   contents:
   - plot_modifiers
   - plot_heterogeneity
   - forestplot_height
+  - forestplot_default_width_height_ratio
 
 - title: Data conversion
   contents:
@@ -91,9 +96,10 @@ reference:
   - summary.interactmeta
   - fitted.interactmeta
   - as.data.frame.interactmeta
+  - tidy.interactmeta
   - tidy.interactmeta_subgroup_effects
   - tidy.interactmeta_interaction_effects
-  - tidy.interactmeta_overall_effect
+  - tidy.interactmeta_combined_effect
   - tidy.interactmeta_heterogeneity
   - plot.interactmeta_compare
   - traceplot.interactmeta
