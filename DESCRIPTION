@@ -1,6 +1,6 @@
 Package: interact
 Title: Effect modification in meta-analysis
-Version: 0.0.1
+Version: 0.1.0
 Authors@R: c(
     person(
       given = c("Renato", "Valladares"),
@@ -22,18 +22,19 @@ Authors@R: c(
       comment = c(ORCID = "0000-0001-5347-7441")
     ))
 Description: Contribution-adjusted meta-analysis (CAMS) for
-    treatment-by-subgroup interactions from subgroup-level aggregate data
-    (Panaro, Röver & Friede, 2025, arXiv:2512.18785). The package constructs
-    trial information fractions, rotates subgroup estimates into orthogonal
-    overall and interaction series, and reconstructs contribution-adjusted
-    interaction, subgroup, and combined-population effects. CAMS can be
-    fitted using Bayesian or frequentist inference. Bayesian CAMS uses
-    'bayesmeta' (DIRECT quadrature; binary subgroups); frequentist CAMS uses
-    'metafor' (REML/ML). Difference of Averages (DA) and Average Difference
-    (AD) are different constructions (Panaro, Röver & Friede, 2026); the
-    SWADA shared-weight principle is included as context, not as an
-    alternative CAMS model.
-URL: https://arxiv.org/abs/2512.18785
+    treatment effect modification from modifier-level aggregate data
+    (Panaro, Röver & Friede, 2025, arXiv:2512.18785). From paired
+    modifier-level estimates per trial, the package builds information
+    fractions, fits standard random-effects meta-analysis and
+    meta-regression components, and reports interaction, modifier-level,
+    and combined-population effects.
+    Bayesian inference (default) uses 'bayesmeta'; frequentist inference
+    uses 'metafor' (REML/ML). Difference of Averages (DA) and Average
+    Difference (AD) are different constructions (Panaro, Röver & Friede,
+    2026); the SWADA shared-weight principle is included as context, not
+    as an alternative CAMS model.
+URL: https://rvpanaro.github.io/interactmeta/, https://arxiv.org/abs/2512.18785
+BugReports: https://github.com/rvpanaro/interactmeta/issues
 License: MIT + file LICENSE
 Logo: man/figures/logo.png
 Encoding: UTF-8
@@ -48,13 +49,13 @@ Imports:
     ggplot2,
     metafor,
     paletteer,
-    rlang,
     scales,
     tibble,
     tidyr
 Suggests:
-    brms,
+    covr,
     patchwork,
+    pkgload,
     testthat,
     knitr,
     rmarkdown

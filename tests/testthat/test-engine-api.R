@@ -1,12 +1,3 @@
-cams_engine_example_data <- function() {
-  data.frame(
-    trial = rep(paste0("T", 1:4), each = 2),
-    subgroup = factor(rep(c("Younger", "Older"), 4), levels = c("Younger", "Older")),
-    yi = c(0.10, 0.25, 0.12, 0.28, 0.08, 0.22, 0.15, 0.30),
-    vi = c(0.04, 0.02, 0.05, 0.03, 0.03, 0.04, 0.02, 0.025)
-  )
-}
-
 test_that("method = bayes without engine selects bayesmeta", {
   expect_equal(
     interact:::interactmeta_engine_from_approach(
@@ -26,7 +17,7 @@ test_that("method = bayes without engine selects bayesmeta", {
     interact:::interactmeta_engine_from_approach(
       c("bayesmeta", "metafor"),
       NULL,
-      approach = "bayes"
+      method = "Bayesian"
     ),
     "bayesmeta"
   )
@@ -48,7 +39,7 @@ test_that("method = bayes without engine selects bayesmeta", {
     interact:::interactmeta_engine_from_approach(
       c("bayesmeta", "metafor"),
       NULL,
-      approach = "REML"
+      method = "REML"
     ),
     "metafor"
   )
@@ -60,20 +51,12 @@ test_that("method = bayes without engine selects bayesmeta", {
     ),
     "metafor"
   )
-  expect_error(
-    interact:::interactmeta_engine_from_approach(
-      "bayesmeta",
-      "bayes",
-      approach = "REML"
-    ),
+  expect_equal(
+    interact:::interactmeta_resolve_cams_method("REML")$backend,
     "metafor"
   )
-  expect_error(
-    interact:::interactmeta_engine_from_approach(
-      "metafor",
-      "REML",
-      approach = "bayes"
-    ),
+  expect_equal(
+    interact:::interactmeta_resolve_cams_method("Bayesian")$backend,
     "bayesmeta"
   )
 })
@@ -84,52 +67,50 @@ test_that("public CAMS engines are bayesmeta and metafor", {
   expect_true(all(cap$engine[cap$analysis == "cam"] %in% c("bayesmeta", "metafor")))
 })
 
-test_that("cam() defaults to bayesmeta DIRECT", {
+test_that("cams() defaults to bayesmeta DIRECT", {
   skip_if_not_installed("bayesmeta")
   dat <- cams_engine_example_data()
-  fit <- suppressWarnings(cam(
+  fit <- suppressWarnings(cams(
     dat,
     reference = "Younger",
     silent = 2
   ))
-  expect_equal(fit$engine, "bayesmeta")
-  expect_equal(fit$method, "bayes")
+  expect_equal(interactmeta_fit_backend(fit), "bayesmeta")
+  expect_equal(fit$method, "Bayesian")
   expect_equal(fit$algorithm, "quadrature")
 })
 
 test_that("engine / method / algorithm metadata are stored on the fit", {
   skip_if_not_installed("bayesmeta")
   dat <- cams_engine_example_data()
-  fit <- suppressWarnings(cam(
+  fit <- suppressWarnings(cams(
     dat,
     reference = "Younger",
-    engine = "bayesmeta",
-    silent = 2
+        silent = 2
   ))
-  expect_equal(fit$engine, "bayesmeta")
-  expect_equal(fit$method, "bayes")
+  expect_equal(interactmeta_fit_backend(fit), "bayesmeta")
+  expect_equal(fit$method, "Bayesian")
   expect_equal(fit$algorithm, "quadrature")
   expect_false("stanfit" %in% names(fit))
   expect_false("stan_data" %in% names(fit))
-  expect_equal(attr(fit, "interactmeta")$engine, "bayesmeta")
-  expect_equal(attr(fit, "interactmeta")$method, "bayes")
+  expect_equal(attr(fit, "interactmeta")$backend, "bayesmeta")
+  expect_equal(attr(fit, "interactmeta")$method, "Bayesian")
   expect_equal(attr(fit, "interactmeta")$algorithm, "quadrature")
-  expect_s3_class(fit$priors, "cam_priors")
+  expect_s3_class(fit$priors, "interactmeta_priors")
   expect_equal(fit$priors$tau$family, "uniform")
   expect_true(interact:::cam_prior_is_improper_uniform(fit$priors$tau))
   expect_true(interact:::cam_prior_is_improper_uniform(fit$priors$tau_interaction))
-  expect_match(paste(utils::capture.output(print(fit)), collapse = "\n"), "improper uniform")
+  expect_match(paste(utils::capture.output(print(fit)), collapse = "\n"), "Bayesian estimates")
 })
 
 test_that("shared cam_prior objects are stored identically for bayesmeta", {
   skip_if_not_installed("bayesmeta")
   dat <- cams_engine_example_data()
   p <- interact:::cam_prior("half-normal", scale = 0.5)
-  fit <- suppressWarnings(cam(
+  fit <- suppressWarnings(cams(
     dat,
     reference = "Younger",
-    engine = "bayesmeta",
-    tau.prior = p,
+        tau.prior = p,
     tau.interaction.prior = p,
     silent = 2
   ))
@@ -158,26 +139,26 @@ test_that("omitted method is REML for metafor and bayes for bayesmeta", {
 test_that("engine = metafor is frequentist and warns on explicit Bayesian priors", {
   skip_if_not_installed("metafor")
   dat <- cams_engine_example_data()
-  fit <- suppressWarnings(cam(
+  fit <- suppressWarnings(cams(
     dat,
     reference = "Younger",
-    engine = "metafor",
+    method = "REML",
     silent = 2
   ))
-  expect_equal(fit$engine, "metafor")
+  expect_equal(interactmeta_fit_backend(fit), "metafor")
   expect_equal(fit$method, "REML")
   expect_equal(fit$algorithm, "optimization")
   expect_false("stanfit" %in% names(fit))
   expect_false("stan_data" %in% names(fit))
-  expect_s3_class(fit$priors, "cam_priors")
+  expect_s3_class(fit$priors, "interactmeta_priors")
   expect_true(!is.null(fit$metafor$overall))
   expect_true(!is.null(fit$metafor$interaction))
 
   expect_warning(
-    cam(
+    cams(
       dat,
       reference = "Younger",
-      engine = "metafor",
+      method = "REML",
       tau.prior = interact:::cam_prior("half-normal", scale = 0.5),
       silent = 2
     ),
@@ -187,63 +168,69 @@ test_that("engine = metafor is frequentist and warns on explicit Bayesian priors
 
 test_that("metafor CAMS fits a two-trial overall block", {
   skip_if_not_installed("metafor")
-  fit <- cam(respire_age, reference = "<65", engine = "metafor", silent = 2)
-  expect_equal(fit$engine, "metafor")
-  expect_true(is.finite(fit$draws$b_Intercept[[1L]]))
-  ifrac_cols <- grep("^b_ifrac_", names(fit$draws), value = TRUE)
+  fit <- cams(respire_age, reference = "<65", method = "REML", silent = 2)
+  expect_equal(interactmeta_fit_backend(fit), "metafor")
+  expect_true(is.finite(fit$support$b_Intercept[[1L]]))
+  ifrac_cols <- grep("^b_ifrac_", names(fit$support), value = TRUE)
   expect_true(length(ifrac_cols) >= 1L)
-  expect_true(all(vapply(fit$draws[ifrac_cols], function(x) is.finite(x[[1L]]), logical(1))))
+  expect_true(all(vapply(fit$support[ifrac_cols], function(x) is.finite(x[[1L]]), logical(1))))
   expect_equal(as.numeric(fit$metafor$overall$tau2), 0)
-  sg <- subgroups(fit, type = "Overall")
+  sg <- modifiers(fit, type = "Overall")
   expect_true(all(is.finite(sg$summary$estimate)))
 })
 
-test_that("cmdstanr and method = mle are rejected", {
+test_that("lowercase method = mle is rejected", {
   dat <- cams_engine_example_data()
   expect_error(
-    cam(dat, reference = "Younger", engine = "cmdstanr"),
-    "removed"
-  )
-  expect_error(
-    cam(dat, reference = "Younger", method = "mle"),
+    cams(dat, reference = "Younger", method = "mle"),
     "mle"
   )
 })
 
-test_that("method and engine are rejected when incompatible", {
+test_that("method = REML selects metafor", {
+  skip_if_not_installed("metafor")
   dat <- cams_engine_example_data()
-  expect_error(
-    cam(dat, reference = "Younger", engine = "bayesmeta", method = "REML"),
-    "method = \"bayes\""
-  )
-  expect_error(
-    cam(dat, reference = "Younger", engine = "brms", method = "ML"),
-    "method = \"bayes\""
-  )
-  expect_error(
-    cam(dat, reference = "Younger", engine = "metafor", method = "bayes"),
-    "REML"
-  )
-  expect_error(
-    cam(dat, reference = "Younger", engine = "brms", tau.prior = "uniform"),
-    "improper density"
-  )
-  expect_error(
-    cam(dat, reference = "Younger", engine = "brms", tau.prior = "sqrt"),
-    "cannot be represented equivalently"
-  )
+  fit <- suppressWarnings(cams(dat, reference = "Younger", method = "REML", silent = 2))
+  expect_equal(interactmeta_fit_backend(fit), "metafor")
+  expect_equal(fit$method, "REML")
 })
 
 test_that("engine_args are not confused with model priors", {
   skip_if_not_installed("bayesmeta")
   dat <- cams_engine_example_data()
   expect_error(
-    cam(
+    cams(
       dat,
       reference = "Younger",
-      engine = "bayesmeta",
-      tau.prior.overall = "sqrt"
+            tau.prior.overall = "sqrt"
     ),
     "tau.prior"
   )
+})
+
+test_that("cams() uses bayesmeta by default with usable accessors", {
+  skip_if_not_installed("bayesmeta")
+  dat <- cams_engine_example_data()
+  fit <- suppressWarnings(cams(dat, reference = "Younger", silent = 2))
+  expect_s3_class(fit, "interactmeta")
+  expect_equal(attr(fit, "interactmeta")$backend, "bayesmeta")
+  post <- as.data.frame(fit)
+  expect_true("b_Intercept" %in% names(post) || "b_ifrac_Older" %in% names(post))
+})
+
+test_that("bayesmeta DIRECT stores orthogonal overall and interaction support", {
+  skip_if_not_installed("bayesmeta")
+  skip_if_not_installed("metafor")
+  fit <- fixture_age_cam_fit()
+  expect_s3_class(fit, "interactmeta")
+  expect_equal(interactmeta_fit_backend(fit), "bayesmeta")
+  expect_true(!is.null(fit$bayesmeta$overall))
+  expect_true(!is.null(fit$bayesmeta$interaction))
+  expect_true(".weight" %in% names(fit$support))
+  expect_true(abs(sum(fit$support$.weight) - 1) < 1e-8)
+  ov_n <- length(fit$bayesmeta$overall$support$weight)
+  int_n <- nrow(as.data.frame(fit$bayesmeta$interaction$support))
+  expect_equal(nrow(fit$support), ov_n * int_n)
+  expect_true(!is.null(fit$latent$beta))
+  expect_true(!is.null(fit$latent$m))
 })

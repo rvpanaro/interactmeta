@@ -1,7 +1,7 @@
 test_that("add_ifrac_design() matches the three-subgroup centered design", {
   dat <- dplyr::tibble(
     trial = "A",
-    subgroup = c("g1", "g2", "g3"),
+    level = c("g1", "g2", "g3"),
     yi = c(0.2, 0.1, 0.05),
     vi = c(0.01, 0.04, 0.16),
     reference = "g1"
@@ -21,8 +21,8 @@ test_that("add_ifrac_design() matches the three-subgroup centered design", {
 
 test_that("add_ifrac_design() uses arbitrary subgroup labels", {
   dat <- dplyr::tibble(
-    trial = rep("T1", 3),
-    subgroup = c("low", "medium", "high"),
+    study = rep("T1", 3),
+    level = c("low", "medium", "high"),
     yi = c(0, 0, 0),
     vi = c(1, 2, 4),
     reference = "low"
@@ -34,14 +34,14 @@ test_that("add_ifrac_design() uses arbitrary subgroup labels", {
   expect_false(any(grepl("^ifrac2_", names(res))))
   expect_false(any(grepl("^ifrac_low", names(res))))
 
-  row_med <- res[res$subgroup == "medium", , drop = FALSE]
+  row_med <- res[res$level == "medium", , drop = FALSE]
   expect_equal(row_med$ifrac_medium, (1 / 2) / (1 + 1 / 2 + 1 / 4), tolerance = 1e-12)
 })
 
 test_that("add_ifrac2_design() is added only for CAMS fitting", {
   dat <- dplyr::tibble(
     trial = "A",
-    subgroup = c("g1", "g2"),
+    level = c("g1", "g2"),
     yi = c(0.2, 0.1),
     vi = c(0.01, 0.04),
     reference = "g1"
@@ -51,15 +51,15 @@ test_that("add_ifrac2_design() is added only for CAMS fitting", {
   expect_true("ifrac2_g2" %in% names(fit_dat))
   expect_equal(
     fit_dat$ifrac2_g2,
-    as.numeric(fit_dat$subgroup == "g2") - fit_dat$ifrac_g2,
+    as.numeric(fit_dat == "g2") - fit_dat$ifrac_g2,
     tolerance = 1e-12
   )
 })
 
 test_that("add_ifrac_design() excludes overall rows by default", {
   dat <- dplyr::tibble(
-    trial = rep("A", 4),
-    subgroup = c("g1", "g2", "g3", "Combined"),
+    study = rep("A", 4),
+    level = c("g1", "g2", "g3", "Combined"),
     yi = c(0, 0, 0, 0),
     vi = c(0.01, 0.04, 0.16, 0.008),
     reference = "g1"
@@ -67,13 +67,13 @@ test_that("add_ifrac_design() excludes overall rows by default", {
 
   res <- add_ifrac_design(dat)
   expect_equal(nrow(res), 3L)
-  expect_false("Combined" %in% res$subgroup)
+  expect_false("Combined" %in% res$level)
 })
 
 test_that("add_ifrac_design() excludes contrast rows by default", {
   dat <- dplyr::tibble(
-    trial = rep("A", 4),
-    subgroup = c("g1", "g2", "g3", "g2-g1"),
+    study = rep("A", 4),
+    level = c("g1", "g2", "g3", "g2-g1"),
     yi = c(0, 0, 0, 0),
     vi = c(0.01, 0.04, 0.16, 0.05),
     reference = "g1"
@@ -81,5 +81,5 @@ test_that("add_ifrac_design() excludes contrast rows by default", {
 
   res <- add_ifrac_design(dat)
   expect_equal(nrow(res), 3L)
-  expect_false("g2-g1" %in% res$subgroup)
+  expect_false("g2-g1" %in% res$level)
 })

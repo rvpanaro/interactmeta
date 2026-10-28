@@ -13,7 +13,7 @@ heterogeneity(
 )
 }
 \arguments{
-\item{fit}{A \code{\link{interactmeta}} from \code{\link[=cam]{cam()}}.}
+\item{fit}{A \code{\link{interactmeta}} from \code{\link[=cams]{cams()}}.}
 
 \item{component}{Which SD parameters to return: \code{"intercept"}
 (trial intercept, treatment-effect heterogeneity at the
@@ -36,18 +36,20 @@ with columns \code{parameter}, \code{type}, \code{value}) and, when requested, \
 \description{
 Summarizes between-trial standard deviations in the CAMS random-effects
 structure. For Bayesian CAMS this uses the DIRECT support for
-\eqn{\tau_m} and \eqn{\tau_g} (not IID MCMC draws). For frequentist CAMS
-it uses the stored \code{rma} heterogeneity estimates.
+\eqn{\tau} and \eqn{\tau_\gamma}. For frequentist CAMS
+it uses the stored \code{rma} heterogeneity estimates (delta-method SE on
+\verb{\eqn{\hat\tau}}; \code{lci} / \code{uci} from \code{\link[stats:confint]{stats::confint()}} profile intervals
+on each orthogonal \code{rma} block).
 }
 \examples{
 \dontrun{
 library(interact)
-fit <- cam(es, reference = "Younger")
+fit <- cams(es, reference = "Lower")
 heterogeneity(fit)
 heterogeneity(fit, component = "intercept")
 }
 
 }
 \seealso{
-\code{\link[=ifrac]{ifrac()}}, \code{\link[=cam]{cam()}}, \code{\link[=plot_heterogeneity]{plot_heterogeneity()}}
+\code{\link[=ifrac]{ifrac()}}, \code{\link[=cams]{cams()}}, \code{\link[=plot_heterogeneity]{plot_heterogeneity()}}
 }

@@ -7,7 +7,7 @@
 compare_ifrac(..., ifrac = "interaction")
 }
 \arguments{
-\item{...}{Two or more \code{\link[=cam]{cam()}} fits.}
+\item{...}{Two or more \code{\link[=cams]{cams()}} fits.}
 
 \item{ifrac}{\code{"interaction"} (default), \code{"overall"}, or both.}
 }
@@ -24,3 +24,4 @@ CAMS).
 \seealso{
 \code{\link[=ifrac]{ifrac()}}, \code{\link[=compare_weights]{compare_weights()}}
 }
+\keyword{internal}

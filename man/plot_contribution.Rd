@@ -9,12 +9,12 @@ plot_contribution(
   ifrac_var = NULL,
   prob = 0.95,
   type = "Overall",
-  max_draws = NULL,
+  max_support = NULL,
   contrast_sep = "-",
   exponentiate = FALSE,
   subgroup_var = NULL,
   at_ifrac = NULL,
-  oi_draws = NULL,
+  oi_support = NULL,
   trial_var = NULL,
   effects = NULL,
   re_formula = NA,
@@ -30,6 +30,7 @@ plot_contribution(
   x_breaks = NULL,
   y_breaks = NULL,
   show_overall_line = TRUE,
+  ribbon_interval.type = "central",
   point_size_range = c(2.5, 6.5),
   show_footnote = TRUE,
   digits = 2,
@@ -40,32 +41,40 @@ plot_contribution(
 \arguments{
 \item{fit}{A \code{\link{interactmeta}} / \code{interactmeta} from \code{\link[=cams]{cams()}}.}
 
-\item{ifrac_var, prob, type, max_draws, contrast_sep}{Passed to
+\item{ifrac_var, prob, type, max_support, contrast_sep}{Passed to
 \code{\link[=predict_cams_by_if]{predict_cams_by_if()}} and \code{\link[=ifrac]{ifrac()}}.}
 
 \item{exponentiate}{If \code{TRUE}, draw the CAMS curves, study points, and
 intervals on the exponential (ratio) scale. Observed \code{yi} are exponentiated
 after the log-scale Wald interval is formed.}
 
+\item{subgroup_var, trial_var}{Optional subgroup and trial column names.
+Defaults to the names stored on \code{fit}.}
+
 \item{at_ifrac}{Optional dotted reference IF; default \code{NULL} (no marker).}
 
-\item{oi_draws}{Optional overall-IF draws (see \code{\link[=ifrac]{ifrac()}}).}
+\item{oi_support}{Optional overall-IF draws (see \code{\link[=ifrac]{ifrac()}}).}
 
 \item{effects, re_formula, resolution}{Passed to the conditional-effects helper
 (\code{re_formula = NA} by default, population effects only).}
 
 \item{subgroup_labels, legend_math, colors, fills, ylab}{Plot styling.}
 
-\item{xlab}{Axis label; default is the information-fraction label.}
+\item{xlab}{Axis label; default \code{"Information fraction (IF) (\%)"}.}
 
-\item{xlim, ylim, x_breaks, y_breaks}{Axis limits and breaks.}
+\item{xlim, ylim, x_breaks, y_breaks}{Axis limits and breaks (\code{xlim} / \code{x_breaks}
+are on the \strong{percent} scale, 0–100).}
 
-\item{show_overall_line}{Logical; dashed \eqn{M(\pi)=\alpha+\theta\pi} line.}
+\item{show_overall_line}{Logical; dashed \eqn{M(\pi)=\alpha+\theta\pi} line
+(legend \dQuote{All} when drawn).}
+
+\item{ribbon_interval.type}{\code{"central"} or \code{"shortest"} credible interval
+for subgroup ribbon limits on the DIRECT mixture (default \code{"central"}).}
 
 \item{point_size_range}{Range for precision-scaled study points.}
 
 \item{show_footnote}{If \code{TRUE} (default), add a caption below the plot with
-the overall information fraction, its interval, study count, and reference.
+the reporting information fraction (percent, interval), and study count.
 Use \code{FALSE} to omit it.}
 
 \item{digits}{Decimal places in the footnote.}
@@ -88,9 +97,10 @@ own \eqn{\pi_j}. This is the plot of the CAMS identities
 }
 \examples{
 \dontrun{
-plot_contribution(fit)
+plot(fit)
 }
 }
 \seealso{
 \code{\link[=predict_cams_by_if]{predict_cams_by_if()}}, \code{\link[=ifrac]{ifrac()}}
 }
+\keyword{internal}

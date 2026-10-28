@@ -26,7 +26,7 @@
 }
 \arguments{
 \item{x}{A comparison object from \code{\link[=compare_interactions]{compare_interactions()}},
-\code{\link[=compare_subgroups]{compare_subgroups()}}, \code{\link[=compare_combined]{compare_combined()}}, \code{\link[=compare_heterogeneity]{compare_heterogeneity()}},
+\code{\link[=compare_modifiers]{compare_modifiers()}}, \code{\link[=compare_combined]{compare_combined()}}, \code{\link[=compare_heterogeneity]{compare_heterogeneity()}},
 \code{\link[=compare_ifrac]{compare_ifrac()}}, or \code{\link[=compare_weights]{compare_weights()}}.}
 
 \item{y}{Ignored.}

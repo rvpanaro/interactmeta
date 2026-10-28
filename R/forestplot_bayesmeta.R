@@ -1,7 +1,8 @@
+# ---- forestplot_bayesmeta.R ----
 #' Draw a bayesmeta / forestplot-backed forest on the active device
 #'
 #' CAMS forests always use [forestplot::forestplot()] so every `type`
-#' (`"subgroups"`, `"interaction"`, `"combined"`) shares the same aesthetics:
+#' (`"subgroups"`, `"interaction"`) shares the same aesthetics:
 #' black study boxes; blue summary diamonds for every block;
 #' prediction bars; optional grey shrinkage overlays; and IF columns.
 #' (Standalone [as_bayesmeta()] objects can still be drawn with
@@ -289,29 +290,7 @@ forestplot_bayesmeta_build_fp <- function(fp_args) {
     grDevices::dev.off()
     opened_null <- FALSE
   }
-  forestplot_bayesmeta_add_graph_separator(
-    fp,
-    graph.pos = fp_args$graph.pos
-  )
-}
-
-#' Vertical rule at the left of the forest graph (label | forest)
-#' @noRd
-forestplot_bayesmeta_add_graph_separator <- function(fp, graph.pos) {
-  if (is.null(fp) || is.null(graph.pos) || is.character(graph.pos)) {
-    return(fp)
-  }
-  graph.pos <- as.integer(graph.pos)[[1L]]
-  if (!is.finite(graph.pos) || graph.pos < 1L) {
-    return(fp)
-  }
-  if (!is.function(get0("fp_add_lines", envir = asNamespace("forestplot"), inherits = FALSE))) {
-    return(fp)
-  }
-  v_name <- paste0("v_", graph.pos)
-  args <- list(x = fp)
-  args[[v_name]] <- grid::gpar(col = interactmeta_plot_constants()$forest_rule)
-  do.call(forestplot::fp_add_lines, args)
+  fp
 }
 
 #' `Overall` / `Prediction` labels with a subgroup / block heading in parentheses
@@ -606,24 +585,6 @@ forestplot_bayesmeta_print_with_footnotes <- function(fp, foot_lines) {
   invisible(fp)
 }
 
-#' @noRd
-forestplot_bayesmeta_draw_footnotes_only <- function(foot_lines) {
-  rows <- forestplot_footnote_as_rows(foot_lines)
-  if (!length(rows)) {
-    return(invisible(NULL))
-  }
-  # Fallback when forestplot.bayesmeta already drew on the device: try to add
-  # text in the bottom margin without wiping the figure.
-  tryCatch(
-    {
-      grid::seekViewport("axis_margin")
-      forestplot_bayesmeta_draw_footnote_texts(rows)
-    },
-    error = function(e) invisible(NULL)
-  )
-  invisible(NULL)
-}
-
 # --- bayesmeta object construction ------------------------------------------
 
 #' Build a minimal bayesmeta object from study / summary estimates
@@ -790,27 +751,6 @@ as_bayesmeta <- function(y,
   out
 }
 
-#' @noRd
-forestplot_as_bayesmeta_block <- function(block) {
-  studies <- block$studies
-  if (!nrow(studies)) {
-    stop("Block has no study rows for as_bayesmeta().", call. = FALSE)
-  }
-  se <- forestplot_bayesmeta_se(studies)
-  mu <- block$pooled
-  pred <- block$prediction
-  shr <- block$shrinkage
-  as_bayesmeta(
-    y = studies$yi,
-    sigma = se,
-    labels = studies$label,
-    mu = mu,
-    prediction = pred,
-    shrinkage = shr,
-    tau = block$tau
-  )
-}
-
 # --- block parsing ----------------------------------------------------------
 
 #' @noRd
@@ -865,7 +805,7 @@ forestplot_bayesmeta_blocks <- function(panel, row_labels, estimate_col = "yi") 
 
   # Unique headings in order of first appearance.
   heads <- heading
-  heads[!nzchar(heads)] <- "(Combined)"
+  heads[!nzchar(heads)] <- paste0("(", forestplot_combined_block_label(), ")")
   uniq <- unique(heads)
 
   lapply(uniq, function(h) {
@@ -960,6 +900,12 @@ forestplot_bayesmeta_blocks <- function(panel, row_labels, estimate_col = "yi") 
           }
           identical(k0, "prediction") ||
             grepl("^prediction$", lab0, ignore.case = TRUE)
+        },
+        ifrac = if ("ifrac" %in% names(pan_i)) {
+          val <- pan_i$ifrac[[i0]]
+          if (is.null(val) || is.na(val)) "" else as.character(val)
+        } else {
+          ""
         }
       )
     }
@@ -1004,7 +950,11 @@ forestplot_bayesmeta_blocks <- function(panel, row_labels, estimate_col = "yi") 
     }
 
     list(
-      heading = if (identical(h, "(Combined)")) "" else h,
+      heading = if (identical(h, paste0("(", forestplot_combined_block_label(), ")"))) {
+        ""
+      } else {
+        h
+      },
       studies = studies_df,
       shrinkage = shr_df,
       summaries = summaries,
@@ -1026,20 +976,6 @@ forestplot_bayesmeta_block_is_simple <- function(block) {
     !is.null(block$pooled) &&
     is.null(block$overall) &&
     length(block$summaries) <= 2L
-}
-
-#' @noRd
-forestplot_bayesmeta_se <- function(studies) {
-  se <- sqrt(pmax(as.numeric(studies$vi), 0))
-  bad <- !is.finite(se) | se <= 0
-  if (any(bad)) {
-    q <- stats::qnorm(0.975)
-    se[bad] <- pmax(
-      (as.numeric(studies$ci.ub[bad]) - as.numeric(studies$ci.lb[bad])) / (2 * q),
-      .Machine$double.eps
-    )
-  }
-  se
 }
 
 #' Keep at least one non-summary row for forestplot vertical lines
@@ -1072,53 +1008,6 @@ forestplot_ensure_nonsummary_row <- function(is_summary, mean_m) {
   i <- if (length(spacer_i)) spacer_i[[1L]] else idx[[1L]]
   is_summary[[i]] <- FALSE
   is_summary
-}
-
-# --- forestplot::forestplot argument builders -------------------------------
-
-#' @noRd
-forestplot_bayesmeta_call_args <- function(specs, block) {
-  has_shr <- !is.null(block$shrinkage) && nrow(block$shrinkage) &&
-    any(is.finite(block$shrinkage$median))
-  args <- list(
-    exponentiate = isTRUE(specs$exponentiate),
-    prediction = !is.null(block$prediction),
-    shrinkage = has_shr,
-    heterogeneity = FALSE,
-    digits = specs$digits %||% 2,
-    plot = TRUE,
-    zero = specs$nullval %||% if (isTRUE(specs$exponentiate)) 1 else 0
-  )
-  xlab <- specs$xlab[[1L]]
-  if (!is.null(xlab) && !identical(xlab, FALSE)) {
-    args$xlab <- as.character(xlab)[[1L]]
-  }
-  # Prefer compact column header over a large centered title.
-  args$title <- NULL
-  # clip / xticks only when the user supplied them (bayesmeta default: omit).
-  xlim <- if (is.list(specs$xlim)) specs$xlim[[1L]] else specs$xlim
-  if (is.numeric(xlim) && length(xlim) == 2L && all(is.finite(xlim))) {
-    args$clip <- xlim
-    xt <- if (is.list(specs$xticks)) specs$xticks[[1L]] else specs$xticks
-    if (is.numeric(xt) && length(xt)) {
-      args$xticks <- xt
-    }
-  } else {
-    xt <- if (is.list(specs$xticks)) specs$xticks[[1L]] else specs$xticks
-    if (is.numeric(xt) && length(xt)) {
-      args$xticks <- xt
-    }
-  }
-  # User overrides from forest_args / ...
-  fa <- specs$forest_args %||% list()
-  # Drop metafor-only names.
-  drop <- c(
-    "atransf", "efac", "psize", "pch", "annotate", "header", "ilab",
-    "ilab.xpos", "ilab.lab", "top", "annosym", "fonts", "shade", "lty",
-    "rows", "ylim", "alim", "textpos", "slab", "vi", "sei", "ci.lb", "ci.ub"
-  )
-  fa <- fa[setdiff(names(fa), drop)]
-  utils::modifyList(args, fa)
 }
 
 #' Build forestplot::forestplot args for one or more CAMS blocks
@@ -1366,6 +1255,20 @@ forestplot_bayesmeta_forestplot_args <- function(blocks, specs) {
         heading = bl$heading,
         attach_heading = attach_heading
       )
+      if (show_left && length(left_names)) {
+        col_i <- 2L
+        for (nm in left_names) {
+          val <- if (identical(nm, "ifrac") && !is.null(sum_obj[["ifrac"]])) {
+            sum_obj[["ifrac"]]
+          } else if (nm %in% names(sum_obj)) {
+            sum_obj[[nm]]
+          } else {
+            ""
+          }
+          lab[[col_i]] <- if (is.null(val) || is.na(val)) "" else as.character(val)
+          col_i <- col_i + 1L
+        }
+      }
       if (show_ci) {
         lab[[effect_col]] <- paste0(fmt(yi_d), " ", fmt_ci(lo_d, hi_d))
       }
@@ -1398,7 +1301,7 @@ forestplot_bayesmeta_forestplot_args <- function(blocks, specs) {
     } else {
       add_summary(bl$pooled, "Overall", bar = FALSE)
       add_summary(bl$prediction, "Prediction", bar = TRUE)
-      add_summary(bl$overall, "Combined", bar = FALSE)
+      add_summary(bl$overall, forestplot_combined_block_label(), bar = FALSE)
     }
 
     # Empty row between consecutive subgroup blocks (group = "subgroup"),
@@ -1602,9 +1505,4 @@ forestplot_bayesmeta_footnote_lines <- function(specs, wrap_at = 96L) {
     character(1L),
     USE.NAMES = FALSE
   )
-}
-
-#' @noRd
-forestplot_bayesmeta_draw_footer <- function(specs) {
-  invisible(NULL)
 }

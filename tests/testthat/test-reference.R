@@ -1,7 +1,7 @@
 test_that("interactmeta_reference is the single source of truth on fits and data", {
   dat <- data.frame(
-    trial = rep("A", 2),
-    subgroup = c("Younger", "Older"),
+    study = rep("A", 2),
+    level = c("Younger", "Older"),
     yi = c(0.1, 0.2),
     vi = c(0.04, 0.01),
     reference = "Younger",
@@ -16,7 +16,7 @@ test_that("interactmeta_reference is the single source of truth on fits and data
     "does not match the stored reference"
   )
 
-  # Mismatched cam(reference=) vs existing design must error
+  # Mismatched cams(reference=) vs existing design must error
   expect_error(
     interact:::prepare_ifrac_input(dat, reference = "Older"),
     "does not match the stored reference"
@@ -45,7 +45,7 @@ test_that("ifrac_<reference> design columns are rejected", {
 test_that("resolve_forest_reference does not invent a reference", {
   sg <- data.frame(
     trial = "A",
-    subgroup = factor(c("Younger", "Older"), levels = c("Younger", "Older")),
+    level = factor(c("Younger", "Older"), levels = c("Younger", "Older")),
     yi = c(0.1, 0.2),
     vi = c(0.01, 0.02)
   )
@@ -61,16 +61,15 @@ test_that("fitted object stores and reuses the given reference", {
   skip_if_not_installed("bayesmeta")
 
   dat <- data.frame(
-    trial = rep(c("A", "B"), each = 2),
-    subgroup = factor(rep(c("Younger", "Older"), 2), levels = c("Younger", "Older")),
+    study = rep(c("A", "B"), each = 2),
+    level = factor(rep(c("Younger", "Older"), 2), levels = c("Younger", "Older")),
     yi = c(0.1, 0.4, 0.12, 0.28),
     vi = c(0.05, 0.05, 0.04, 0.03),
     n = 10
   )
-  fit <- suppressWarnings(cam(
+  fit <- suppressWarnings(cams(
     dat,
-    engine = "bayesmeta",
-    reference = "Younger"))
+        reference = "Younger"))
   expect_equal(interact:::interactmeta_reference(fit), "Younger")
   expect_equal(attr(fit, "interactmeta")$reference, "Younger")
   expect_equal(interact:::interactmeta_nonref(fit), "Older")

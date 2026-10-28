@@ -1,3 +1,180 @@
+# ---- ifrac_design.R ----
+#' Add information-fraction design columns
+#'
+#' Builds trial-level information fractions for non-reference subgroups. For
+#' each trial, information is `1 / vi` on subgroup rows, and information
+#' fractions are `IF_g = I_g / sum_h I_h`. For each non-reference subgroup `k`,
+#' `ifrac_k = IF_k` (repeated on all rows in the trial).
+#'
+#' @param dat A data frame with at least `trial`, `subgroup`, `vi`, and `reference`.
+#' @param trial_col Name of the trial column.
+#' @param subgroup_col Name of the subgroup column.
+#' @param vi_col Name of the variance column.
+#' @param reference_col Name of the reference subgroup column (constant within trial).
+#' @param include_contrast_rows If `FALSE` (default), rows whose `subgroup` label
+#'   contains `contrast_sep` are excluded (e.g. `"g2-g1"`).
+#' @param contrast_sep Separator used to identify derived contrast rows when
+#'   `include_contrast_rows = FALSE`.
+#' @param subgroup_levels Optional character vector of subgroup labels to keep.
+#'   When provided, only these labels are used (overrides `contrast_sep` filtering).
+#'
+#' @return The input data (subgroup rows only, unless `include_contrast_rows = TRUE`)
+#'   with columns `precision` and `ifrac_*` for each non-reference subgroup.
+#'
+#' @keywords internal
+#' @export
+add_ifrac_design <- function(dat,
+                             trial_col = NULL,
+                             subgroup_col = NULL,
+                             vi_col = "vi",
+                             reference_col = "reference",
+                             include_contrast_rows = FALSE,
+                             contrast_sep = "-",
+                             subgroup_levels = NULL) {
+  trial_col <- trial_col %||% interactmeta_resolve_study_col(dat)
+  subgroup_col <- subgroup_col %||% interactmeta_resolve_level_col(dat)
+  check_ifrac_design_cols(dat, trial_col, subgroup_col, vi_col, reference_col)
+
+  out <- dat
+
+  if (!include_contrast_rows) {
+    if (!is.null(subgroup_levels)) {
+      out <- out[out[[subgroup_col]] %in% subgroup_levels, , drop = FALSE]
+    } else {
+      keep <- is_ifrac_component_row(out[[subgroup_col]], contrast_sep = contrast_sep)
+      out <- out[keep, , drop = FALSE]
+    }
+  }
+
+  if (nrow(out) == 0L) {
+    return(out)
+  }
+
+  vi <- out[[vi_col]]
+  if (any(!is.finite(vi)) || any(vi <= 0)) {
+    stop("`vi` must be positive and finite on all subgroup rows used for the design.", call. = FALSE)
+  }
+
+  ref_per_trial <- out |>
+    dplyr::distinct(
+      dplyr::across(dplyr::all_of(c(trial_col, reference_col)))
+    )
+
+  if (any(is.na(ref_per_trial[[reference_col]])) || any(!nzchar(ref_per_trial[[reference_col]]))) {
+    stop("Each trial must have a non-missing `reference` value.", call. = FALSE)
+  }
+
+  n_trials <- dplyr::n_distinct(out[[trial_col]])
+  if (nrow(ref_per_trial) != n_trials) {
+    stop("Each trial must have exactly one reference subgroup label.", call. = FALSE)
+  }
+
+  out <- out |>
+    dplyr::mutate(
+      # Information: I_g = 1 / v_g. Trial IF of subgroup k is I_k / sum_h I_h.
+      precision = 1 / .data[[vi_col]]
+    )
+
+  if_tbl <- out |>
+    dplyr::group_by(dplyr::across(dplyr::all_of(c(trial_col, subgroup_col)))) |>
+    dplyr::summarise(
+      precision = sum(.data$precision),
+      .groups = "drop"
+    ) |>
+    dplyr::group_by(dplyr::across(dplyr::all_of(trial_col))) |>
+    dplyr::mutate(
+      ifrac = .data$precision / sum(.data$precision)
+    ) |>
+    dplyr::ungroup()
+
+  sum_if <- if_tbl |>
+    dplyr::group_by(dplyr::across(dplyr::all_of(trial_col))) |>
+    dplyr::summarise(sum_ifrac = sum(.data$ifrac), .groups = "drop")
+
+  if (any(abs(sum_if$sum_ifrac - 1) > 1e-8)) {
+    stop("Within each trial, information fractions must sum to 1.", call. = FALSE)
+  }
+
+  non_ref <- if_tbl |>
+    dplyr::left_join(
+      ref_per_trial,
+      by = trial_col
+    ) |>
+    dplyr::filter(.data[[subgroup_col]] != .data$reference) |>
+    dplyr::select(
+      dplyr::all_of(c(trial_col, subgroup_col)),
+      "ifrac"
+    )
+
+  if (nrow(non_ref) > 0L) {
+    ifrac_wide <- non_ref |>
+      tidyr::pivot_wider(
+        id_cols = dplyr::all_of(trial_col),
+        names_from = dplyr::all_of(subgroup_col),
+        values_from = "ifrac",
+        names_prefix = "ifrac_"
+      )
+
+    out <- out |>
+      dplyr::left_join(ifrac_wide, by = trial_col)
+
+    non_ref_labels <- sort(unique(non_ref[[subgroup_col]]))
+    for (lab in non_ref_labels) {
+      icol <- paste0("ifrac_", lab)
+      if (!icol %in% names(out)) {
+        next
+      }
+      out[[icol]] <- as.numeric(out[[icol]])
+    }
+  }
+
+  ifrac_k_cols <- sort(grep("^ifrac_", names(out), value = TRUE))
+  ifrac_k_cols <- ifrac_k_cols[!grepl("^ifrac2_", ifrac_k_cols)]
+  design_cols <- c("precision", ifrac_k_cols)
+  design_cols <- design_cols[design_cols %in% names(out)]
+
+  front <- setdiff(names(dat), c(design_cols, reference_col))
+  tail <- if (reference_col %in% names(out)) reference_col else character(0)
+  keep <- unique(c(front, design_cols, tail))
+  keep <- keep[keep %in% names(out)]
+  keep <- keep[!grepl("^ifrac2_", keep)]
+  out <- out[, keep, drop = FALSE]
+  coerce_ifrac_numeric_cols(out)
+}
+
+check_ifrac_design_cols <- function(dat, trial_col, subgroup_col, vi_col, reference_col) {
+  need <- c(trial_col, subgroup_col, vi_col, reference_col)
+  missing <- setdiff(need, names(dat))
+  if (length(missing) > 0L) {
+    stop(
+      sprintf("Missing required column(s): %s.", paste(missing, collapse = ", ")),
+      call. = FALSE
+    )
+  }
+  invisible(TRUE)
+}
+
+#' Centered IF design columns used only for CAMS fitting
+#'
+#' `ifrac2_k = 1(subgroup == k) - ifrac_k`. Not returned by [ifrac()] or
+#' [add_ifrac_design()].
+#' @noRd
+add_ifrac2_design <- function(dat, subgroup_col = NULL) {
+  subgroup_col <- subgroup_col %||% interactmeta_resolve_level_col(dat)
+  ifrac_cols <- grep("^ifrac_", names(dat), value = TRUE)
+  ifrac_cols <- ifrac_cols[!grepl("^ifrac2_", ifrac_cols)]
+  sg <- as.character(dat[[subgroup_col]])
+  for (icol in ifrac_cols) {
+    lab <- sub("^ifrac_", "", icol)
+    i2col <- paste0("ifrac2_", lab)
+    if (!i2col %in% names(dat)) {
+      dat[[i2col]] <- as.numeric(sg == lab) - as.numeric(dat[[icol]])
+    }
+  }
+  coerce_ifrac_numeric_cols(dat)
+}
+
+# ---- ifrac.R ----
 #' Information fraction within each trial and pooled across trials
 #'
 #' **Design** (default): computes information fractions within each trial from
@@ -87,7 +264,7 @@
 #' \eqn{v_i=\mathrm{Var}(m_i)=(1-\pi_i)^2\sigma_{Ai}^2+\pi_i^2\sigma_{Bi}^2}.
 #' On Bayesian CAMS, \eqn{\tau} / \eqn{\tau_\gamma} are DIRECT posterior supports, so
 #' the pooled IF is a distribution. On frequentist CAMS (`engine = "metafor"`),
-#' pooling is a plug-in at the fitted \eqn{\tau} or \eqn{\tau_\gamma}.
+#' pooling uses the fitted \eqn{\tau} or \eqn{\tau_\gamma}.
 #' See argument details below and examples.
 #'
 #' @param ifrac For pooling only: `"interaction"` (default) or `"overall"`.
@@ -143,7 +320,7 @@
 #' library(interact)
 #' e <- escalc(measure = "IRR", yi = edss$yi, vi = edss$vi, data = edss)
 #' d <- ifrac(e, reference = "Lower", include_interaction = TRUE)
-#' fit <- cam(d, reference = "Lower")
+#' fit <- cams(d, reference = "Lower")
 #' forestplot(fit)
 #' plot_contribution(fit)
 #'
@@ -210,9 +387,9 @@ ifrac.data.frame <- function(x,
                              tau = NULL,
                              tau_gamma = NULL,
                              reference = NULL,
-                             trial = "trial",
+                             trial = "study",
                              modifier = NULL,
-                             subgroup = "subgroup",
+                             subgroup = "level",
                              ifrac_var = NULL,
                              contrast_sep = "-",
                              summary = FALSE,
@@ -225,6 +402,13 @@ ifrac.data.frame <- function(x,
                              ...) {
   if (is.character(modifier) && length(modifier) == 1L && nzchar(modifier)) {
     subgroup <- modifier
+  }
+  if (is.data.frame(x) || inherits(x, "escalc")) {
+    subgroup <- interactmeta_resolve_modifier_column(
+      modifier,
+      subgroup,
+      dat = as.data.frame(x)
+    )
   }
   if (!is.null(yi)) {
     x <- yi
@@ -524,6 +708,8 @@ ifrac_design <- function(yi, vi = NULL, trial = NULL, subgroup = NULL, big_var =
 
   out <- set_subgroup_factor(out, ref_label, all_subgroups, contrast_sep)
   out <- out[, !grepl("^ifrac2_", names(out)), drop = FALSE]
+  out <- interactmeta_rename_modifier_col_to_level(out)
+  out <- interactmeta_rename_trial_col_to_study(out)
   coerce_ifrac_numeric_cols(out)
 }
 
@@ -555,10 +741,11 @@ build_ifrac_combined_rows <- function(dat_complete, combined_label = ifrac_combi
   } else {
     as.character(dat_complete$subgroup)[[1L]]
   }
+  level_col <- interactmeta_resolve_level_col(dat_complete)
   blocks <- comparison_trial_effect_blocks(
     data = dat_complete,
-    trial_var = "trial",
-    subgroup_var = "subgroup",
+    trial_var = interactmeta_resolve_study_col(dat_complete),
+    subgroup_var = level_col,
     reference = ref
   )
   out <- blocks$overall
@@ -574,7 +761,7 @@ build_ifrac_combined_rows <- function(dat_complete, combined_label = ifrac_combi
 }
 
 ifrac_output_base_cols <- function(dat) {
-  cols <- c("trial", "subgroup", "yi", "vi")
+  cols <- c(interactmeta_resolve_study_col(dat), interactmeta_resolve_level_col(dat), "yi", "vi")
   if ("n" %in% names(dat)) {
     cols <- c(cols, "n")
   }
@@ -596,7 +783,11 @@ coerce_ifrac_numeric_cols <- function(dat) {
 }
 
 set_subgroup_factor <- function(out, ref_label, all_subgroups, contrast_sep) {
-  if (!("subgroup" %in% names(out))) {
+  col <- interactmeta_resolve_level_col(out)
+  if (!(col %in% names(out)) && "subgroup" %in% names(out)) {
+    col <- "subgroup"
+  }
+  if (!(col %in% names(out))) {
     return(out)
   }
 
@@ -624,16 +815,16 @@ set_subgroup_factor <- function(out, ref_label, all_subgroups, contrast_sep) {
   is_subgroup_row <- rep(TRUE, nrow(out))
 
   if (!is.null(contrast_sep) && nzchar(contrast_sep)) {
-    is_subgroup_row <- is_ifrac_component_row(out$subgroup, contrast_sep = contrast_sep)
+    is_subgroup_row <- is_ifrac_component_row(out[[col]], contrast_sep = contrast_sep)
   }
 
   if (all(is_subgroup_row)) {
-    out$subgroup <- factor(out$subgroup, levels = sg_levels)
-    stopifnot(identical(levels(out$subgroup)[[1]], ref))
+    out[[col]] <- factor(out[[col]], levels = sg_levels)
+    stopifnot(identical(levels(out[[col]])[[1]], ref))
   } else if (any(is_subgroup_row)) {
-    out$subgroup <- as.character(out$subgroup)
-    out$subgroup[is_subgroup_row] <- as.character(
-      factor(out$subgroup[is_subgroup_row], levels = sg_levels)
+    out[[col]] <- as.character(out[[col]])
+    out[[col]][is_subgroup_row] <- as.character(
+      factor(out[[col]][is_subgroup_row], levels = sg_levels)
     )
   }
 
@@ -733,13 +924,16 @@ coerce_ifrac_inputs <- function(yi, vi, trial, subgroup, big_var = 100^2) {
     }
 
     if (is.null(trial)) {
-      trial <- "trial"
+      trial <- interactmeta_resolve_study_col(dat)
     }
     if (is.null(subgroup)) {
-      subgroup <- "subgroup"
+      subgroup <- interactmeta_resolve_level_col(dat)
     }
 
     if (!is.character(trial) || length(trial) != 1L || !(trial %in% names(dat))) {
+      trial <- interactmeta_resolve_study_col(dat, fallback = trial)
+    }
+    if (!(trial %in% names(dat))) {
       stop(
         sprintf("`trial` must be a single column name in the data. Got: %s.", trial),
         call. = FALSE
@@ -873,4 +1067,919 @@ check_vi <- function(vi) {
   }
 
   invisible(TRUE)
+}
+
+# ---- overall_ifrac.R ----
+#' @rdname ifrac
+#' @export
+ifrac.interactmeta <- function(x,
+                               ifrac = c("interaction", "overall"),
+                               ifrac_var = NULL,
+                               summary = FALSE,
+                               prob = 0.95,
+                               ...) {
+  overall_ifrac_from_fit(
+    x,
+    ifrac_var = ifrac_var,
+    ifrac = match.arg(ifrac),
+    summary = summary,
+    prob = prob
+  )
+}
+
+
+#' @rdname ifrac
+#' @export
+ifrac.interactmeta_overall_ifrac <- function(x, ...) {
+  x
+}
+
+#' @noRd
+overall_ifrac_from_fit <- function(fit,
+                                   ifrac_var = NULL,
+                                   ifrac = c("interaction", "overall"),
+                                   summary = FALSE,
+                                   prob = 0.95) {
+  ifrac <- match.arg(ifrac)
+  check_comparison_fit(fit)
+  st <- attr(fit, "interactmeta", exact = TRUE)
+  if (is.null(st)) {
+    stop(
+      "Fit has no `\"interactmeta\"` attribute; refit with `cams()`.",
+      call. = FALSE
+    )
+  }
+
+  trial_var <- st$trial_var %||% interactmeta_study_column()
+  subgroup_var <- st$subgroup_var %||% interactmeta_level_column()
+  ref <- st$reference
+  if (is.null(ref) || !nzchar(ref)) {
+    stop("Fit has no `reference` in attribute `\"interactmeta\"`.", call. = FALSE)
+  }
+
+  d <- st$data_fit
+  if (is.null(d) && !is.null(st$ifrac_data)) {
+    d <- st$ifrac_data
+    if (is.null(ifrac_var)) {
+      ifrac_var <- st$ifrac_var
+      if (is.null(ifrac_var) || !ifrac_var %in% names(d)) {
+        vars <- detect_ifrac_vars(d)
+        ifrac_var <- vars[[1]]
+      }
+    }
+  } else if (is.null(ifrac_var)) {
+    ifrac_var <- st$ifrac_vars_std[[1]]
+    if (is.null(ifrac_var) && !is.null(st$ifrac_var)) {
+      ifrac_var <- st$ifrac_var
+    }
+    if (is.null(ifrac_var) || !length(ifrac_var) || !ifrac_var %in% names(d)) {
+      if (!is.null(d)) {
+        vars <- detect_ifrac_vars(d)
+        ifrac_var <- vars[[1]]
+      }
+    }
+  }
+
+  if (is.null(d)) {
+    stop("Fit has no `data_fit` or `ifrac_data`; refit with `cams()`.", call. = FALSE)
+  }
+
+  draws <- if (identical(ifrac, "interaction")) {
+    tau_gamma <- comparison_tau_gamma_samples(fit, ifrac_var = ifrac_var, trial_var = trial_var)
+    interaction_ifrac_compute(
+      data = d,
+      trial_var = trial_var,
+      subgroup_var = subgroup_var,
+      reference = ref,
+      ifrac_var = ifrac_var,
+      tau_gamma = tau_gamma,
+      contrast_sep = "-"
+    )
+  } else {
+    tau_hyp <- sprintf("%s__Intercept = 0", interactmeta_sd_re_group())
+    tau <- comparison_sd_samples(fit, tau_hyp)
+    overall_ifrac_compute(
+      data = d,
+      trial_var = trial_var,
+      subgroup_var = subgroup_var,
+      reference = ref,
+      ifrac_var = ifrac_var,
+      tau = tau,
+      contrast_sep = "-"
+    )
+  }
+
+  trial_pi <- overall_ifrac_trial_pi(
+    d,
+    trial_var = trial_var,
+    subgroup_var = subgroup_var,
+    reference = ref,
+    ifrac_var = ifrac_var
+  )
+  bundle <- list(
+    support = draws,
+    trial_pi = trial_pi,
+    reference = ref,
+    ifrac_var = ifrac_var,
+    subgroup_label = overall_ifrac_subgroup_label(ifrac_var, interactmeta = st),
+    n_trials = nrow(trial_pi),
+    summary = overall_ifrac_summary_df(draws, prob = prob, weight = interactmeta_ifrac_draw_weights(fit, draws)),
+    prob = prob,
+    ifrac = ifrac,
+    fit = fit
+  )
+  obj <- overall_ifrac_result(draws, summary = summary, prob = prob, bundle = bundle)
+  if (inherits(obj, "interactmeta_overall_ifrac")) {
+    w <- interactmeta_ifrac_draw_weights(fit, draws)
+    if (!is.null(w)) {
+      attr(obj, ".weight") <- w
+    }
+    obj <- interactmeta_attach_origin(obj, fit, quantity = "overall_ifrac")
+  }
+  obj
+}
+
+#' @noRd
+overall_ifrac_from_data <- function(data,
+                                    fit = NULL,
+                                    tau = NULL,
+                                    tau_gamma = NULL,
+                                    ifrac = c("interaction", "overall"),
+                                    reference = NULL,
+                                    trial = "study",
+                                    subgroup = "level",
+                                    ifrac_var = NULL,
+                                    contrast_sep = "-",
+                                    summary = FALSE,
+                                    prob = 0.95) {
+  ifrac <- match.arg(ifrac)
+  if (!is.null(fit)) {
+    check_comparison_fit(fit)
+    if (!is_comparison_fit(fit)) {
+      stop("`fit` must be an `interactmeta` from `cams()`.", call. = FALSE)
+    }
+    st <- attr(fit, "interactmeta", exact = TRUE)
+    trial_var <- if (!is.null(st) && !is.null(st$trial_var)) st$trial_var else trial
+    if (identical(ifrac, "interaction")) {
+      if (is.null(ifrac_var)) {
+        ifrac_var <- detect_ifrac_vars(data)[[1]]
+      }
+      tau_gamma <- comparison_tau_gamma_samples(fit, ifrac_var = ifrac_var, trial_var = trial_var)
+    } else {
+      tau_hyp <- sprintf("%s__Intercept = 0", interactmeta_sd_re_group())
+      tau <- comparison_sd_samples(fit, tau_hyp)
+    }
+  } else if (identical(ifrac, "interaction")) {
+    if (is.null(tau_gamma)) {
+      stop(
+        "Supply `fit` or `tau_gamma` when `object` is a data frame and `ifrac = \"interaction\"`.",
+        call. = FALSE
+      )
+    }
+  } else if (is.null(tau)) {
+    stop(
+      "Supply `fit` or `tau` when `object` is a data frame and `ifrac = \"overall\"`.",
+      call. = FALSE
+    )
+  }
+
+  if (identical(ifrac, "interaction")) {
+    tau_gamma <- as.numeric(tau_gamma)
+    if (!length(tau_gamma) || !all(is.finite(tau_gamma))) {
+      stop("`tau_gamma` must be one or more finite numeric values.", call. = FALSE)
+    }
+  } else {
+    tau <- as.numeric(tau)
+    if (!length(tau) || !all(is.finite(tau))) {
+      stop("`tau` must be one or more finite numeric values.", call. = FALSE)
+    }
+  }
+
+  ref <- reference
+  if (is.null(ref)) {
+    if ("reference" %in% names(data)) {
+      ref <- unique(data$reference)
+      ref <- ref[!is.na(ref) & nzchar(ref)]
+    }
+    if (length(ref) != 1L) {
+      stop(
+        "Supply `reference` or include a single `reference` column in `object`.",
+        call. = FALSE
+      )
+    }
+    ref <- ref[[1]]
+  }
+
+  if (is.null(ifrac_var)) {
+    ifrac_var <- detect_ifrac_vars(data)[[1]]
+  }
+
+  draws <- if (identical(ifrac, "interaction")) {
+    interaction_ifrac_compute(
+      data = data,
+      trial_var = trial,
+      subgroup_var = subgroup,
+      reference = ref,
+      ifrac_var = ifrac_var,
+      tau_gamma = tau_gamma,
+      contrast_sep = contrast_sep
+    )
+  } else {
+    overall_ifrac_compute(
+      data = data,
+      trial_var = trial,
+      subgroup_var = subgroup,
+      reference = ref,
+      ifrac_var = ifrac_var,
+      tau = tau,
+      contrast_sep = contrast_sep
+    )
+  }
+
+  trial_pi <- overall_ifrac_trial_pi(
+    data,
+    trial_var = trial,
+    subgroup_var = subgroup,
+    reference = ref,
+    ifrac_var = ifrac_var,
+    contrast_sep = contrast_sep
+  )
+  bundle <- list(
+    support = draws,
+    trial_pi = trial_pi,
+    reference = ref,
+    ifrac_var = ifrac_var,
+    subgroup_label = overall_ifrac_subgroup_label(ifrac_var),
+    n_trials = nrow(trial_pi),
+    summary = overall_ifrac_summary_df(draws, prob = prob),
+    prob = prob,
+    ifrac = ifrac
+  )
+  overall_ifrac_result(draws, summary = summary, prob = prob, bundle = bundle)
+}
+
+#' @noRd
+overall_ifrac_prepare_trials <- function(data,
+                                         trial_var,
+                                         subgroup_var,
+                                         reference,
+                                         ifrac_var,
+                                         contrast_sep = "-") {
+  if (!ifrac_var %in% names(data)) {
+    stop(sprintf("Column `%s` not found in data.", ifrac_var), call. = FALSE)
+  }
+
+  d <- data[
+    is_ifrac_component_row(data[[subgroup_var]], contrast_sep = contrast_sep),
+    ,
+    drop = FALSE
+  ]
+  if (!nrow(d)) {
+    stop("No subgroup rows found for overall IF computation.", call. = FALSE)
+  }
+
+  sg <- as.character(d[[subgroup_var]])
+  reference <- overall_ifrac_resolve_reference(sg, reference)
+  d <- d[order(d[[trial_var]], sg != reference, sg), , drop = FALSE]
+  d$se <- sqrt(d$vi)
+
+  trials <- unique(as.character(d[[trial_var]]))
+  n_trials <- length(trials)
+  n_per <- nrow(d) / n_trials
+  if (abs(n_per - round(n_per)) > 1e-8 || round(n_per) != n_per) {
+    stop("Each trial must have the same number of subgroup rows.", call. = FALSE)
+  }
+
+  pi <- vapply(
+    trials,
+    function(tr) {
+      d[[ifrac_var]][d[[trial_var]] == tr][[1]]
+    },
+    numeric(1)
+  )
+
+  list(data = d, trials = trials, pi = pi, reference = reference)
+}
+
+#' Match `reference` to subgroup labels in the IF table
+#'
+#' Fitted `data_fit` recodes subgroups to `interactmeta_sg_1` (reference)
+#' / `interactmeta_sg_2` while `st$reference` stays the original label.
+#' @noRd
+overall_ifrac_resolve_reference <- function(sg, reference) {
+  sg <- unique(as.character(sg))
+  ref <- as.character(reference)[[1L]]
+  if (length(ref) && ref %in% sg) {
+    return(ref)
+  }
+  canon <- "interactmeta_sg_1"
+  if (canon %in% sg) {
+    return(canon)
+  }
+  ref
+}
+
+#' @noRd
+overall_ifrac_weighted_pool <- function(pi, den, hetero_sd) {
+  hetero_sd <- as.numeric(hetero_sd)
+  wi <- vapply(hetero_sd, function(h) 1 / (h^2 + den), numeric(length(pi)))
+  if (!is.matrix(wi)) {
+    wi <- matrix(wi, nrow = length(pi), ncol = length(hetero_sd))
+  }
+  vapply(
+    seq_len(ncol(wi)),
+    function(j) {
+      w <- wi[, j]
+      sum(pi * w) / sum(w)
+    },
+    numeric(1)
+  )
+}
+
+#' Trial-level IF coordinates and the two pooling denominators
+#'
+#' `pi` is the trial information fraction (same under both weighting schemes).
+#' Combined denominator is \eqn{\mathrm{Var}(m_j)=1/\sum_g 1/\sigma_{gj}^2},
+#' the overall-block sampling variance
+#' \eqn{(1-\pi_j)^2\sigma_{Aj}^2+\pi_j^2\sigma_{Bj}^2}.
+#' Interaction denominator is \eqn{\sigma_{Aj}^2+\sigma_{Bj}^2=\mathrm{Var}(g_j)}.
+#' Weights are \eqn{w_j=1/(\tau^2+v_j)} at a supplied heterogeneity SD.
+#' @noRd
+overall_ifrac_trial_components <- function(data,
+                                           trial_var,
+                                           subgroup_var,
+                                           reference,
+                                           ifrac_var,
+                                           contrast_sep = "-") {
+  prep <- overall_ifrac_prepare_trials(
+    data = data,
+    trial_var = trial_var,
+    subgroup_var = subgroup_var,
+    reference = reference,
+    ifrac_var = ifrac_var,
+    contrast_sep = contrast_sep
+  )
+  d <- prep$data
+  trials <- prep$trials
+  pi <- unname(prep$pi)
+  reference <- prep$reference
+
+  den_overall <- vapply(
+    trials,
+    function(tr) {
+      ix <- d[[trial_var]] == tr
+      vi <- pmax(as.numeric(d$vi[ix]), 1e-12)
+      1 / sum(1 / vi)
+    },
+    numeric(1)
+  )
+  den_interaction <- vapply(
+    trials,
+    function(tr) {
+      ix <- d[[trial_var]] == tr
+      sum(d$vi[ix])
+    },
+    numeric(1)
+  )
+  max_vi <- vapply(
+    trials,
+    function(tr) {
+      max(d$vi[d[[trial_var]] == tr], na.rm = TRUE)
+    },
+    numeric(1)
+  )
+
+  data.frame(
+    trial = as.character(trials),
+    pi = as.numeric(pi),
+    den_overall = unname(as.numeric(den_overall)),
+    den_interaction = unname(as.numeric(den_interaction)),
+    max_vi = unname(as.numeric(max_vi)),
+    stringsAsFactors = FALSE
+  )
+}
+
+#' @noRd
+overall_ifrac_compute <- function(data,
+                                  trial_var,
+                                  subgroup_var,
+                                  reference,
+                                  ifrac_var,
+                                  tau,
+                                  contrast_sep = "-") {
+  comp <- overall_ifrac_trial_components(
+    data = data,
+    trial_var = trial_var,
+    subgroup_var = subgroup_var,
+    reference = reference,
+    ifrac_var = ifrac_var,
+    contrast_sep = contrast_sep
+  )
+  overall_ifrac_weighted_pool(
+    pi = comp$pi,
+    den = comp$den_overall,
+    hetero_sd = tau
+  )
+}
+
+#' Interaction-IF weights: inverse of tau_gamma^2 + subgroup sampling variances
+#' @noRd
+interaction_ifrac_compute <- function(data,
+                                      trial_var,
+                                      subgroup_var,
+                                      reference,
+                                      ifrac_var,
+                                      tau_gamma,
+                                      contrast_sep = "-") {
+  comp <- overall_ifrac_trial_components(
+    data = data,
+    trial_var = trial_var,
+    subgroup_var = subgroup_var,
+    reference = reference,
+    ifrac_var = ifrac_var,
+    contrast_sep = contrast_sep
+  )
+  overall_ifrac_weighted_pool(
+    pi = comp$pi,
+    den = comp$den_interaction,
+    hetero_sd = tau_gamma
+  )
+}
+
+#' Posterior draws of interaction heterogeneity (trial ifrac2 SD)
+#' @noRd
+comparison_tau_gamma_samples <- function(fit, ifrac_var, trial_var = NULL) {
+  st <- attr(fit, "interactmeta", exact = TRUE)
+  if (is.null(trial_var) || !nzchar(trial_var)) {
+    trial_var <- if (!is.null(st) && !is.null(st$trial_var)) st$trial_var else "trial"
+  }
+  subgroup <- sub("^ifrac_", "", ifrac_var)
+  interaction_param <- paste0("Interaction_", subgroup)
+  legacy_ifrac2_param <- paste0("ifrac2_", subgroup)
+  specs <- comparison_heterogeneity_specs(fit, trial_var = trial_var, component = "slope")
+  if (!nrow(specs)) {
+    stop(
+      "No interaction heterogeneity (`Interaction_*` / `ifrac2_*` slope SD) found in the fit.",
+      call. = FALSE
+    )
+  }
+  hit <- specs$parameter %in% c(interaction_param, legacy_ifrac2_param)
+  if (!any(hit)) {
+    hit <- specs$type == "slope"
+    if (!any(hit)) {
+      stop(
+        sprintf(
+          "No slope heterogeneity parameter for `%s`; available: %s.",
+          interaction_param,
+          paste(specs$parameter, collapse = ", ")
+        ),
+        call. = FALSE
+      )
+    }
+    ix <- which(hit)[[1L]]
+  } else {
+    ix <- which(hit)[[1L]]
+  }
+  comparison_sd_samples(fit, specs$hypothesis[[ix]])
+}
+
+#' @noRd
+overall_ifrac_weight_label <- function(ifrac = c("interaction", "overall")) {
+  ifrac <- match.arg(ifrac)
+  if (identical(ifrac, "interaction")) {
+    "Interaction-weighted information fraction"
+  } else {
+    "Combined-weighted information fraction"
+  }
+}
+
+#' Short row label for [print.interactmeta_overall_ifrac()] tables
+#' @noRd
+overall_ifrac_print_row_label <- function(ifrac = c("interaction", "overall")) {
+  ifrac <- match.arg(ifrac)
+  if (identical(ifrac, "interaction")) {
+    "interaction-weighted"
+  } else {
+    "combined-weighted"
+  }
+}
+
+#' Trial-level information fractions used in the overall IF weights
+#' @noRd
+overall_ifrac_trial_pi <- function(data,
+                                   trial_var,
+                                   subgroup_var,
+                                   reference,
+                                   ifrac_var,
+                                   contrast_sep = "-") {
+  d <- data[
+    is_ifrac_component_row(data[[subgroup_var]], contrast_sep = contrast_sep),
+    ,
+    drop = FALSE
+  ]
+  trials <- unique(as.character(d[[trial_var]]))
+  data.frame(
+    trial = trials,
+    pi = vapply(
+      trials,
+      function(tr) {
+        d[[ifrac_var]][d[[trial_var]] == tr][[1]]
+      },
+      numeric(1)
+    ),
+    stringsAsFactors = FALSE
+  )
+}
+
+#' Draws plus metadata for plotting
+#' @noRd
+overall_ifrac_bundle <- function(object,
+                                 fit = NULL,
+                                 tau = NULL,
+                                 tau_gamma = NULL,
+                                 ifrac = c("interaction", "overall"),
+                                 reference = NULL,
+                                 trial = "study",
+                                 subgroup = "level",
+                                 ifrac_var = NULL,
+                                 contrast_sep = "-",
+                                 prob = 0.95,
+                                 ...) {
+  ifrac <- match.arg(ifrac)
+  if (inherits(object, "interactmeta_overall_ifrac")) {
+    return(list(
+      draws = as.numeric(object),
+      trial_pi = attr(object, "trial_pi", exact = TRUE),
+      reference = attr(object, "reference", exact = TRUE),
+      ifrac_var = attr(object, "ifrac_var", exact = TRUE),
+      subgroup_label = attr(object, "subgroup_label", exact = TRUE),
+      n_trials = attr(object, "n_trials", exact = TRUE),
+      summary = attr(object, "summary", exact = TRUE),
+      prob = attr(object, "prob", exact = TRUE) %||% prob,
+      ifrac = attr(object, "ifrac", exact = TRUE) %||% "interaction",
+      fit = attr(object, "interactmeta", exact = TRUE)
+    ))
+  }
+
+  if (is.numeric(object) && !is.data.frame(object) && !inherits(object, "interactmeta_overall_ifrac")) {
+    draws <- as.numeric(object)
+    if (!length(draws) || !all(is.finite(draws))) {
+      stop("`object` must be a finite numeric vector of overall IF draws.", call. = FALSE)
+    }
+    summ <- overall_ifrac_summary_df(draws, prob = prob)
+    return(list(
+      support = draws,
+      trial_pi = NULL,
+      reference = reference,
+      ifrac_var = ifrac_var,
+      subgroup_label = overall_ifrac_subgroup_label(ifrac_var),
+      n_trials = NA_integer_,
+      summary = summ,
+      prob = prob,
+      ifrac = ifrac
+    ))
+  }
+
+  if (is_comparison_fit(object)) {
+    check_comparison_fit(fit)
+    st <- attr(object, "interactmeta", exact = TRUE)
+    trial_var <- st$trial_var %||% interactmeta_study_column()
+    subgroup_var <- st$subgroup_var %||% interactmeta_level_column()
+    ref <- st$reference
+    d <- st$data_fit
+    if (is.null(d) && !is.null(st$ifrac_data)) {
+      d <- st$ifrac_data
+      if (is.null(ifrac_var)) {
+        ifrac_var <- st$ifrac_var
+        if (is.null(ifrac_var) || !ifrac_var %in% names(d)) {
+          ifrac_var <- detect_ifrac_vars(d)[[1]]
+        }
+      }
+    } else if (is.null(ifrac_var)) {
+      ifrac_var <- st$ifrac_vars_std[[1]]
+      if (is.null(ifrac_var) && !is.null(st$ifrac_var)) {
+        ifrac_var <- st$ifrac_var
+      }
+      if (is.null(ifrac_var) || !ifrac_var %in% names(d)) {
+        ifrac_var <- detect_ifrac_vars(d)[[1]]
+      }
+    }
+    draws <- overall_ifrac_from_fit(
+      object,
+      ifrac_var = ifrac_var,
+      ifrac = ifrac,
+      summary = FALSE,
+      prob = prob
+    )
+    # Prefer attributes already attached by overall_ifrac_from_fit
+    trial_pi <- attr(draws, "trial_pi", exact = TRUE)
+    if (is.null(trial_pi)) {
+      trial_pi <- overall_ifrac_trial_pi(
+        d,
+        trial_var = trial_var,
+        subgroup_var = subgroup_var,
+        reference = ref,
+        ifrac_var = ifrac_var
+      )
+    }
+    summ <- attr(draws, "summary", exact = TRUE)
+    if (is.null(summ)) {
+      summ <- overall_ifrac_summary_df(draws, prob = prob)
+    }
+    return(list(
+      support = draws,
+      trial_pi = trial_pi,
+      reference = ref,
+      ifrac_var = ifrac_var,
+      subgroup_label = overall_ifrac_subgroup_label(ifrac_var, interactmeta = st),
+      n_trials = if (is.data.frame(trial_pi)) nrow(trial_pi) else length(trial_pi),
+      summary = summ,
+      prob = prob,
+      ifrac = ifrac,
+      fit = object
+    ))
+  }
+
+  ref <- reference
+  if (is.null(ref) && "reference" %in% names(object)) {
+    ref <- unique(object$reference)
+    ref <- ref[!is.na(ref) & nzchar(ref)]
+    if (length(ref) == 1L) {
+      ref <- ref[[1]]
+    }
+  }
+  if (is.null(ifrac_var)) {
+    ifrac_var <- detect_ifrac_vars(object)[[1]]
+  }
+  draws <- overall_ifrac_from_data(
+    object,
+    fit = fit,
+    tau = tau,
+    tau_gamma = tau_gamma,
+    ifrac = ifrac,
+    reference = ref,
+    trial = trial,
+    subgroup = subgroup,
+    ifrac_var = ifrac_var,
+    contrast_sep = contrast_sep,
+    summary = FALSE,
+    prob = prob
+  )
+  trial_pi <- overall_ifrac_trial_pi(
+    object,
+    trial_var = trial,
+    subgroup_var = subgroup,
+    reference = ref,
+    ifrac_var = ifrac_var,
+    contrast_sep = contrast_sep
+  )
+  list(
+    support = draws,
+    trial_pi = trial_pi,
+    reference = ref,
+    ifrac_var = ifrac_var,
+    subgroup_label = overall_ifrac_subgroup_label(ifrac_var),
+    n_trials = nrow(trial_pi),
+    summary = overall_ifrac_summary_df(draws, prob = prob),
+    prob = prob,
+    ifrac = ifrac
+  )
+}
+
+#' @noRd
+overall_ifrac_summary_df <- function(draws, prob = 0.95, weight = NULL) {
+  if (is.null(weight)) {
+    weight <- attr(draws, ".weight", exact = TRUE)
+  }
+  mom <- comparison_draw_moments(as.numeric(draws), prob = prob, weight = weight)
+  data.frame(
+    estimate = mom$estimate,
+    median = mom$median,
+    mean = mom$mean,
+    sd = mom$sd,
+    lci = mom$lci,
+    uci = mom$uci,
+    prob = mom$prob,
+    stringsAsFactors = FALSE
+  )
+}
+
+#' Align quadrature node weights with IF draws from the same fit
+#' @noRd
+interactmeta_ifrac_draw_weights <- function(fit, draws) {
+  w <- as.data.frame(fit$support)$.weight
+  if (is.null(w)) {
+    return(NULL)
+  }
+  if (length(w) == length(draws)) {
+    return(as.numeric(w))
+  }
+  NULL
+}
+
+#' One-line summary for overall-IF plot captions (IF %, interval, study count)
+#' @noRd
+overall_ifrac_footnote <- function(summary,
+                                   prob = NULL,
+                                   n_trials = NULL,
+                                   digits = 2,
+                                   plugin = FALSE,
+                                   ifrac = c("interaction", "overall")) {
+  ifrac <- match.arg(ifrac)
+  if (is.null(prob)) {
+    prob <- if (!is.null(summary$prob)) summary$prob[[1L]] else 0.95
+  }
+  pct <- function(x) {
+    format(
+      round(100 * as.numeric(x), digits),
+      nsmall = digits,
+      trim = TRUE
+    )
+  }
+  est_pct <- pct(summary$estimate)
+  has_int <- !isTRUE(plugin) &&
+    "lci" %in% names(summary) &&
+    "uci" %in% names(summary) &&
+    is.finite(as.numeric(summary$lci)[[1L]]) &&
+    is.finite(as.numeric(summary$uci)[[1L]])
+  out <- paste0(overall_ifrac_weight_label(ifrac), ": ", est_pct, "%")
+  if (has_int) {
+    out <- paste0(
+      out,
+      " [",
+      pct(summary$lci),
+      "%, ",
+      pct(summary$uci),
+      "%]"
+    )
+  } else {
+    out <- paste0(out, " (at fitted ", "\u03c4", ")")
+  }
+  if (!is.null(n_trials) && !is.na(n_trials)) {
+    out <- paste0(out, " \u00b7 k = ", n_trials, " studies")
+  }
+  out
+}
+
+#' @noRd
+overall_ifrac_footnote_bundle <- function(bundle, digits = 2) {
+  plugin <- FALSE
+  if (!is.null(bundle$fit)) {
+    plugin <- isTRUE(interactmeta_ifrac_is_plugin(bundle$fit))
+  }
+  overall_ifrac_footnote(
+    summary = bundle$summary,
+    prob = bundle$prob %||% 0.95,
+    n_trials = bundle$n_trials,
+    digits = digits,
+    plugin = plugin,
+    ifrac = bundle$ifrac %||% "interaction"
+  )
+}
+
+#' @noRd
+new_interactmeta_overall_ifrac <- function(draws, bundle, prob = 0.95) {
+  obj <- draws
+  class(obj) <- c("interactmeta_overall_ifrac", "numeric")
+  attr(obj, "trial_pi") <- bundle$trial_pi
+  attr(obj, "summary") <- bundle$summary
+  attr(obj, "reference") <- bundle$reference
+  attr(obj, "ifrac_var") <- bundle$ifrac_var
+  attr(obj, "subgroup_label") <- bundle$subgroup_label
+  attr(obj, "n_trials") <- bundle$n_trials
+  attr(obj, "prob") <- prob
+  attr(obj, "ifrac") <- bundle$ifrac %||% "interaction"
+  attr(obj, "interactmeta") <- bundle$fit
+  obj
+}
+
+#' @noRd
+overall_ifrac_result <- function(draws, summary = FALSE, prob = 0.95, bundle = NULL) {
+  if (summary) {
+    return(overall_ifrac_summary_df(draws, prob = prob))
+  }
+  if (is.null(bundle)) {
+    bundle <- list(
+      support = draws,
+      trial_pi = NULL,
+      reference = NULL,
+      ifrac_var = NULL,
+      subgroup_label = NULL,
+      n_trials = NA_integer_,
+      summary = overall_ifrac_summary_df(draws, prob = prob),
+      prob = prob
+    )
+  }
+  new_interactmeta_overall_ifrac(draws, bundle = bundle, prob = prob)
+}
+
+#' Print overall information fraction summary
+#'
+#' @param x A `interactmeta_overall_ifrac` object.
+#' @param digits Decimal places (default `2`).
+#' @param ... Ignored.
+#'
+#' @export
+print.interactmeta_overall_ifrac <- function(x, digits = 2, ...) {
+  summ <- attr(x, "summary", exact = TRUE)
+  prob <- attr(x, "prob", exact = TRUE) %||% 0.95
+  if (is.null(summ)) {
+    summ <- overall_ifrac_summary_df(x, prob = prob)
+  }
+  scheme <- attr(x, "ifrac", exact = TRUE) %||% "interaction"
+  style <- interactmeta_interval_style(x)
+  plugin_fit <- identical(style, "frequentist")
+  summ <- as.data.frame(summ, stringsAsFactors = FALSE)
+  summ$IF <- overall_ifrac_print_row_label(scheme)
+  comparison_print_effects_table(
+    summ,
+    digits = digits,
+    prob = prob,
+    id_cols = "IF",
+    title = NULL,
+    interval_scope = "single",
+    style = style
+  )
+  if (plugin_fit) {
+    tau_lab <- if (identical(scheme, "interaction")) {
+      paste0(
+        "at fitted interaction heterogeneity ",
+        "\u03c4",
+        "_",
+        "\u03b3"
+      )
+    } else {
+      paste0("at fitted heterogeneity ", "\u03c4")
+    }
+    cat("(", tau_lab, ")\n", sep = "")
+  }
+  invisible(x)
+}
+
+#' @noRd
+`%||%` <- function(x, y) if (is.null(x)) y else x
+
+# ---- prepare_ifrac_input.R ----
+is_ifrac_output <- function(x) {
+  if (!is.data.frame(x)) {
+    return(FALSE)
+  }
+  cols <- grep("^ifrac_", names(x), value = TRUE)
+  cols <- cols[!grepl("^ifrac2_", cols)]
+  length(cols) > 0L
+}
+
+prepare_ifrac_input <- function(x,
+                                reference = NULL,
+                                trial = "study",
+                                subgroup = "level",
+                                contrast = "all",
+                                contrast_sep = "-",
+                                big_var = 100^2,
+                                include_combined = FALSE,
+                                include_interaction = FALSE) {
+  if (is_ifrac_output(x)) {
+    out <- tibble::as_tibble(x)
+    # Already designed: reference must agree with the stored design (ifrac_<nonref>).
+    ref <- interactmeta_reference(out, reference = reference, subgroup_var = subgroup)
+    out <- interactmeta_ensure_reference_column(out, ref)
+    # Reject ifrac_<reference> columns (pi must be non-reference only).
+    ifrac_cols <- grep("^ifrac_", names(out), value = TRUE)
+    ifrac_cols <- ifrac_cols[!grepl("^ifrac2_", ifrac_cols)]
+    bad <- ifrac_cols[sub("^ifrac_", "", ifrac_cols) == ref]
+    if (length(bad)) {
+      stop(
+        "Design column(s) ",
+        paste(bad, collapse = ", "),
+        " name the reference subgroup `",
+        ref,
+        "`. CAMS `ifrac_*` columns must be non-reference only ",
+        "(pi = IF_nonref, reference weight = 1 - pi).",
+        call. = FALSE
+      )
+    }
+    level_col <- interactmeta_resolve_level_col(out, fallback = subgroup)
+    return(add_ifrac2_design(out, subgroup_col = level_col))
+  }
+
+  if (is.null(reference)) {
+    stop(
+      "`reference` is required when `x` is not already output from `ifrac()`.",
+      call. = FALSE
+    )
+  }
+
+  designed <- ifrac(
+    x,
+    trial = trial,
+    subgroup = subgroup,
+    reference = reference,
+    contrast = contrast,
+    contrast_sep = contrast_sep,
+    big_var = big_var,
+    include_combined = include_combined,
+    include_interaction = include_interaction
+  )
+  level_col <- interactmeta_resolve_level_col(designed, fallback = subgroup)
+  add_ifrac2_design(designed, subgroup_col = level_col)
 }

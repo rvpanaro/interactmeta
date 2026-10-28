@@ -1,354 +1,3 @@
-# Panel assembly / drawing lives in R/forestplot_metafor.R (metafor::forest).
-# ggplot helpers below are retained only for label / colour utilities used elsewhere.
-
-#' @noRd
-forestplot_ggplot_panel <- function(panel,
-                                    row_labels,
-                                    xlim,
-                                    xticks,
-                                    xlab = "",
-                                    title = NULL,
-                                    estimate_col = "yi",
-                                    base_size = interactmeta_forest_base_size(),
-                                    pointsize = interactmeta_forest_pointsize(),
-                                    digits = 2,
-                                    exponentiate = FALSE,
-                                    nullval = 0,
-                                    show_left = TRUE,
-                                    left_names = character(),
-                                    left_headings = character(),
-                                    plot.margin = interactmeta_forestplot_margin(),
-                                    favours = NULL,
-                                    ...) {
-  n <- nrow(panel)
-  if (!n) {
-    stop("Forest panel data is empty.", call. = FALSE)
-  }
-
-  est_raw <- panel[[estimate_col]]
-  if (is.null(est_raw)) {
-    est_raw <- panel$yi
-  }
-  lci_raw <- panel$ci.lb
-  uci_raw <- panel$ci.ub
-
-  if (isTRUE(exponentiate)) {
-    est <- exp(est_raw)
-    lci <- exp(lci_raw)
-    uci <- exp(uci_raw)
-  } else {
-    est <- est_raw
-    lci <- lci_raw
-    uci <- uci_raw
-  }
-
-  row_id <- seq_len(n)
-  lab_heading <- if ("heading" %in% names(row_labels)) {
-    as.character(row_labels$heading)
-  } else {
-    rep("", n)
-  }
-  lab_label <- if ("label" %in% names(row_labels)) {
-    as.character(row_labels$label)
-  } else {
-    rep("", n)
-  }
-  lab_heading[is.na(lab_heading)] <- ""
-  lab_label[is.na(lab_label)] <- ""
-  # Placeholder blanks (ZWSP / legacy NBSP) must not appear in axis text
-  lab_label[comparison_forest_is_blank_row_label(lab_label)] <- ""
-  lab_heading[comparison_forest_is_blank_row_label(lab_heading)] <- ""
-
-  y_lab <- forestplot_compose_row_label(lab_heading, lab_label, group_by_heading = TRUE)
-  y_lab[!nzchar(y_lab)] <- ""
-
-  if (isTRUE(show_left) && length(left_names)) {
-    y_lab <- forestplot_prefix_left_columns(
-      y_lab = y_lab,
-      panel = panel,
-      left_names = left_names
-    )
-  }
-
-  # Numeric y lets identical labels repeat (study vs shrinkage rows).
-  # Row 1 at the top (y = n), last row at the bottom (y = 1).
-  y_pos <- (n + 1) - row_id
-  y_breaks <- y_pos
-  y_labels <- y_lab
-
-  shape <- if ("shape" %in% names(panel) && length(panel$shape) == n) {
-    as.integer(panel$shape)
-  } else {
-    rep(22L, n)
-  }
-  colour <- if ("colour" %in% names(panel) && length(panel$colour) == n) {
-    as.character(panel$colour)
-  } else {
-    rep(comparison_forest_marker_colour(), n)
-  }
-  fill <- if ("fill" %in% names(panel) && length(panel$fill) == n) {
-    as.character(panel$fill)
-  } else {
-    rep("white", n)
-  }
-  stroke_v <- if ("stroke" %in% names(panel) && length(panel$stroke) == n) {
-    as.numeric(panel$stroke)
-  } else {
-    rep(as.numeric(interactmeta_forest_stroke()), n)
-  }
-  pscale <- if ("point_scale" %in% names(panel) && length(panel$point_scale) == n) {
-    ps <- as.numeric(panel$point_scale)
-    ps[is.na(ps)] <- 1
-    ps
-  } else {
-    rep(1, n)
-  }
-  shape[is.na(shape)] <- 22L
-  colour[is.na(colour) | !nzchar(colour)] <- comparison_forest_marker_colour()
-  fill[is.na(fill) | !nzchar(fill)] <- "white"
-  stroke_v[!is.finite(stroke_v)] <- as.numeric(interactmeta_forest_stroke())
-
-  pt_size <- suppressWarnings(as.numeric(pointsize)[1])
-  if (!is.finite(pt_size) || pt_size <= 0) {
-    pt_size <- as.numeric(interactmeta_forest_pointsize())
-  }
-
-  df <- data.frame(
-    row_id = row_id,
-    y = y_pos,
-    estimate = est,
-    lci = lci,
-    uci = uci,
-    shape = shape,
-    colour = colour,
-    fill = fill,
-    stroke = stroke_v,
-    pointsize = pscale * pt_size,
-    stringsAsFactors = FALSE
-  )
-
-  df$ci_text <- forestplot_format_ci_text(
-    estimate = df$estimate,
-    lci = df$lci,
-    uci = df$uci,
-    digits = digits
-  )
-
-  if (length(xlim) != 2L || any(!is.finite(xlim))) {
-    stop("`xlim` must be a length-2 finite numeric vector.", call. = FALSE)
-  }
-  if (is.null(xticks) || !length(xticks)) {
-    xticks <- forestplot_nice_axis(
-      xlim,
-      exponentiate = FALSE,
-      nullval = nullval
-    )$xticks
-  }
-
-  line_size <- forestplot_base_line_size(base_size)
-  const <- interactmeta_plot_constants()
-  style_cols <- forestplot_style_colours()
-  null_col <- style_cols$null_line
-  null_lw <- line_size * 0.7
-  p <- ggplot2::ggplot(df, ggplot2::aes(y = .data$y)) +
-    ggplot2::geom_vline(
-      xintercept = nullval,
-      colour = null_col,
-      linewidth = null_lw
-    ) +
-    ggplot2::geom_errorbar(
-      data = df[is.finite(df$lci) & is.finite(df$uci), , drop = FALSE],
-      ggplot2::aes(
-        xmin = .data$lci,
-        xmax = .data$uci,
-        colour = .data$colour
-      ),
-      orientation = "y",
-      width = 0.35,
-      linewidth = line_size,
-      na.rm = TRUE,
-      show.legend = FALSE
-    ) +
-    ggplot2::geom_point(
-      data = df[is.finite(df$estimate), , drop = FALSE],
-      ggplot2::aes(
-        x = .data$estimate,
-        shape = .data$shape,
-        colour = .data$colour,
-        fill = .data$fill,
-        size = .data$pointsize,
-        stroke = .data$stroke / 10
-      ),
-      na.rm = TRUE,
-      show.legend = FALSE
-    ) +
-    ggplot2::scale_shape_identity() +
-    ggplot2::scale_colour_identity() +
-    ggplot2::scale_fill_identity() +
-    ggplot2::scale_size_identity() +
-    ggplot2::scale_x_continuous(
-      limits = xlim,
-      breaks = xticks,
-      expand = c(0, 0),
-      trans = if (isTRUE(exponentiate)) "log" else "identity"
-    ) +
-    ggplot2::scale_y_continuous(
-      breaks = y_breaks,
-      labels = if (isTRUE(show_left)) y_labels else NULL,
-      expand = ggplot2::expansion(add = 0.6)
-    ) +
-    ggplot2::labs(
-      x = if (is.null(xlab) || !nzchar(as.character(xlab)[[1]])) NULL else xlab,
-      y = NULL,
-      title = title
-    ) +
-    ggplot2::theme_classic(base_size = base_size, base_family = "sans") +
-    ggplot2::theme(
-      axis.line.x = ggplot2::element_line(colour = const$axis_line, linewidth = const$line_hair),
-      axis.line.y = ggplot2::element_blank(),
-      axis.ticks.x = ggplot2::element_line(colour = const$axis_line, linewidth = 0.3),
-      axis.ticks.y = ggplot2::element_blank(),
-      axis.text.x = ggplot2::element_text(
-        size = base_size * 0.7,
-        colour = const$axis_line
-      ),
-      axis.text.y = if (isTRUE(show_left)) {
-        ggplot2::element_text(
-          hjust = 1,
-          size = base_size * 0.9,
-          colour = const$axis_line,
-          family = "sans",
-          margin = ggplot2::margin(r = 4, unit = "pt")
-        )
-      } else {
-        ggplot2::element_blank()
-      },
-      axis.title.x = ggplot2::element_text(
-        size = base_size * 0.95,
-        colour = const$axis_line,
-        margin = ggplot2::margin(t = 4, unit = "pt")
-      ),
-      plot.title = ggplot2::element_text(
-        hjust = 0.5,
-        face = "bold",
-        size = base_size,
-        colour = const$axis_line,
-        margin = ggplot2::margin(b = 4, unit = "pt")
-      ),
-      plot.background = ggplot2::element_rect(fill = "white", colour = NA),
-      panel.background = ggplot2::element_rect(fill = "white", colour = NA),
-      plot.margin = if (inherits(plot.margin, "margin")) {
-        plot.margin
-      } else {
-        interactmeta_forestplot_margin()
-      }
-    )
-
-  if (!is.null(favours) && length(favours) >= 2L) {
-    p <- forestplot_add_favours(
-      p,
-      favours = favours,
-      xlim = xlim,
-      nullval = nullval,
-      base_size = base_size,
-      exponentiate = exponentiate
-    )
-  }
-
-  p
-}
-
-#' Left meta column(s) for forest plots (IF, N, row labels)
-#' @noRd
-forestplot_ggplot_meta_panel <- function(panel,
-                                         row_labels,
-                                         left_names,
-                                         left_headings = character(),
-                                         base_size = interactmeta_forest_base_size(),
-                                         plot.margin = interactmeta_forestplot_margin(),
-                                         title_spacer = NULL,
-                                         ...) {
-  n <- nrow(panel)
-  y_pos <- (n + 1) - seq_len(n)
-  label_txt <- forestplot_meta_label_strings(panel, row_labels, left_names)
-
-  df <- data.frame(
-    y = y_pos,
-    label = label_txt,
-    stringsAsFactors = FALSE
-  )
-  const <- interactmeta_plot_constants()
-  spacer <- if (!is.null(title_spacer) && nzchar(as.character(title_spacer)[[1]])) {
-    as.character(title_spacer)[[1]]
-  } else {
-    " "
-  }
-
-  ggplot2::ggplot(df, ggplot2::aes(x = 0, y = .data$y, label = .data$label)) +
-    ggplot2::geom_text(
-      hjust = 0,
-      size = base_size * 0.9 / ggplot2::.pt,
-      colour = const$axis_line,
-      family = "mono",
-      na.rm = TRUE
-    ) +
-    ggplot2::scale_x_continuous(limits = c(0, 1), expand = c(0, 0)) +
-    ggplot2::scale_y_continuous(
-      breaks = y_pos,
-      expand = ggplot2::expansion(add = 0.6)
-    ) +
-    ggplot2::labs(x = NULL, y = NULL, title = spacer) +
-    ggplot2::theme_void(base_size = base_size) +
-    ggplot2::theme(
-      plot.title = ggplot2::element_text(
-        hjust = 0.5,
-        face = "bold",
-        size = base_size,
-        colour = "white",
-        margin = ggplot2::margin(b = 4, unit = "pt")
-      ),
-      plot.margin = if (inherits(plot.margin, "margin")) {
-        plot.margin
-      } else {
-        interactmeta_forestplot_margin()
-      }
-    )
-}
-
-#' Shared left-column strings for forest meta panel width / labels
-#' @noRd
-forestplot_meta_label_strings <- function(panel, row_labels, left_names) {
-  n <- nrow(panel)
-  lab_heading <- if ("heading" %in% names(row_labels)) {
-    as.character(row_labels$heading)
-  } else {
-    rep("", n)
-  }
-  lab_label <- if ("label" %in% names(row_labels)) {
-    as.character(row_labels$label)
-  } else {
-    rep("", n)
-  }
-  lab_heading[is.na(lab_heading)] <- ""
-  lab_label[is.na(lab_label)] <- ""
-  lab_label[comparison_forest_is_blank_row_label(lab_label)] <- ""
-  lab_heading[comparison_forest_is_blank_row_label(lab_heading)] <- ""
-  row_lab <- forestplot_compose_row_label(lab_heading, lab_label, group_by_heading = TRUE)
-
-  cols <- left_names[left_names %in% names(panel)]
-  meta_bits <- lapply(cols, function(nm) {
-    x <- as.character(panel[[nm]])
-    x[is.na(x)] <- ""
-    width <- max(1L, max(nchar(x, type = "width"), na.rm = TRUE))
-    format(x, width = width, justify = "right")
-  })
-  if (length(meta_bits)) {
-    left_txt <- do.call(paste, c(meta_bits, list(sep = "  ")))
-    paste0(left_txt, "   ", row_lab)
-  } else {
-    row_lab
-  }
-}
 
 #' Blank repeated group headings so trials (or marginal groups) appear once
 #'
@@ -405,32 +54,6 @@ forestplot_compose_row_label <- function(heading, label, group_by_heading = FALS
   )
 }
 
-#' Prefix y labels with left-column metadata (IF, N) without pipe clutter
-#' @noRd
-forestplot_prefix_left_columns <- function(y_lab, panel, left_names) {
-  out <- y_lab
-  for (nm in left_names) {
-    if (!nm %in% names(panel)) {
-      next
-    }
-    prefix <- as.character(panel[[nm]])
-    prefix[is.na(prefix)] <- ""
-    keep <- nzchar(prefix)
-    if (!any(keep)) {
-      next
-    }
-    width <- max(nchar(prefix[keep], type = "width"), na.rm = TRUE)
-    prefix_fmt <- ifelse(
-      keep,
-      format(prefix, width = width, justify = "right"),
-      strrep(" ", width)
-    )
-    out <- paste0(prefix_fmt, "  ", out)
-    break
-  }
-  out
-}
-
 #' Marker / null-line colours (default forest chrome)
 #'
 #' Summary diamonds use blue via
@@ -457,27 +80,19 @@ forestplot_default_summary_colour <- function() {
 
 #' Reference-subgroup summary diamond colour
 #' @noRd
-forestplot_reference_summary_colour <- function() {
-  forestplot_default_summary_colour()
-}
+forestplot_reference_summary_colour <- forestplot_default_summary_colour
 
 #' Non-reference subgroup summary diamond colour
 #' @noRd
-forestplot_nonref_summary_colour <- function() {
-  forestplot_default_summary_colour()
-}
+forestplot_nonref_summary_colour <- forestplot_default_summary_colour
 
 #' Interaction-block summary diamond colour
 #' @noRd
-forestplot_interaction_summary_colour <- function() {
-  forestplot_default_summary_colour()
-}
+forestplot_interaction_summary_colour <- forestplot_default_summary_colour
 
 #' Combined-block summary diamond colour
 #' @noRd
-forestplot_overall_summary_colour <- function() {
-  forestplot_default_summary_colour()
-}
+forestplot_overall_summary_colour <- forestplot_default_summary_colour
 
 #' Summary diamond / prediction-bar colour for a forest block heading
 #'
@@ -625,6 +240,12 @@ forestplot_interaction_favours <- function(reference = NULL,
 #' Reference / first non-reference subgroup labels from a CAMS fit
 #' @noRd
 forestplot_fit_reference_nonref <- function(fit) {
+  if (interactmeta_is_non_cams_analysis(fit) && !is.null(fit$reference)) {
+    return(list(
+      reference = as.character(fit$reference)[[1L]],
+      nonref = as.character(fit$nonref %||% "")[[1L]]
+    ))
+  }
   st <- attr(fit, "interactmeta", exact = TRUE)
   empty <- list(reference = "", nonref = "")
   if (is.null(st)) {
@@ -762,164 +383,604 @@ forestplot_apply_journal_colours <- function(resultsA,
   list(resultsA = paint(resultsA), resultsB = paint(resultsB))
 }
 
-#' Format effect \[CI\] strings for the right-hand text column
+# ---- forestplot_layout.R ----
+#' Recommended figure dimensions for a forest plot
+#'
+#' Returns width and height in inches scaled to the number of layout rows
+#' (studies, pooled / prediction diamonds, subgroup headers), plus footnote
+#' lines and axis / favours chrome. Full forests use about **0.28 inches per
+#' content row**, **0.14 inches per footnote line**, and ~2.3 inches of chrome,
+#' capped at 24 inches.
+#'
+#' Height follows row count; the **auto-recommended width** (when `width =
+#' NULL`) is at least **2:1 width-to-height** so exports stay landscape.
+#' Passing an explicit `width` keeps that width unchanged (height still follows
+#' content). Set `width_height = FALSE` to skip widening the auto width.
+#'
+#' Use the returned sizes with `png()` / `pdf()` or **knitr** chunk options
+#' (`fig.width`, `fig.height`). Compute dimensions *before* opening the device
+#' or in a prior chunk, then pass them into the export / chunk options — the
+#' active device height is what prevents row overlap / cut-off.
+#'
+#' @param x A `forestplot()` result.
+#' @param width Target figure width in inches. When `NULL`, uses a size derived
+#'   from the number of rows and panels (including the width-to-height rule).
+#' @param width_height Target **width / height** ratio for the auto-recommended
+#'   width. Default `NULL` uses [forestplot_default_width_height_ratio()] (`2`).
+#'   `FALSE` disables widening.
+#'
+#' @return A list with elements `width`, `height`, `aspect` (width / height;
+#'   `2` is a 2:1 landscape figure),
+#'   `n_rows` (content / layout rows), `n_footnotes`, `n_chrome_in` (axis +
+#'   favours band in inches), and `formula` (character description of the
+#'   height calculation).
+#'
+#' @examples
+#' \dontrun{
+#' fp <- forestplot(fit)
+#' dims <- forestplot_height(fp, width = 10)
+#' png("forestplot.png", width = dims$width, height = dims$height,
+#'     units = "in", res = 300)
+#' forestplot_draw(fp)
+#' dev.off()
+#' }
+#'
+#' @seealso [forestplot_draw()], [forestplot()]
+#' @export
+forestplot_height <- function(x, width = 9.5, width_height = NULL) {
+  dims <- forestplot_figure_inches(x, width_height = width_height)
+  if (is.null(width)) {
+    width <- dims$width
+  }
+  if (!is.finite(width) || width <= 0) {
+    stop("`width` must be a positive finite number.", call. = FALSE)
+  }
+  # Height is driven by layout rows + footnotes, not by aspect with width.
+  height <- dims$height
+  height <- max(3, min(24, height))
+  list(
+    width = width,
+    height = height,
+    aspect = height / width,
+    n_rows = dims$n_rows,
+    n_footnotes = dims$n_footnotes %||% 0L,
+    n_chrome_in = dims$n_chrome_in %||% NA_real_,
+    formula = dims$formula %||% NA_character_
+  )
+}
+
+#' Draw a forest plot on the active graphics device
+#'
+#' Forest plots are drawn with [metafor::forest()] / [forestplot::forestplot()].
+#' When `typography_auto = TRUE` was requested, sizes may be re-fit if the
+#' device has changed.
+#'
+#' @param x A `forestplot()` result.
+#'
+#' @return `x`, invisibly.
+#'
+#' @seealso [forestplot_height()], [forestplot()]
+#' @keywords internal
+#' @export
+forestplot_draw <- function(x) {
+  if (forestplot_is_metafor_engine(x)) {
+    x <- forestplot_refit_typography(x)
+    if (forestplot_has_graphics_device()) {
+      grDevices::dev.hold()
+      on.exit(grDevices::dev.flush(), add = TRUE)
+    }
+    forestplot_metafor_draw(x)
+    return(invisible(x))
+  }
+
+  # Legacy ggplot / grid objects (if any)
+  x <- forestplot_refit_typography(x)
+  grob <- forestplot_as_grob(x)
+  dims <- forestplot_grob_inches(grob)
+  if (!all(is.finite(unlist(dims))) || dims$width <= 0 || dims$height <= 0) {
+    stop("Forest plot has non-finite grob dimensions.", call. = FALSE)
+  }
+
+  grid::grid.newpage()
+  dev_size <- grDevices::dev.size("in")
+  scale <- min(dev_size[1] / dims$width, dev_size[2] / dims$height)
+  w_npc <- (dims$width * scale) / dev_size[1]
+  h_npc <- (dims$height * scale) / dev_size[2]
+
+  x_left <- (1 - w_npc) / 2
+  y_bottom <- (1 - h_npc) / 2
+
+  vp <- grid::viewport(
+    x = x_left,
+    y = y_bottom,
+    width = w_npc,
+    height = h_npc,
+    just = c("left", "bottom")
+  )
+  grid::pushViewport(vp)
+  on.exit(grid::popViewport(), add = TRUE)
+  grid::grid.draw(grob)
+  invisible(x)
+}
+
+#' @param ... Ignored.
+#' @rdname forestplot_draw
+#' @export
+print.interactmeta_forestplot <- function(x, ...) {
+  forestplot_maybe_print(x)
+  invisible(x)
+}
+
 #' @noRd
-forestplot_format_ci_text <- function(estimate,
-                                      lci,
-                                      uci,
-                                      digits = 2,
-                                      ...) {
-  fmt <- function(x) {
-    ifelse(
-      is.finite(x),
-      format(round(x, digits), nsmall = digits, trim = TRUE),
-      ""
+forestplot_is_fitted <- function(fp) {
+  !is.null(attr(fp, "forestplot_fit_render", exact = TRUE))
+}
+
+#' @noRd
+forestplot_as_grob <- function(x) {
+  if (forestplot_is_metafor_engine(x)) {
+    stop(
+      "metafor-backed forest plots are drawn with `forestplot_draw()` / ",
+      "`print()` (base graphics), not as grid grobs.",
+      call. = FALSE
     )
   }
-  ok <- is.finite(estimate) & is.finite(lci) & is.finite(uci)
-  out <- rep("", length(estimate))
-  # Effect column format: "est [lower, upper]"
-  out[ok] <- paste0(fmt(estimate[ok]), " [", fmt(lci[ok]), ", ", fmt(uci[ok]), "]")
+  if (inherits(x, "grob")) {
+    return(x)
+  }
+  if (inherits(x, "ggplot")) {
+    return(ggplot2::ggplotGrob(x))
+  }
+  if (inherits(x, "patchwork")) {
+    return(patchwork::patchworkGrob(x))
+  }
+  if (is.list(x) && !is.null(x$figure) && inherits(x$figure, "grob")) {
+    return(x$figure)
+  }
+  if (is.list(x) && !is.null(x$plot) && inherits(x$plot, "ggplot")) {
+    gt <- ggplot2::ggplotGrob(x$plot)
+    return(forestplot_set_panel_height(gt, attr(x, "panel.height", exact = TRUE)))
+  }
+  stop(
+    "`x` must be a forest plot object, ggplot, patchwork, or grid grob.",
+    call. = FALSE
+  )
+}
+
+#' Default width-to-height ratio for recommended forest export size
+#' @export
+forestplot_default_width_height_ratio <- function() {
+  2
+}
+
+#' Widen `width` so width / height meets `width_height` (never shrinks height)
+#' @noRd
+forestplot_fit_width_to_height <- function(width, height, width_height = NULL) {
+  if (identical(width_height, FALSE)) {
+    return(width)
+  }
+  wh <- width_height %||% forestplot_default_width_height_ratio()
+  wh <- suppressWarnings(as.numeric(wh)[1L])
+  if (!is.finite(wh) || wh <= 0) {
+    return(width)
+  }
+  max(as.numeric(width)[1L], as.numeric(height)[1L] * wh)
+}
+
+#' Figure size in inches for forestplot_height()
+#' @noRd
+forestplot_figure_inches <- function(x, width_height = NULL) {
+  if (forestplot_is_metafor_engine(x)) {
+    n_rows <- forestplot_n_layout_rows(x)
+    n_panels <- forestplot_n_panels(x)
+    n_footnotes <- forestplot_n_footnote_lines(x)
+    has_favours <- isTRUE(attr(x, "has_favours", exact = TRUE)) ||
+      (!is.null(x$specs$favours) && length(x$specs$favours) >= 2L)
+    # Wide enough for study labels + forest + Effect text; leave room so
+    # wrapped footnotes are not clipped on the right.
+    width <- if (n_panels <= 1L) {
+      12.5
+    } else {
+      5.8 * n_panels + 1.6
+    }
+    # Content rows (studies + diamonds + subgroup headers + table header):
+    #   0.28 in each. Footnote lines sit in a tight band below the axis: 0.14 in
+    #   each. Chrome covers axis ticks, xlab, and favours (~2.0–2.3 in).
+    row_pitch <- 0.28
+    foot_pitch <- 0.14
+    # Reserve favours chrome even when favours are off so recommended height
+    # stays stable across `favours` / `type` toggles.
+    force(has_favours)
+    chrome <- 2.3
+    # +1 row of slack so the last Combined / Prediction diamond is not clipped.
+    height <- row_pitch * (n_rows + 1L) + foot_pitch * n_footnotes + chrome
+    height <- max(3.8, min(28, height))
+    formula <- sprintf(
+      "height = 0.28*(%d+1) + 0.14*%d + %.1f = %.2f",
+      n_rows, n_footnotes, chrome, height
+    )
+    width0 <- width
+    width <- forestplot_fit_width_to_height(
+      width = width,
+      height = height,
+      width_height = width_height
+    )
+    if (is.finite(width) && is.finite(width0) && width > width0 + 1e-9) {
+      wh <- width_height %||% forestplot_default_width_height_ratio()
+      formula <- paste0(
+        formula,
+        sprintf(
+          "; width = max(%.2f, %.2g*%.2f) = %.2f",
+          width0, wh, height, width
+        )
+      )
+    }
+    return(list(
+      width = width,
+      height = height,
+      n_rows = n_rows,
+      n_footnotes = n_footnotes,
+      n_chrome_in = chrome,
+      formula = formula
+    ))
+  }
+  out <- forestplot_grob_inches(forestplot_as_grob(x))
+  out$n_rows <- NA_integer_
+  out$n_footnotes <- 0L
+  out$n_chrome_in <- NA_real_
+  out$formula <- NA_character_
   out
 }
 
-#' Right-hand effect \[CI\] text column
+#' Number of wrapped footnote lines for height sizing
 #' @noRd
-forestplot_ggplot_ci_panel <- function(panel,
-                                       estimate_col = "yi",
-                                       digits = 2,
-                                       exponentiate = FALSE,
-                                       base_size = interactmeta_forest_base_size(),
-                                       plot.margin = interactmeta_forestplot_margin(),
-                                       title_spacer = NULL,
-                                       ...) {
-  n <- nrow(panel)
-  y_pos <- (n + 1) - seq_len(n)
-
-  est_raw <- panel[[estimate_col]]
-  if (is.null(est_raw)) {
-    est_raw <- panel$yi
+forestplot_n_footnote_lines <- function(x, wrap_at = 96L) {
+  specs <- x$specs
+  if (is.null(specs)) {
+    return(0L)
   }
-  lci_raw <- panel$ci.lb
-  uci_raw <- panel$ci.ub
-  if (isTRUE(exponentiate)) {
-    est <- exp(est_raw)
-    lci <- exp(lci_raw)
-    uci <- exp(uci_raw)
-  } else {
-    est <- est_raw
-    lci <- lci_raw
-    uci <- uci_raw
-  }
-
-  label_txt <- forestplot_format_ci_text(
-    estimate = est,
-    lci = lci,
-    uci = uci,
-    digits = digits
-  )
-
-  df <- data.frame(
-    y = y_pos,
-    label = label_txt,
-    stringsAsFactors = FALSE
-  )
-  const <- interactmeta_plot_constants()
-  spacer <- if (!is.null(title_spacer) && nzchar(as.character(title_spacer)[[1]])) {
-    as.character(title_spacer)[[1]]
-  } else {
-    " "
-  }
-
-  ggplot2::ggplot(df, ggplot2::aes(x = 1, y = .data$y, label = .data$label)) +
-    ggplot2::geom_text(
-      hjust = 1,
-      size = base_size * 0.88 / ggplot2::.pt,
-      colour = const$axis_line,
-      family = "mono",
-      na.rm = TRUE
-    ) +
-    ggplot2::scale_x_continuous(limits = c(0, 1), expand = c(0, 0)) +
-    ggplot2::scale_y_continuous(
-      breaks = y_pos,
-      expand = ggplot2::expansion(add = 0.6)
-    ) +
-    ggplot2::labs(x = NULL, y = NULL, title = spacer) +
-    ggplot2::theme_void(base_size = base_size) +
-    ggplot2::theme(
-      plot.title = ggplot2::element_text(
-        hjust = 0.5,
-        face = "bold",
-        size = base_size,
-        colour = "white",
-        margin = ggplot2::margin(b = 4, unit = "pt")
-      ),
-      plot.margin = if (inherits(plot.margin, "margin")) {
-        plot.margin
-      } else {
-        interactmeta_forestplot_margin()
-      }
-    )
+  length(forestplot_bayesmeta_footnote_lines(specs, wrap_at = wrap_at))
 }
 
-#' Add “Favours …” labels under the forest axis
+#' Number of forest panels on a forestplot object
 #' @noRd
-forestplot_add_favours <- function(p,
-                                   favours,
-                                   xlim,
-                                   nullval,
-                                   base_size,
-                                   exponentiate = FALSE) {
-  favours <- as.character(favours)
-  if (length(favours) < 2L) {
-    return(p)
+forestplot_n_panels <- function(x) {
+  panels <- attr(x, "panels", exact = TRUE)
+  if (is.list(panels) && length(panels)) {
+    return(length(panels))
   }
-  const <- interactmeta_plot_constants()
-  if (isTRUE(exponentiate)) {
-    # Geometric midpoints on the ratio scale
-    x_left <- exp((log(xlim[[1]]) + log(nullval)) / 2)
-    x_right <- exp((log(nullval) + log(xlim[[2]])) / 2)
+  if (!is.null(x$specs$panels)) {
+    return(length(x$specs$panels))
+  }
+  2L
+}
+
+#' Layout row count for height sizing (panel rows + subgroup headers / gaps)
+#'
+#' Counts panel data rows plus unique non-empty headings (and a table header
+#' row). Prefer this over the legacy metafor ylim span so bayesmeta forests
+#' size correctly when Combined includes both Overall and Prediction.
+#'
+#' @noRd
+forestplot_n_layout_rows <- function(x) {
+  specs <- x$specs
+  # Prefer draw panels from specs when multiple axis panels are present.
+  draw_panels <- specs$panels
+  if (is.list(draw_panels) && length(draw_panels) && is.data.frame(draw_panels[[1L]]) &&
+        !is.null(specs$panel_roles) &&
+        length(specs$panel_roles) == length(draw_panels) &&
+        length(draw_panels) > 1L) {
+    rl <- specs$row_labels
+    total <- 0L
+    for (i in seq_along(draw_panels)) {
+      rl_i <- if (is.list(rl) && !is.data.frame(rl)) rl[[i]] else rl
+      total <- total + forestplot_n_layout_rows_one(draw_panels[[i]], rl_i)
+    }
+    return(max(1L, total))
+  }
+
+  panels <- attr(x, "panels", exact = TRUE)
+  if (is.null(panels) || !length(panels)) {
+    panels <- draw_panels
+  }
+  if (!is.list(panels) || !length(panels) || !is.data.frame(panels[[1L]])) {
+    return(10L)
+  }
+  panel <- if (!is.null(draw_panels) && length(draw_panels) && is.data.frame(draw_panels[[1L]])) {
+    draw_panels[[1L]]
   } else {
-    x_left <- mean(c(xlim[[1]], nullval))
-    x_right <- mean(c(nullval, xlim[[2]]))
+    panels[[1L]]
   }
-  if (!is.finite(x_left) || !is.finite(x_right)) {
-    return(p)
+  row_labels <- specs$row_labels
+  if (is.list(row_labels) && !is.data.frame(row_labels)) {
+    row_labels <- row_labels[[1L]]
+  }
+  if (is.null(row_labels) && !is.null(attr(x, "row_labels", exact = TRUE))) {
+    row_labels <- attr(x, "row_labels", exact = TRUE)
+  }
+  forestplot_n_layout_rows_one(panel, row_labels)
+}
+
+#' @noRd
+forestplot_n_layout_rows_one <- function(panel, row_labels) {
+  n <- max(1L, nrow(panel))
+  n_headers <- 0L
+  if (is.data.frame(row_labels) && "heading" %in% names(row_labels)) {
+    h <- as.character(row_labels$heading)
+    h <- unique(h[nzchar(h) & !is.na(h)])
+    n_headers <- length(h)
+  }
+  # +1 table header row
+  as.integer(n + n_headers + 1L)
+}
+
+#' Force absolute height of ggplot panel cell(s) in a gtable
+#' @noRd
+forestplot_set_panel_height <- function(gt, panel.height) {
+  if (is.null(panel.height) || !inherits(gt, "gtable")) {
+    return(gt)
+  }
+  h <- if (inherits(panel.height, "unit")) {
+    panel.height
+  } else if (is.numeric(panel.height) && length(panel.height) == 1L && is.finite(panel.height)) {
+    grid::unit(panel.height, "mm")
+  } else {
+    return(gt)
+  }
+  panel_rows <- unique(gt$layout$t[grepl("^panel", gt$layout$name)])
+  for (r in panel_rows) {
+    gt$heights[r] <- h
+  }
+  gt
+}
+
+#' @noRd
+forestplot_grob_inches <- function(x) {
+  grob <- if (inherits(x, "grob")) x else forestplot_as_grob(x)
+  list(
+    width = grid::convertWidth(grid::grobWidth(grob), "in", valueOnly = TRUE),
+    height = grid::convertHeight(grid::grobHeight(grob), "in", valueOnly = TRUE)
+  )
+}
+
+#' Active (or fallback) device size in inches
+#' @noRd
+forestplot_device_inches <- function() {
+  if (forestplot_has_graphics_device()) {
+    return(as.numeric(grDevices::dev.size("in")))
+  }
+  fallback <- getOption("interactmeta.forest_device_inches", c(12, 8.5))
+  fallback <- as.numeric(fallback)
+  if (length(fallback) != 2L || any(!is.finite(fallback)) || any(fallback <= 0)) {
+    return(c(12, 8.5))
+  }
+  fallback
+}
+
+#' Typography and panel height tuned to display size
+#'
+#' Chooses `base_size`, `pointsize`, and `panel.height` so row labels stay
+#' readable on the target device (about 7–12 pt after draw scaling).
+#' @noRd
+forestplot_display_metrics <- function(n_rows,
+                                       device_width_in = NULL,
+                                       device_height_in = NULL,
+                                       base_size = NULL,
+                                       pointsize = NULL,
+                                       panel.height = NULL,
+                                       has_favours = FALSE,
+                                       show_ci_text = FALSE,
+                                       n_forest_panels = 2L) {
+  n_rows <- max(1L, as.integer(n_rows)[1])
+  dev <- forestplot_device_inches()
+  if (is.null(device_width_in)) {
+    device_width_in <- dev[[1]]
+  }
+  if (is.null(device_height_in)) {
+    device_height_in <- dev[[2]]
+  }
+  device_width_in <- as.numeric(device_width_in)[1]
+  device_height_in <- as.numeric(device_height_in)[1]
+  if (!is.finite(device_width_in) || device_width_in <= 0) {
+    device_width_in <- 8
+  }
+  if (!is.finite(device_height_in) || device_height_in <= 0) {
+    device_height_in <- 6
   }
 
-  # Extra bottom space so labels sit under tick labels
-  cur_margin <- p$theme$plot.margin
-  if (inherits(cur_margin, "margin")) {
-    m <- as.numeric(cur_margin)
-    # ggplot margin order: t, r, b, l
-    bottom <- max(m[[3]], 8)
-    p <- p + ggplot2::theme(
-      plot.margin = ggplot2::margin(m[[1]], m[[2]], bottom, m[[4]], unit = "mm")
-    )
+  # Chrome: title, x-axis, margins, optional favours+arrows strip
+  chrome_in <- 0.95 + if (isTRUE(has_favours)) 0.75 else 0
+  usable_h_mm <- max(28, (device_height_in - chrome_in) * 25.4)
+
+  row_mm <- usable_h_mm / n_rows
+  # Keep rows tall enough for readable type
+  row_mm <- max(3.8, min(8.5, row_mm))
+
+  if (is.null(panel.height)) {
+    panel_mm <- min(360, max(36, row_mm * n_rows))
+    panel.height <- grid::unit(panel_mm, "mm")
+  } else if (is.numeric(panel.height) && length(panel.height) == 1L) {
+    panel_mm <- as.numeric(panel.height)
+    row_mm <- panel_mm / n_rows
+    panel.height <- grid::unit(panel_mm, "mm")
+  } else if (inherits(panel.height, "unit")) {
+    panel_mm <- grid::convertHeight(panel.height, "mm", valueOnly = TRUE)
+    if (is.finite(panel_mm) && panel_mm > 0) {
+      row_mm <- panel_mm / n_rows
+    }
   }
 
-  p +
-    ggplot2::coord_cartesian(clip = "off") +
-    ggplot2::annotate(
-      "text",
-      x = x_left,
-      y = -Inf,
-      label = favours[[1]],
-      vjust = 3.2,
-      hjust = 0.5,
-      size = base_size * 0.9 / ggplot2::.pt,
-      colour = const$forest_text,
-      fontface = "plain"
-    ) +
-    ggplot2::annotate(
-      "text",
-      x = x_right,
-      y = -Inf,
-      label = favours[[2]],
-      vjust = 3.2,
-      hjust = 0.5,
-      size = base_size * 0.9 / ggplot2::.pt,
-      colour = const$forest_text,
-      fontface = "plain"
+  # ~55% of row pitch in points
+  row_pt <- row_mm * (72 / 25.4)
+  auto_base <- max(7, min(12, round(row_pt * 0.55, 1)))
+
+  # Narrow multi-column layouts (CI text) need slightly smaller type
+  n_forest_panels <- max(1L, as.integer(n_forest_panels)[1])
+  col_units <- 1 + n_forest_panels * (1 + isTRUE(show_ci_text))
+  min_width <- 1.55 * col_units
+  if (device_width_in < min_width) {
+    auto_base <- max(6.5, round(auto_base * device_width_in / min_width, 1))
+  }
+
+  if (is.null(base_size)) {
+    base_size <- auto_base
+  }
+  base_size <- as.numeric(base_size)[1]
+  if (!is.finite(base_size) || base_size <= 0) {
+    base_size <- 9
+  }
+
+  if (is.null(pointsize)) {
+    pointsize <- max(4.5, min(8, base_size * 0.75))
+  }
+  pointsize <- as.numeric(pointsize)[1]
+  if (!is.finite(pointsize) || pointsize <= 0) {
+    pointsize <- max(4.5, base_size * 0.75)
+  }
+
+  list(
+    base_size = base_size,
+    pointsize = pointsize,
+    panel.height = panel.height,
+    row_mm = row_mm,
+    device_inches = c(device_width_in, device_height_in)
+  )
+}
+
+#' Apply display metrics inside forestplot_render()
+#' @noRd
+forestplot_apply_display_metrics <- function(panels,
+                                             base_size,
+                                             pointsize,
+                                             panel.height,
+                                             typography_auto = FALSE,
+                                             has_favours = FALSE,
+                                             show_ci_text = FALSE) {
+  n_rows <- max(1L, max(vapply(panels, nrow, integer(1L))))
+  metrics <- forestplot_display_metrics(
+    n_rows = n_rows,
+    device_width_in = NULL,
+    device_height_in = NULL,
+    base_size = if (isTRUE(typography_auto)) NULL else base_size,
+    pointsize = if (isTRUE(typography_auto)) NULL else pointsize,
+    panel.height = panel.height,
+    has_favours = has_favours,
+    show_ci_text = show_ci_text,
+    n_forest_panels = length(panels)
+  )
+  list(
+    base_size = metrics$base_size,
+    pointsize = metrics$pointsize,
+    panel.height = metrics$panel.height,
+    device_inches = metrics$device_inches
+  )
+}
+
+#' Re-render forest typography when the active device size changes
+#' @noRd
+forestplot_refit_typography <- function(x) {
+  if (!inherits(x, "interactmeta_forestplot")) {
+    return(x)
+  }
+  if (!isTRUE(attr(x, "typography_auto", exact = TRUE))) {
+    return(x)
+  }
+  if (!forestplot_has_graphics_device()) {
+    return(x)
+  }
+
+  n_rows <- forestplot_n_layout_rows(x)
+  n_panels <- forestplot_n_panels(x)
+  dev <- as.numeric(grDevices::dev.size("in"))
+  prev <- attr(x, "display_inches", exact = TRUE)
+  if (
+    is.numeric(prev) && length(prev) == 2L &&
+      abs(prev[[1]] - dev[[1]]) < 0.2 &&
+      abs(prev[[2]] - dev[[2]]) < 0.2
+  ) {
+    return(x)
+  }
+
+  has_favours <- isTRUE(attr(x, "has_favours", exact = TRUE))
+  show_ci_text <- isTRUE(attr(x, "show_ci_text", exact = TRUE))
+
+  metrics <- forestplot_display_metrics(
+    n_rows = n_rows,
+    device_width_in = dev[[1]],
+    device_height_in = dev[[2]],
+    has_favours = has_favours,
+    show_ci_text = show_ci_text,
+    n_forest_panels = n_panels
+  )
+
+  if (forestplot_is_fitted(x)) {
+    render_args <- attr(x, "forestplot_fit_render", exact = TRUE)
+    opts <- attr(x, "forestplot_fit_options", exact = TRUE)
+    if (is.null(render_args) || is.null(opts)) {
+      return(x)
+    }
+    dots <- opts$dots %||% list()
+    override <- list(
+      prob = opts$prob,
+      contrast_sep = opts$contrast_sep,
+      exponentiate = opts$exponentiate %||% FALSE,
+      base_size = metrics$base_size,
+      pointsize = metrics$pointsize,
+      panel.height = metrics$panel.height,
+      typography_auto = TRUE,
+      annotations = attr(x, "annotations", exact = TRUE),
+      group = opts$group %||% "subgroup"
     )
+    # Drop names we set explicitly so do.call does not see duplicates.
+    if (length(dots)) {
+      dots <- dots[setdiff(names(dots), c(names(override), "show_annotations", "annotation_digits", "layout", "printplot", "quiet"))]
+    }
+    fp <- do.call(
+      forestplot_render,
+      c(render_args, override, dots)
+    )
+    if (!is.null(attr(x, "footnote", exact = TRUE))) {
+      attr(fp, "footnote") <- attr(x, "footnote", exact = TRUE)
+    }
+    if (!is.null(attr(x, "annotations", exact = TRUE))) {
+      attr(fp, "annotations") <- attr(x, "annotations", exact = TRUE)
+    }
+  } else {
+    snap <- attr(x, "forestplot_render", exact = TRUE)
+    if (!is.list(snap)) {
+      return(x)
+    }
+    snap$base_size <- metrics$base_size
+    snap$pointsize <- metrics$pointsize
+    snap$panel.height <- metrics$panel.height
+    snap$typography_auto <- TRUE
+    snap$printplot <- NULL
+    snap$quiet <- NULL
+    fp <- do.call(forestplot_render, snap)
+  }
+
+  attr(fp, "typography_auto") <- TRUE
+  attr(fp, "display_inches") <- metrics$device_inches
+  attr(fp, "has_favours") <- has_favours
+  attr(fp, "show_ci_text") <- show_ci_text
+  fp
+}
+
+#' @noRd
+forestplot_add_class <- function(x) {
+  class(x) <- unique(c("interactmeta_forestplot", class(x)))
+  x
+}
+
+#' @noRd
+forestplot_has_graphics_device <- function() {
+  grDevices::dev.cur() > 1L
+}
+
+#' @noRd
+forestplot_maybe_print <- function(x) {
+  # Never call dev.new() / open a window — draw on the active device only.
+  # In RStudio the Plots pane is used; knitr already has a device open.
+  forestplot_draw(x)
+  invisible(x)
 }

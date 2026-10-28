@@ -1,20 +1,19 @@
-test_that("plot_contribution() returns ggplot", {
+test_that("plot() contribution type returns ggplot", {
   skip_if_not_installed("bayesmeta")
   skip_if_not_installed("ggplot2")
   dat <- data.frame(
-    trial = rep(c("A", "B"), each = 2),
-    subgroup = factor(rep(c("Younger", "Older"), 2), levels = c("Younger", "Older")),
+    study = rep(c("A", "B"), each = 2),
+    level = factor(rep(c("Younger", "Older"), 2), levels = c("Younger", "Older")),
     yi = c(0.1, 0.2, 0.15, 0.25),
     vi = 0.01,
     reference = "Younger",
     ifrac_Older = c(0.3, 0.3, 0.4, 0.4),
     ifrac2_Older = c(-0.3, 0.7, -0.4, 0.6)
   )
-  fit <- cam(
+  fit <- cams(
     dat,
-    engine = "bayesmeta",
-    reference = "Younger")
-  p <- plot_contribution(fit, ifrac_var = "ifrac_Older")
+        reference = "Younger")
+  p <- plot(fit, type = "contribution", ifrac_var = "ifrac_Older")
   expect_s3_class(p, "ggplot")
   expect_true(length(p$layers) >= 4L)
   expect_false(any(vapply(
@@ -31,17 +30,50 @@ test_that("plot_contribution() returns ggplot", {
   ))
   expect_true(length(point_layer) >= 1L)
   xs <- unique(built$data[[point_layer[[1L]]]]$x)
-  expect_equal(sort(xs), sort(unique(fit$data$ifrac_Older)), tolerance = 1e-8)
+  expect_equal(
+    sort(xs),
+    sort(100 * unique(fit$data$ifrac_Older)),
+    tolerance = 1e-6
+  )
 
   caption <- p$labels$caption
-  expect_match(caption, "^IF ")
-  expect_match(caption, "95% interval:")
+  if (is.language(caption)) {
+    caption <- paste(deparse(caption), collapse = "")
+  }
+  expect_match(caption, "Interaction-weighted information fraction")
+  expect_match(caption, "%")
   expect_match(caption, "k = ")
   expect_match(caption, "studies")
-  expect_match(caption, "reference: Younger")
+  expect_false(grepl("reference:", caption, fixed = TRUE))
 
   p_no <- plot_contribution(fit, ifrac_var = "ifrac_Older", show_footnote = FALSE)
   expect_null(p_no$labels$caption)
+
+  lty_layer <- vapply(
+    p$layers,
+    function(ly) "linetype" %in% names(ly$mapping),
+    logical(1)
+  )
+  expect_true(any(lty_layer))
+  built_lty <- vapply(
+    ggplot2::ggplot_build(p)$plot$scales$scales,
+    function(s) identical(s$aesthetics, "linetype"),
+    logical(1)
+  )
+  expect_true(any(built_lty))
+
+  p_no_overall <- plot_contribution(
+    fit,
+    ifrac_var = "ifrac_Older",
+    show_footnote = FALSE,
+    show_overall_line = FALSE
+  )
+  lty_layer_off <- vapply(
+    p_no_overall$layers,
+    function(ly) "linetype" %in% names(ly$mapping),
+    logical(1)
+  )
+  expect_false(any(lty_layer_off))
 })
 
 test_that("attach_observed_effect_interval() exponentiates after the log Wald interval", {
@@ -63,15 +95,14 @@ test_that("plot_contribution(exponentiate = TRUE) exponentiates study points and
   skip_if_not_installed("ggplot2")
 
   dat <- data.frame(
-    trial = rep(paste0("T", 1:4), each = 2),
-    subgroup = factor(rep(c("Younger", "Older"), 4), levels = c("Younger", "Older")),
+    study = rep(paste0("T", 1:4), each = 2),
+    level = factor(rep(c("Younger", "Older"), 4), levels = c("Younger", "Older")),
     yi = c(0.10, 0.25, 0.12, 0.28, 0.08, 0.22, 0.15, 0.30),
     vi = c(0.04, 0.02, 0.05, 0.03, 0.03, 0.04, 0.02, 0.025)
   )
-  fit <- suppressWarnings(bayescam(
+  fit <- suppressWarnings(cams(
     dat,
     reference = "Younger",
-    engine = "bayesmeta",
     silent = 2
   ))
   p <- plot_contribution(fit, resolution = 11, show_footnote = FALSE, exponentiate = TRUE)

@@ -3,10 +3,9 @@ test_that("traceplot() uses native bayesmeta objects and does not refit", {
   skip_if_not_installed("metafor")
 
   es <- metafor::escalc(measure = "IRR", yi = age$yi, vi = age$vi, data = age)
-  fit <- suppressWarnings(cam(
+  fit <- suppressWarnings(cams(
     es,
-    engine = "bayesmeta",
-    reference = "Younger",
+        reference = "Younger",
     silent = 2
   ))
 
@@ -45,14 +44,13 @@ test_that("traceplot() uses native bayesmeta objects and does not refit", {
 test_that("traceplot() does not substitute bayesmeta on another engine", {
   skip_if_not_installed("metafor")
   es <- metafor::escalc(measure = "IRR", yi = age$yi, vi = age$vi, data = age)
-  fit <- suppressWarnings(cam(
+  fit <- suppressWarnings(cams(
     es,
-    engine = "metafor",
     method = "REML",
     reference = "Younger",
     silent = 2
   ))
-  expect_error(traceplot(fit, type = "interaction"), "engine = \"metafor\"")
+  expect_error(traceplot(fit, type = "interaction"), 'method = "REML"')
   expect_error(traceplot(fit, type = "combined"), "Auxiliary bayesmeta")
 })
 
@@ -85,10 +83,9 @@ test_that("comparison_traceplot_default_bmr_X() uses stored trial IF", {
   skip_if_not_installed("metafor")
 
   es <- metafor::escalc(measure = "IRR", yi = age$yi, vi = age$vi, data = age)
-  fit <- suppressWarnings(cam(
+  fit <- suppressWarnings(cams(
     es,
-    engine = "bayesmeta",
-    reference = "Younger",
+        reference = "Younger",
     silent = 2
   ))
   X <- interact:::comparison_traceplot_default_bmr_X(fit)

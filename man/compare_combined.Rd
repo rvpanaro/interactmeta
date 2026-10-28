@@ -7,7 +7,7 @@
 compare_combined(..., exponentiate = TRUE, type = "Overall")
 }
 \arguments{
-\item{...}{Two or more \code{\link[=cam]{cam()}} fits.}
+\item{...}{Two or more \code{\link[=cams]{cams()}} fits.}
 
 \item{exponentiate}{If \code{TRUE} (default), report on the exponentiated
 (ratio) scale.}
@@ -19,11 +19,12 @@ A tibble with class \code{interactmeta_compare_combined}. Print the
 table; \code{\link[=plot]{plot()}} draws a forest of the compared estimates.
 }
 \description{
-\code{\link[=combined]{combined()}} is a CAMS estimand. Pass two or more \code{\link[=cam]{cam()}} fits (for
+\code{\link[=combined]{combined()}} is a CAMS estimand. Pass two or more \code{\link[=cams]{cams()}} fits (for
 example Bayesian vs frequentist CAMS). Approach labels keep the analysis
 family and, when the same family appears more than once, the approach
-(\verb{CAMS — bayesmeta} vs \verb{CAMS — metafor (REML)}).
+(\verb{CAMS — Bayesian} vs \verb{CAMS — REML}).
 }
 \seealso{
-\code{\link[=compare_interactions]{compare_interactions()}}, \code{\link[=compare_subgroups]{compare_subgroups()}}, \code{\link[=combined]{combined()}}
+\code{\link[=compare]{compare()}}, \code{\link[=combined]{combined()}}
 }
+\keyword{internal}

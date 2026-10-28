@@ -3,8 +3,16 @@
 \name{forestplot}
 \alias{forestplot}
 \alias{forestplot.interactmeta}
+\alias{forestplot.interactmeta_da}
+\alias{forestplot.interactmeta_ad}
+\alias{forestplot.interactmeta_swada}
+\alias{forestplot.interactmeta_conventional}
+\alias{forest.interactmeta_da}
+\alias{forest.interactmeta_ad}
+\alias{forest.interactmeta_swada}
+\alias{forest.interactmeta_conventional}
 \alias{forest.interactmeta}
-\title{Forest plot for a fitted CAMS model}
+\title{Forest plot for a fitted model}
 \usage{
 forestplot(
   x,
@@ -17,7 +25,6 @@ forestplot(
   contrast = "all",
   contrast_sep = "-",
   big_var = 100^2,
-  include_interaction = FALSE,
   pooled = NULL,
   model_names = "Model 1",
   include_shrinkage = TRUE,
@@ -49,19 +56,35 @@ forestplot(
   grouping = NULL,
   panel.height = NULL,
   estimates_only = FALSE,
-  type = c("subgroups", "interaction", "combined"),
+  type = c("modifiers", "interaction", "subgroups"),
   which_panel = NULL,
   ...
 )
 
 forestplot.interactmeta(x, ...)
 
+forestplot.interactmeta_da(x, ...)
+
+forestplot.interactmeta_ad(x, ...)
+
+forestplot.interactmeta_swada(x, ...)
+
+forestplot.interactmeta_conventional(x, ...)
+
+forest.interactmeta_da(x, ...)
+
+forest.interactmeta_ad(x, ...)
+
+forest.interactmeta_swada(x, ...)
+
+forest.interactmeta_conventional(x, ...)
+
 forest.interactmeta(x, ...)
 }
 \arguments{
-\item{x}{A CAMS fit from \code{\link[=cam]{cam()}}.}
+\item{x}{A CAMS fit from \code{\link[=cams]{cams()}}.}
 
-\item{reference, label, subgroup, trial, contrast, big_var, include_interaction, pooled}{Ignored for CAMS fits; retained for back-compatibility.}
+\item{reference, label, modifier, subgroup, trial, contrast, big_var, pooled}{Ignored for CAMS fits; retained for back-compatibility.}
 
 \item{n_var}{Column name for per-study patient counts shown in an \strong{N}
 column. Default \code{FALSE} (omit). Set to \code{"n"} or another column name to
@@ -80,9 +103,14 @@ layers follow those flags alone.}
 \item{include_shrinkage, include_overall, include_prediction, include_combined}{Include shrinkage, overall-effect, prediction, and combined-population rows.
 All four layers default to \code{TRUE}. Grey
 shrinkage intervals appear alongside quoted estimates (bayesmeta style)
-in the active \code{type} block. Set \code{include_shrinkage = FALSE} to omit them.
-Switching off overall or prediction keeps blank placeholder rows so the
-figure height and spacing stay close to the full plot.}
+in the active \code{type} block. Shrinkage is included by default for Bayesian
+fits only; frequentist (\code{REML} / \code{ML}) forests omit shrinkage rows.
+Set \code{include_shrinkage = FALSE} to omit them on Bayesian fits.
+For \code{type = "modifiers"}, \code{include_combined} controls a trailing
+\strong{All} section (\strong{Overall} / \strong{Prediction} for \code{\link[=combined]{combined()}} at
+the reporting IF), not the subgroup panels. Switching off overall or
+prediction keeps blank placeholder rows so the figure height and spacing
+stay close to the full plot.}
 
 \item{ifrac}{How the overall information fraction ω is pooled via \code{\link[=ifrac]{ifrac()}}
 for \strong{annotations} and for \strong{Overall / Prediction / Combined} diamonds:
@@ -90,14 +118,14 @@ for \strong{annotations} and for \strong{Overall / Prediction / Combined} diamon
 \code{"overall"} (τ and design SEs). Shrinkage greys are the trial-specific
 CAMS reconstructions from \code{\link[=shrinkage]{shrinkage()}} (shrunken \eqn{m_j,g_j} inverted
 at each trial's own \eqn{\pi_j}); they are not population fitted values.
-Observed study rows remain at each trial's own π_j.}
+Observed trial rows remain at each trial's own π_j.}
 
 \item{xlab}{Character; x-axis title. Default is
 \code{"Effect (log scale)"} when \code{exponentiate = FALSE}, or
 \code{"Effect"} when \code{exponentiate = TRUE} (ratio-scale ticks via
 \code{xlog = TRUE}).}
 
-\item{group}{How to nest study rows. \code{"subgroup"} (default) groups by
+\item{group}{How to nest trial rows. \code{"subgroup"} (default) groups by
 subgroup level with trial names as row labels; \code{"trial"} groups by trial
 with subgroup names as row labels.}
 
@@ -109,9 +137,10 @@ intervals.}
 
 \item{favours}{Optional length-2 character labels placed under the x-axis
 (left / right of the null). Default is \code{c("Control", "Experimental")}
-for \code{type = "subgroups"} / \code{"combined"}. For \code{type = "interaction"}, the
+for \code{type = "modifiers"}. For \code{type = "interaction"}, the
 default names the reference and non-reference subgroups (same left/right
-roles). Set to \code{FALSE} to suppress.}
+roles), and the IF column header is \verb{IF (non-reference subgroup)}.
+Set to \code{FALSE} to suppress favours.}
 
 \item{show_ci_text}{Logical; show estimate and CI text. Default \code{TRUE}.}
 
@@ -119,11 +148,9 @@ roles). Set to \code{FALSE} to suppress.}
 
 \item{col_right_heading}{Column heading for the effect column.}
 
-\item{study_fill, }{study_colour Optional overrides for study-row colours.}
+\item{study_fill, study_colour}{Optional overrides for study-row colours.}
 
-\item{base_size, }{pointsize, digits, stroke, fill,
-summary_fill, summary_colour, plot.margin, which_panel
-Plotting options passed through to the bayesmeta / forestplot renderer.}
+\item{base_size, pointsize, digits, stroke, fill, summary_fill, summary_colour, which_panel}{Plotting options passed through to the bayesmeta / forestplot renderer.}
 
 \item{prob}{Coverage probability for confidence intervals (default \code{0.95}).}
 
@@ -140,15 +167,15 @@ are chosen automatically (forestplot's log axis cannot include 0). When
 
 \item{grouping}{Optional vector of subheadings for row labels.}
 
-\item{estimates_only}{If \code{TRUE}, drop observed study rows (keep shrinkage /
+\item{estimates_only}{If \code{TRUE}, drop observed trial rows (keep shrinkage /
 summary diamonds) and omit the IF and study-size columns.}
 
 \item{type}{Which forest block(s) to draw. One of:
 \itemize{
-\item \code{"subgroups"} (default): subgroup blocks only (each with \strong{Overall} and
-\strong{Prediction} when \code{include_overall} / \code{include_prediction} are \code{TRUE})
+\item \code{"modifiers"} (default): one section per modifier level (reference and
+non-reference), each with \strong{Overall} and \strong{Prediction} when enabled;
+optional trailing \strong{All} summaries when \code{include_combined = TRUE}
 \item \code{"interaction"}: Interaction block only (Overall + Prediction)
-\item \code{"combined"}: Combined-population block only (Overall + Prediction)
 }
 
 Other features (favours, annotations, \code{include_shrinkage}, …) apply
@@ -158,7 +185,7 @@ within the selected type.}
 presentation args).}
 }
 \value{
-For a CAMS fit, a \code{interactmeta_forestplot} object with attributes
+For a CAMS or construction fit, a \code{interactmeta_forestplot} object with attributes
 \code{"panels"}, \code{"panel.height"} (when set), and \code{"base_size"}. Drawing is
 deferred to \code{\link[=print.interactmeta_forestplot]{print.interactmeta_forestplot()}} / \code{\link[=forestplot_draw]{forestplot_draw()}} (so
 \code{fp <- forestplot(fit)} does not draw; a top-level \code{forestplot(fit)} does).
@@ -167,7 +194,7 @@ Otherwise whatever \code{\link[forestplot:forestplot]{forestplot::forestplot()}}
 A \code{interactmeta_forestplot} object (see \code{\link[=forestplot]{forestplot()}}).
 }
 \description{
-Draws a forest for a \code{\link[=cam]{cam()}} fit using \link[bayesmeta:forestplot.bayesmeta]{bayesmeta::forestplot.bayesmeta}
+Draws a forest for a \code{\link[=cams]{cams()}} fit using \link[bayesmeta:forestplot.bayesmeta]{bayesmeta::forestplot.bayesmeta}
 (single-block) or \code{\link[forestplot:forestplot]{forestplot::forestplot()}} with the same conventions
 (multi-block): observed study estimates, optional grey \strong{shrinkage}
 overlays, and \strong{Overall} / \strong{Prediction} / \strong{Combined} summaries. An
@@ -177,7 +204,7 @@ Thin adapter so \code{forestplot::forestplot(fit, ...)} reaches the same
 implementation as \code{\link[=forestplot]{forestplot()}}. Prefer \code{\link[=forestplot]{forestplot()}} for argument
 completion in the IDE.
 
-Metafor-idiomatic entry point for a \code{\link[=cam]{cam()}} fit. Delegates to
+Metafor-idiomatic entry point for a \code{\link[=cams]{cams()}} fit. Delegates to
 \code{\link[=forestplot]{forestplot()}} with the same arguments so CAMS options (\code{type},
 \code{group}, …) share one implementation.
 }
@@ -187,9 +214,10 @@ to \code{\link[forestplot:forestplot]{forestplot::forestplot()}}, which dispatch
 \link[bayesmeta:forestplot.escalc]{bayesmeta::forestplot.escalc} when \strong{bayesmeta} is loaded (interact loads it
 on attach).
 
-By default (\code{type = "subgroups"}) the plot shows \strong{subgroup} blocks
+By default (\code{type = "modifiers"}) the plot shows \strong{modifier-level} panels
 (each with \strong{Overall} and \strong{Prediction}), with overall-IF notes under the
-x-axis. Use \code{type = "interaction"} or \code{type = "combined"} for those blocks.
+x-axis. Use \code{type = "interaction"} for the interaction block only.
+\code{type = "subgroups"} is deprecated (same as \code{"modifiers"}).
 }
 \section{Aesthetics vs content}{
 
@@ -217,12 +245,12 @@ still dispatches to the CAMS method)
 \dontrun{
 e <- escalc(measure = "IRR", yi = edss$yi, vi = edss$vi, data = edss)
 forestplot(e)                          # → forestplot.escalc
-fit <- cam(e, reference = "Lower")
-forestplot(fit, exponentiate = TRUE, type = "subgroups")
+fit <- cams(e, reference = "Lower")
+forestplot(fit, exponentiate = TRUE, type = "modifiers")
 forest(fit, exponentiate = TRUE)       # same via metafor::forest
 }
 \dontrun{
-fit <- cam(escalc(measure = "IRR", yi = edss$yi, vi = edss$vi, data = edss),
+fit <- cams(escalc(measure = "IRR", yi = edss$yi, vi = edss$vi, data = edss),
             reference = "Lower")
 forest(fit, exponentiate = TRUE)
 }

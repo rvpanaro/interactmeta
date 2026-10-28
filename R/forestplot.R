@@ -1,6 +1,7 @@
-#' Forest plot for a fitted CAMS model
+# ---- forestplot.R ----
+#' Forest plot for a fitted model
 #'
-#' Draws a forest for a [cam()] fit using [bayesmeta::forestplot.bayesmeta]
+#' Draws a forest for a [cams()] fit using [bayesmeta::forestplot.bayesmeta]
 #' (single-block) or [forestplot::forestplot()] with the same conventions
 #' (multi-block): observed study estimates, optional grey **shrinkage**
 #' overlays, and **Overall** / **Prediction** / **Combined** summaries. An
@@ -11,11 +12,13 @@
 #' [bayesmeta::forestplot.escalc] when **bayesmeta** is loaded (interact loads it
 #' on attach).
 #'
-#' By default (`type = "subgroups"`) the plot shows **subgroup** blocks
+#' By default (`type = "modifiers"`) the plot shows **modifier-level** panels
 #' (each with **Overall** and **Prediction**), with overall-IF notes under the
-#' x-axis. Use `type = "interaction"` or `type = "combined"` for those blocks.
+#' x-axis. Use `type = "interaction"` for the interaction block only.
+#' `type = "subgroups"` is deprecated (same as `"modifiers"`).
 #'
-#' @param x A CAMS fit from [cam()] (`interactmeta`), or another object handled by
+#' @param x A CAMS fit from [cams()] (`interactmeta`), a construction fit from
+#'   [da()], [ad()], [swada()], or [conventional()], or another object handled by
 #'   [forestplot::forestplot()] (e.g. `escalc`).
 #' @param n_var Column name for per-study patient counts shown in an **N**
 #'   column. Default `FALSE` (omit). Set to `"n"` or another column name to
@@ -32,14 +35,19 @@
 #'   Include shrinkage, overall-effect, prediction, and combined-population rows.
 #'   All four layers default to `TRUE`. Grey
 #'   shrinkage intervals appear alongside quoted estimates (bayesmeta style)
-#'   in the active `type` block. Set `include_shrinkage = FALSE` to omit them.
-#'   Switching off overall or prediction keeps blank placeholder rows so the
-#'   figure height and spacing stay close to the full plot.
+#'   in the active `type` block. Shrinkage is included by default for Bayesian
+#'   fits only; frequentist (`REML` / `ML`) forests omit shrinkage rows.
+#'   Set `include_shrinkage = FALSE` to omit them on Bayesian fits.
+#'   For `type = "modifiers"`, `include_combined` controls a trailing
+#'   **All** section (**Overall** / **Prediction** for [combined()] at
+#'   the reporting IF), not the subgroup panels. Switching off overall or
+#'   prediction keeps blank placeholder rows so the figure height and spacing
+#'   stay close to the full plot.
 #' @param type Which forest block(s) to draw. One of:
-#'   - `"subgroups"` (default): subgroup blocks only (each with **Overall** and
-#'     **Prediction** when `include_overall` / `include_prediction` are `TRUE`)
+#'   - `"modifiers"` (default): one section per modifier level (reference and
+#'     non-reference), each with **Overall** and **Prediction** when enabled;
+#'     optional trailing **All** summaries when `include_combined = TRUE`
 #'   - `"interaction"`: Interaction block only (Overall + Prediction)
-#'   - `"combined"`: Combined-population block only (Overall + Prediction)
 #'
 #'   Other features (favours, annotations, `include_shrinkage`, …) apply
 #'   within the selected type.
@@ -49,12 +57,12 @@
 #'   `"overall"` (τ and design SEs). Shrinkage greys are the trial-specific
 #'   CAMS reconstructions from [shrinkage()] (shrunken \eqn{m_j,g_j} inverted
 #'   at each trial's own \eqn{\pi_j}); they are not population fitted values.
-#'   Observed study rows remain at each trial's own π_j.
+#'   Observed trial rows remain at each trial's own π_j.
 #' @param xlab Character; x-axis title. Default is
 #'   `"Effect (log scale)"` when `exponentiate = FALSE`, or
 #'   `"Effect"` when `exponentiate = TRUE` (ratio-scale ticks via
 #'   `xlog = TRUE`).
-#' @param group How to nest study rows. `"subgroup"` (default) groups by
+#' @param group How to nest trial rows. `"subgroup"` (default) groups by
 #'   subgroup level with trial names as row labels; `"trial"` groups by trial
 #'   with subgroup names as row labels.
 #' @param show_annotations If `TRUE` (default), annotate under the x-axis with
@@ -63,18 +71,18 @@
 #' @param annotation_digits Decimal places in annotation text (default `2`).
 #' @param favours Optional length-2 character labels placed under the x-axis
 #'   (left / right of the null). Default is `c("Control", "Experimental")`
-#'   for `type = "subgroups"` / `"combined"`. For `type = "interaction"`, the
+#'   for `type = "modifiers"`. For `type = "interaction"`, the
 #'   default names the reference and non-reference subgroups (same left/right
-#'   roles). Set to `FALSE` to suppress.
+#'   roles), and the IF column header is `IF (non-reference subgroup)`.
+#'   Set to `FALSE` to suppress favours.
 #' @param show_ci_text Logical; show estimate and CI text. Default `TRUE`.
 #' @param exponentiate Logical; if `TRUE`, show estimates on the ratio scale.
 #' @param col_right_heading Column heading for the effect column.
 #' @param prob Coverage probability for confidence intervals (default `0.95`).
-#' @param study_fill, study_colour Optional overrides for study-row colours.
-#' @param base_size, pointsize, digits, stroke, fill,
-#'   summary_fill, summary_colour, plot.margin, which_panel
+#' @param study_fill,study_colour Optional overrides for study-row colours.
+#' @param base_size,pointsize,digits,stroke,fill,summary_fill,summary_colour,which_panel
 #'   Plotting options passed through to the bayesmeta / forestplot renderer.
-#' @param estimates_only If `TRUE`, drop observed study rows (keep shrinkage /
+#' @param estimates_only If `TRUE`, drop observed trial rows (keep shrinkage /
 #'   summary diamonds) and omit the IF and study-size columns.
 #' @param xlim,xticks Optional axis limits and tick positions on the displayed
 #'   effect scale. When both are `NULL` (default) and `exponentiate = FALSE`,
@@ -86,14 +94,19 @@
 #'   `xticks` are filled if omitted).
 #' @param plot.margin,panel.height Unused (kept for compatibility).
 #' @param grouping Optional vector of subheadings for row labels.
-#' @param reference,label,subgroup,trial,contrast,big_var,include_interaction,pooled
+#' @param reference,label,modifier,subgroup,trial,contrast,big_var,pooled
 #'   Ignored for CAMS fits; retained for back-compatibility.
 #' @param ... Further arguments passed through to [forestplot::forestplot()]
 #'   when the plot is drawn (same escape hatch as
 #'   [bayesmeta::forestplot.bayesmeta]'s `...`). For non-CAMS `x`, unused CAMS
 #'   formals are ignored and `...` is forwarded to [forestplot::forestplot()].
 #'
-#' @return For a CAMS fit, a `interactmeta_forestplot` object with attributes
+#' Construction fits use the same layout (study rows, shrinkage, Overall /
+#' Prediction, optional Combined) without CAMS information fractions.
+#' [ad()] uses `type = "interaction"` by default; only the interaction block
+#' is available (`type = "modifiers"` errors).
+#'
+#' @return For a CAMS or construction fit, a `interactmeta_forestplot` object with attributes
 #'   `"panels"`, `"panel.height"` (when set), and `"base_size"`. Drawing is
 #'   deferred to [print.interactmeta_forestplot()] / [forestplot_draw()] (so
 #'   `fp <- forestplot(fit)` does not draw; a top-level `forestplot(fit)` does).
@@ -119,8 +132,8 @@
 #' \dontrun{
 #' e <- escalc(measure = "IRR", yi = edss$yi, vi = edss$vi, data = edss)
 #' forestplot(e)                          # → forestplot.escalc
-#' fit <- cam(e, reference = "Lower")
-#' forestplot(fit, exponentiate = TRUE, type = "subgroups")
+#' fit <- cams(e, reference = "Lower")
+#' forestplot(fit, exponentiate = TRUE, type = "modifiers")
 #' forest(fit, exponentiate = TRUE)       # same via metafor::forest
 #' }
 #' @rdname forestplot
@@ -135,7 +148,6 @@ forestplot <- function(x,
                        contrast = "all",
                        contrast_sep = "-",
                        big_var = 100^2,
-                       include_interaction = FALSE,
                        pooled = NULL,
                        model_names = "Model 1",
                        include_shrinkage = TRUE,
@@ -167,13 +179,106 @@ forestplot <- function(x,
                        grouping = NULL,
                        panel.height = NULL,
                        estimates_only = FALSE,
-                       type = c("subgroups", "interaction", "combined"),
+                       type = c("modifiers", "interaction", "subgroups"),
                        which_panel = NULL,
                        ...) {
   if (is.character(modifier) && length(modifier) == 1L && nzchar(modifier)) {
     subgroup <- modifier
   }
-  interactmeta_abort_non_cams(x, "forestplot()")
+  if (inherits(x, "interactmeta") ||
+        interactmeta_is_non_cams_analysis(x) ||
+        inherits(x, interactmeta_non_cams_classes())) {
+    include_shrinkage <- forestplot_resolve_include_shrinkage(
+      fit = x,
+      include_shrinkage = include_shrinkage,
+      call = match.call(expand.dots = FALSE)
+    )
+  }
+  if (interactmeta_is_non_cams_analysis(x) ||
+        inherits(x, interactmeta_non_cams_classes())) {
+    check_forestplot_deps()
+    dots <- list(...)
+    typography_auto <- isTRUE(dots$typography_auto)
+    dots$typography_auto <- NULL
+    panel_height_auto <- missing(panel.height) || is.null(panel.height)
+    group <- match.arg(group, c("subgroup", "trial"))
+    type <- forestplot_resolve_fit_type(
+      fit = x,
+      type = type,
+      call = match.call(expand.dots = FALSE)
+    )
+    if (is.null(show_ci_text)) {
+      show_ci_text <- TRUE
+    }
+    show_ci_text <- isTRUE(show_ci_text)
+    sg_pair <- forestplot_fit_reference_nonref(x)
+    favours <- resolve_forestplot_favours(
+      favours = favours,
+      exponentiate = exponentiate,
+      type = type,
+      reference = sg_pair$reference,
+      nonref_subgroup = sg_pair$nonref
+    )
+    validate_forestplot_args(
+      prob = prob,
+      which_panel = which_panel,
+      xlim = xlim,
+      xticks = xticks,
+      fill = fill,
+      n_var = n_var
+    )
+    construction_args <- list(
+      fit = x,
+      prob = prob,
+      contrast_sep = contrast_sep,
+      include_shrinkage = include_shrinkage,
+      include_overall = include_overall,
+      include_prediction = include_prediction,
+      include_combined = include_combined,
+      exponentiate = exponentiate,
+      n_var = n_var,
+      group = group,
+      show_annotations = show_annotations,
+      annotation_digits = annotation_digits,
+      favours = favours,
+      show_ci_text = show_ci_text,
+      typography_auto = typography_auto,
+      xlab = xlab,
+      col_right_heading = col_right_heading,
+      stroke = stroke,
+      digits = digits,
+      fill = fill,
+      study_fill = study_fill,
+      study_colour = study_colour,
+      summary_fill = summary_fill,
+      summary_colour = summary_colour,
+      pointsize = pointsize,
+      base_size = base_size,
+      plot.margin = plot.margin,
+      xlim = xlim,
+      xticks = xticks,
+      grouping = grouping,
+      estimates_only = estimates_only,
+      type = if (identical(type, "subgroups")) "modifiers" else type,
+      which_panel = which_panel
+    )
+    if (!identical(model_names, "Model 1")) {
+      construction_args$model_names <- model_names
+    }
+    if (!panel_height_auto) {
+      construction_args$panel.height <- panel.height
+    }
+    if (!typography_auto) {
+      construction_args$base_size <- base_size
+      construction_args$pointsize <- pointsize
+    }
+    dots$printplot <- NULL
+    dots$quiet <- NULL
+    for (nm in names(construction_args)) {
+      dots[[nm]] <- NULL
+    }
+    return(do.call(construction_forestplot_from_fit, c(construction_args, dots)))
+  }
   if (!inherits(x, "interactmeta")) {
     return(forestplot::forestplot(x, ...))
   }
@@ -186,7 +291,16 @@ forestplot <- function(x,
   dots$typography_auto <- NULL
   panel_height_auto <- missing(panel.height) || is.null(panel.height)
   group <- match.arg(group, c("subgroup", "trial"))
-  type <- comparison_resolve_effect_type(match.arg(type))
+  fcall <- match.call(expand.dots = FALSE)
+  type_user <- if (is.null(fcall$type)) {
+    "modifiers"
+  } else {
+    forestplot_parse_panel_type(type)
+  }
+  if (identical(type_user, "subgroups")) {
+    .Deprecated(msg = 'type = "subgroups" is deprecated; use type = "modifiers".')
+  }
+  type <- forestplot_resolve_type(type_user)
   if (is.null(show_ci_text)) {
     show_ci_text <- TRUE
   }
@@ -241,7 +355,7 @@ forestplot <- function(x,
     xticks = xticks,
     grouping = grouping,
     estimates_only = estimates_only,
-    type = type,
+    type = if (identical(type, "subgroups")) "modifiers" else type,
     which_panel = which_panel
   )
   if (!identical(model_names, "Model 1")) {
@@ -271,7 +385,6 @@ forestplot <- function(x,
 #' implementation as [forestplot()]. Prefer [forestplot()] for argument
 #' completion in the IDE.
 #'
-#' @inheritParams forestplot
 #' @rdname forestplot
 #' @exportS3Method forestplot::forestplot interactmeta
 forestplot.interactmeta <- function(x, ...) {
@@ -279,13 +392,61 @@ forestplot.interactmeta <- function(x, ...) {
   do.call(forestplot, c(list(x = x), list(...)))
 }
 
+#' @rdname forestplot
+#' @exportS3Method forestplot::forestplot interactmeta_da
+forestplot.interactmeta_da <- function(x, ...) {
+  forestplot(x, ...)
+}
+
+#' @rdname forestplot
+#' @exportS3Method forestplot::forestplot interactmeta_ad
+forestplot.interactmeta_ad <- function(x, ...) {
+  forestplot(x, ...)
+}
+
+#' @rdname forestplot
+#' @exportS3Method forestplot::forestplot interactmeta_swada
+forestplot.interactmeta_swada <- function(x, ...) {
+  forestplot(x, ...)
+}
+
+#' @rdname forestplot
+#' @exportS3Method forestplot::forestplot interactmeta_conventional
+forestplot.interactmeta_conventional <- function(x, ...) {
+  forestplot(x, ...)
+}
+
+#' @rdname forestplot
+#' @exportS3Method metafor::forest interactmeta_da
+forest.interactmeta_da <- function(x, ...) {
+  forestplot(x, ...)
+}
+
+#' @rdname forestplot
+#' @exportS3Method metafor::forest interactmeta_ad
+forest.interactmeta_ad <- function(x, ...) {
+  forestplot(x, ...)
+}
+
+#' @rdname forestplot
+#' @exportS3Method metafor::forest interactmeta_swada
+forest.interactmeta_swada <- function(x, ...) {
+  forestplot(x, ...)
+}
+
+#' @rdname forestplot
+#' @exportS3Method metafor::forest interactmeta_conventional
+forest.interactmeta_conventional <- function(x, ...) {
+  forestplot(x, ...)
+}
+
 #' Forest plot method for CAMS fits ([metafor::forest] generic)
 #'
-#' Metafor-idiomatic entry point for a [cam()] fit. Delegates to
+#' Metafor-idiomatic entry point for a [cams()] fit. Delegates to
 #' [forestplot()] with the same arguments so CAMS options (`type`,
 #' `group`, …) share one implementation.
 #'
-#' @param x A CAMS fit from [cam()].
+#' @param x A CAMS fit from [cams()].
 #' @param ... Passed to [forestplot()] (CAMS options and/or forestplot
 #'   presentation args).
 #'
@@ -293,14 +454,13 @@ forestplot.interactmeta <- function(x, ...) {
 #'
 #' @examples
 #' \dontrun{
-#' fit <- cam(escalc(measure = "IRR", yi = edss$yi, vi = edss$vi, data = edss),
+#' fit <- cams(escalc(measure = "IRR", yi = edss$yi, vi = edss$vi, data = edss),
 #'             reference = "Lower")
 #' forest(fit, exponentiate = TRUE)
 #' }
 #'
 #' @seealso [forestplot()], [metafor::forest()]
 #' @rdname forestplot
-#' @export
 #' @exportS3Method metafor::forest interactmeta
 forest.interactmeta <- function(x, ...) {
   forestplot(x, ...)
@@ -324,7 +484,7 @@ forestplot_render <- function(resultsA,
                                          study_colour = NULL,
                                          grouping = NULL,
                                          estimates_only = FALSE,
-                                         type = c("subgroups", "interaction", "combined"),
+                                         type = c("modifiers", "interaction", "subgroups"),
                                          which_panel = NULL,
                                          xlim = NULL,
                                          xticks = NULL,
@@ -341,6 +501,7 @@ forestplot_render <- function(resultsA,
                                          obs_row_index = NULL,
                                          include_shrinkage = TRUE,
                                          include_prediction = TRUE,
+                                         include_combined = TRUE,
                                          annotations = NULL,
                                          group = "subgroup",
                                          ...) {
@@ -397,8 +558,9 @@ forestplot_render <- function(resultsA,
   if ("include_overall" %in% names(dots)) {
     dots <- dots[!names(dots) %in% "include_overall"]
   }
-  if ("include_prediction" %in% names(dots)) {
-    dots <- dots[!names(dots) %in% "include_prediction"]
+  if ("include_combined" %in% names(dots)) {
+    include_combined <- dots$include_combined
+    dots <- dots[!names(dots) %in% "include_combined"]
   }
   if ("estimates_only" %in% names(dots)) {
     estimates_only <- dots$estimates_only
@@ -414,7 +576,7 @@ forestplot_render <- function(resultsA,
     dots <- dots[!names(dots) %in% "result"]
   }
   estimates_only <- isTRUE(estimates_only)
-  type <- comparison_resolve_effect_type(as.character(type)[[1L]])
+  type <- forestplot_resolve_type(as.character(type)[[1L]])
   # Legacy printplot / quiet ignored — draw via print() / forestplot_draw().
   dots$printplot <- NULL
   dots$quiet <- NULL
@@ -480,14 +642,12 @@ forestplot_render <- function(resultsA,
     obs_row_index = obs_row_index,
     include_shrinkage = include_shrinkage,
     include_prediction = include_prediction,
+    include_combined = include_combined,
     group = group
   )
   if (length(dots)) {
     render_snapshot <- c(render_snapshot, dots)
   }
-
-  sum_f <- if (!is.null(summary_fill)) summary_fill else "white"
-  sum_c <- if (!is.null(summary_colour)) summary_colour else interactmeta_accent_colour()
 
   if (!"shape" %in% names(resultsA)) {
     resultsA$shape <- ifelse(resultsA$bold, 18, 22)
@@ -558,7 +718,7 @@ forestplot_render <- function(resultsA,
     resultsB$colour[is.na(resultsB$yi)] <- NA_character_
   }
 
-  layer_on <- interact:::comparison_forest_layer_on
+  layer_on <- comparison_forest_layer_on
   has_shrinkage_rows <- layer_on(include_shrinkage) &&
     "row_kind" %in% names(resultsA) &&
     any(resultsA$row_kind == "shrinkage", na.rm = TRUE)
@@ -638,19 +798,28 @@ forestplot_render <- function(resultsA,
     resultsA = resultsA,
     resultsB = resultsB,
     row_labels = row_labels,
-    type = type
+    type = type,
+    include_combined = include_combined
   )
   resultsA <- filtered$resultsA
   resultsB <- filtered$resultsB
   row_labels <- filtered$row_labels
-  # IF cells for the non-reference subgroup (header is fixed "IF").
+  # IF cells for the non-reference subgroup when `type = "interaction"`.
   resultsA <- forestplot_restrict_ifrac_to_subgroup(
     resultsA = resultsA,
     row_labels = row_labels,
     subgroup = nonref_subgroup
   )
   n_study <- sum(resultsA$row_kind == "study", na.rm = TRUE)
-  annotations <- forestplot_filter_annotations_type(annotations, type)
+  fit_analysis <- dots$fit_analysis
+  if ("fit_analysis" %in% names(dots)) {
+    dots$fit_analysis <- NULL
+  }
+  annotations <- forestplot_filter_annotations_type(
+    annotations,
+    type = type,
+    fit_analysis = fit_analysis
+  )
   obs_row_index <- which(resultsA$row_kind == "study")
   bold <- if ("bold" %in% names(resultsA)) {
     as.logical(resultsA$bold)
@@ -714,7 +883,6 @@ forestplot_render <- function(resultsA,
   } else {
     col_right_heading <- list(col_right_heading)
   }
-  n_panels <- length(panels_to_use)
   # Role-specific axis title unless the user supplied `xlab`.
   xlab_for_roles <- if (isTRUE(xlab_user_supplied)) xlab else NULL
   xlab <- lapply(panel_roles, function(role) {
@@ -837,23 +1005,6 @@ forestplot_render <- function(resultsA,
   fp
 }
 
-#' Line width for forest CI / null / diamond geoms (fraction of `base_size`)
-#' @noRd
-forestplot_base_line_size <- function(base_size = interactmeta_forest_base_size()) {
-  base_size / 16
-}
-
-#' Draw a `forestplot()` result on the active graphics device.
-#' @noRd
-forestplot_print_result <- function(fp) {
-  suppressWarnings(
-    suppressMessages({
-      forestplot_maybe_print(fp)
-    })
-  )
-  invisible(fp)
-}
-
 #' Drop left-side annotation columns from secondary forest panels.
 #' @noRd
 forestplot_drop_left_on_secondary <- function(panels) {
@@ -865,18 +1016,6 @@ forestplot_drop_left_on_secondary <- function(panels) {
     p[, setdiff(names(p), drop), drop = FALSE]
   })
   panels
-}
-
-#' First panel value from a specs field (scalar or length-1 list)
-#' @noRd
-forestplot_specs_panel_value <- function(x, i = 1L) {
-  if (is.null(x)) {
-    return(NULL)
-  }
-  if (is.list(x) && !is.data.frame(x) && !is.character(x) && length(x)) {
-    return(x[[min(i, length(x))]])
-  }
-  x
 }
 
 check_forestplot_deps <- function() {
@@ -931,44 +1070,15 @@ forestplot_n_values <- function(dat, n_var = FALSE) {
   )
 }
 
-#' Resolve patient-count column name for forest plot trial labels
-#' @noRd
-forestplot_resolve_n_var <- function(dat, n_var = FALSE) {
-  if (identical(n_var, FALSE)) {
-    return(NULL)
-  }
-  if (!is.character(n_var) || length(n_var) != 1L || !nzchar(n_var)) {
-    stop("`n_var` must be `FALSE` or a single column name.", call. = FALSE)
-  }
-  if (n_var %in% names(dat)) {
-    return(n_var)
-  }
-  # Arm totals are handled in forestplot_n_values(); treat as available.
-  if (identical(n_var, "n") &&
-        all(c("treat.total", "cont.total") %in% names(dat))) {
-    return("n")
-  }
-  if (identical(n_var, "n")) {
-    warning(
-      "Column `n` not found; trial size labels are omitted. ",
-      "Pass `n_var` with the patient-count column name, or `n_var = FALSE` to silence.",
-      call. = FALSE
-    )
-    return(NULL)
-  }
-  stop(
-    sprintf("`n_var` column `%s` is not in the forest plot data.", n_var),
-    call. = FALSE
-  )
-}
-
 #' Total patients per trial from subgroup rows
 #' @noRd
 forestplot_trial_n_lookup <- function(dat,
-                                      trial_col = "trial",
-                                      subgroup_col = "subgroup",
+                                      trial_col = NULL,
+                                      subgroup_col = NULL,
                                       n_var = FALSE,
                                       contrast_sep = "-") {
+  trial_col <- trial_col %||% interactmeta_resolve_study_col(dat)
+  subgroup_col <- subgroup_col %||% interactmeta_resolve_level_col(dat)
   n_vals_all <- forestplot_n_values(dat, n_var)
   if (is.null(n_vals_all)) {
     return(NULL)
@@ -1061,14 +1171,22 @@ forestplot_col_left_names <- function(panel_df) {
   }
 }
 
+#' IF column header (`IF` or `IF (non-reference subgroup)`)
+#' @noRd
+forestplot_if_column_heading <- function(nonref_subgroup = NULL) {
+  sg <- as.character(nonref_subgroup %||% "")[[1L]]
+  if (!nzchar(sg)) {
+    "IF"
+  } else {
+    paste0("IF (", sg, ")")
+  }
+}
+
 #' @noRd
 forestplot_col_left_headings <- function(panel_df, nonref_subgroup = NULL) {
-  # Keep headings fixed across type / subgroup so column widths stay stable.
-  # `nonref_subgroup` is retained for call compatibility.
-  force(nonref_subgroup)
   heads <- character(0)
   if ("ifrac" %in% names(panel_df)) {
-    heads <- c(heads, "IF")
+    heads <- c(heads, forestplot_if_column_heading(nonref_subgroup))
   }
   if ("trial_size" %in% names(panel_df)) {
     heads <- c(heads, "N")
@@ -1080,8 +1198,8 @@ forestplot_col_left_headings <- function(panel_df, nonref_subgroup = NULL) {
 #'
 #' When `subgroup` is set (interaction / overall forests), keep IF only on
 #' rows belonging to that subgroup; Interaction / Combined study rows already
-#' carry the non-ref IF and are retained. The IF column header itself stays
-#' fixed as `"IF"`.
+#' carry the non-ref IF and are retained. With `type = "interaction"`, the
+#' column header is `IF (non-reference subgroup)`; subgroup forests use `"IF"`.
 #' @noRd
 forestplot_restrict_ifrac_to_subgroup <- function(resultsA,
                                                   row_labels,
@@ -1155,7 +1273,9 @@ validate_forestplot_data <- function(data) {
   if (!nrow(data)) {
     stop("`data` must have at least one row for the forest plot.", call. = FALSE)
   }
-  req <- c("trial", "subgroup", "yi", "vi")
+  study_col <- interactmeta_resolve_study_col(data)
+  level_col <- interactmeta_resolve_level_col(data)
+  req <- c(study_col, level_col, "yi", "vi")
   missing <- setdiff(req, names(data))
   if (length(missing)) {
     stop(
@@ -1164,6 +1284,13 @@ validate_forestplot_data <- function(data) {
       ".",
       call. = FALSE
     )
+  }
+  # Internal forest code expects `trial` / `subgroup` (metafor-era names).
+  if (!"trial" %in% names(data)) {
+    data$trial <- data[[study_col]]
+  }
+  if (!"subgroup" %in% names(data)) {
+    data$subgroup <- data[[level_col]]
   }
   data
 }
@@ -1256,21 +1383,6 @@ validate_forestplot_xticks_arg <- function(x) {
   invisible(NULL)
 }
 
-#' Accept only known forest-plot input classes
-#' @noRd
-validate_forestplot_x <- function(x) {
-  if (inherits(x, "interactmeta")) {
-    return(invisible(NULL))
-  }
-  if (is.data.frame(x) || inherits(x, "escalc")) {
-    return(invisible(NULL))
-  }
-  stop(
-    "`x` must be a data frame, `escalc` / `ifrac()` output, or a CAMS fit from `cam()`.",
-    call. = FALSE
-  )
-}
-
 #' Resolve the study / group label column for [forestplot()]
 #' @noRd
 resolve_forestplot_label_col <- function(label = NULL, trial = NULL) {
@@ -1304,8 +1416,11 @@ resolve_forestplot_subgroup_col <- function(subgroup = NULL, data = NULL) {
   }
   if (is.null(subgroup)) {
     nms <- tryCatch(names(data), error = function(e) NULL)
-    if (!is.null(nms) && "subgroup" %in% nms) {
-      return("subgroup")
+    if (!is.null(nms) && length(nms)) {
+      col <- interactmeta_resolve_level_col(data, fallback = NULL)
+      if (col %in% nms) {
+        return(col)
+      }
     }
     return(NULL)
   }
@@ -1318,273 +1433,10 @@ resolve_forestplot_subgroup_col <- function(subgroup = NULL, data = NULL) {
   subgroup
 }
 
-#' Prepare one-row-per-estimate data for a univariate forest
-#' @noRd
-forestplot_prepare_univariate_data <- function(x, label_col, contrast_sep = "-") {
-  if (is_ifrac_output(x)) {
-    d <- tibble::as_tibble(x)
-    if ("subgroup" %in% names(d)) {
-      d <- d[
-        !is_ifrac_contrast_row(d$subgroup, contrast_sep = contrast_sep),
-        ,
-        drop = FALSE
-      ]
-    }
-  } else {
-    d <- tryCatch(
-      as.data.frame(x, stringsAsFactors = FALSE),
-      error = function(e) {
-        stop(
-          "`x` must be a data frame, `escalc`, or `ifrac` output.",
-          call. = FALSE
-        )
-      }
-    )
-  }
-
-  if (!is.data.frame(d) || !nrow(d)) {
-    stop("`x` must be a non-empty data frame for the forest plot.", call. = FALSE)
-  }
-  if (!label_col %in% names(d)) {
-    stop(
-      "Label column `", label_col, "` not found in `x`.",
-      call. = FALSE
-    )
-  }
-  missing <- setdiff(c("yi", "vi"), names(d))
-  if (length(missing)) {
-    stop(
-      "`x` is missing required columns: ",
-      paste(missing, collapse = ", "),
-      ".",
-      call. = FALSE
-    )
-  }
-
-  trial <- as.character(d[[label_col]])
-  sg_lab <- if ("subgroup" %in% names(d)) {
-    as.character(d$subgroup)
-  } else {
-    rep("", nrow(d))
-  }
-  sg_lab[is.na(sg_lab)] <- ""
-
-  out <- data.frame(
-    trial = trial,
-    subgroup = sg_lab,
-    yi = as.numeric(d$yi),
-    vi = as.numeric(d$vi),
-    stringsAsFactors = FALSE
-  )
-  # Carry through size / extra columns (n, custom n_var, etc.)
-  skip <- c(label_col, "trial", "subgroup", "yi", "vi")
-  for (nm in setdiff(names(d), skip)) {
-    if (!nm %in% names(out)) {
-      out[[nm]] <- d[[nm]]
-    }
-  }
-  out
-}
-
-#' Univariate (single-panel) forest plot — no subgroup interaction panel
-#' @noRd
-forestplot_univariate <- function(x,
-                                  label_col,
-                                  n_var = FALSE,
-                                  pooled = NULL,
-                                  model_names = "Model 1",
-                                  xlab = NULL,
-                                  favours = NULL,
-                                  show_ci_text = FALSE,
-                                  typography_auto = FALSE,
-                                  exponentiate = FALSE,
-                                  col_right_heading = NULL,
-                                  stroke = interactmeta_forest_stroke(),
-                                  digits = 2,
-                                  fill = "white",
-                                  study_fill = NULL,
-                                  study_colour = NULL,
-                                  summary_fill = NULL,
-                                  summary_colour = NULL,
-                                  pointsize = interactmeta_forest_pointsize(),
-                                  base_size = interactmeta_forest_base_size(),
-                                  prob = 0.95,
-                                  plot.margin = interactmeta_forestplot_margin(),
-                                  xlim = NULL,
-                                  xticks = NULL,
-                                  grouping = NULL,
-                                  panel.height = NULL,
-                                  estimates_only = FALSE,
-                                  ...) {
-  dat <- forestplot_prepare_univariate_data(x, label_col = label_col)
-  if (!nrow(dat)) {
-    stop("No rows found for the univariate forest plot.", call. = FALSE)
-  }
-
-  # Information fraction across all rows (study-level weights)
-  ifrac_disp <- forestplot_univariate_ifrac_display(dat)
-
-  resultsA <- forestplot_panel_df(
-    dat,
-    prob = prob,
-    ifrac_display = ifrac_disp
-  )
-  resultsA <- forestplot_attach_univariate_size(
-    resultsA,
-    dat,
-    n_var = n_var
-  )
-
-  # Dummy interaction panel (unused; which_panel = 1)
-  resultsB <- resultsA
-  resultsB$yi <- NA_real_
-  resultsB$vi <- NA_real_
-  resultsB$ci.lb <- NA_real_
-  resultsB$ci.ub <- NA_real_
-  if ("est_plot" %in% names(resultsB)) {
-    resultsB$est_plot <- NA_real_
-  }
-  if ("plot_yi" %in% names(resultsB)) {
-    resultsB$plot_yi <- NA_real_
-  }
-
-  n_study <- nrow(resultsA)
-  # Study name as the row label; keep subgroup text only when it disambiguates
-  # multiple rows that share a trial id
-  trial_chr <- as.character(dat$trial)
-  sg_chr <- as.character(dat$subgroup)
-  dup_trial <- ave(trial_chr, trial_chr, FUN = length) > 1L
-  row_lab <- ifelse(dup_trial & nzchar(sg_chr), sg_chr, "")
-  row_labels <- data.frame(
-    subheading = trial_chr,
-    heading = "",
-    label = row_lab,
-    stringsAsFactors = FALSE
-  )
-
-  sum_f <- if (!is.null(summary_fill)) summary_fill else "white"
-  sum_c <- if (!is.null(summary_colour)) summary_colour else interactmeta_accent_colour()
-
-  resultsA$fill <- if (!is.null(study_fill)) study_fill else "white"
-  resultsA$colour <- if (!is.null(study_colour)) {
-    study_colour
-  } else {
-    comparison_forest_marker_colour()
-  }
-  resultsA$bold <- FALSE
-  resultsB$fill <- NA_character_
-  resultsB$colour <- NA_character_
-  resultsB$bold <- FALSE
-  resultsA$shape <- 22L
-  resultsB$shape <- NA_integer_
-
-  if (!is.null(pooled)) {
-    pooled <- validate_pooled(pooled, contrast_sep = "-")
-    extra <- append_pooled_rows(
-      resultsA = resultsA,
-      resultsB = resultsB,
-      row_labels = row_labels,
-      pooled_subgroup = pooled$subgroup,
-      pooled_interaction = NULL,
-      model_names = model_names,
-      prob = prob,
-      study_labels = row_labels$label
-    )
-    resultsA <- extra$resultsA
-    resultsB <- extra$resultsB
-    row_labels <- extra$row_labels
-    is_summary <- seq_len(nrow(resultsA)) > n_study
-    resultsA$fill[is_summary] <- sum_f
-    resultsA$colour[is_summary] <- sum_c
-    resultsA$bold[is_summary] <- TRUE
-    resultsA$shape[is_summary] <- 18L
-    resultsB$fill[is_summary] <- NA_character_
-    resultsB$colour[is_summary] <- NA_character_
-    resultsB$bold[is_summary] <- TRUE
-    resultsB$shape[is_summary] <- NA_integer_
-  }
-
-  if (is.null(col_right_heading) || !length(col_right_heading)) {
-    col_right_heading <- paste0("Effect\n(", 100 * prob, "% interval)")
-  }
-  if (is.null(xlab) || !length(xlab) || all(!nzchar(as.character(xlab)))) {
-    xlab <- forestplot_default_xlab(exponentiate)
-  }
-
-  forestplot_render(
-    resultsA = resultsA,
-    resultsB = resultsB,
-    row_labels = row_labels,
-    n_study = n_study,
-    ref = NA_character_,
-    prob = prob,
-    contrast_sep = "-",
-    xlab = xlab,
-    col_right_heading = col_right_heading,
-    summary_fill = summary_fill,
-    summary_colour = summary_colour,
-    fill = fill,
-    study_fill = if (!is.null(study_fill)) study_fill else "white",
-    study_colour = if (!is.null(study_colour)) {
-      study_colour
-    } else {
-      comparison_forest_marker_colour()
-    },
-    grouping = grouping,
-    estimates_only = estimates_only,
-    which_panel = 1L,
-    xlim = xlim,
-    xticks = xticks,
-    base_size = base_size,
-    pointsize = pointsize,
-    digits = digits,
-    stroke = stroke,
-    plot.margin = plot.margin,
-    panel.height = panel.height,
-    exponentiate = exponentiate,
-    favours = favours,
-    show_ci_text = show_ci_text,
-    typography_auto = typography_auto,
-    obs_row_index = NULL,
-    ...
-  )
-}
-
-#' Study-level information-fraction display for univariate forests
-#' @noRd
-forestplot_univariate_ifrac_display <- function(dat) {
-  w <- 1 / dat$vi
-  w[!is.finite(w) | w < 0] <- NA_real_
-  total <- sum(w, na.rm = TRUE)
-  if (!is.finite(total) || total <= 0) {
-    return(rep(NA_character_, nrow(dat)))
-  }
-  pct <- 100 * w / total
-  ifelse(
-    is.finite(pct),
-    format(round(pct, 1), nsmall = 1, trim = TRUE),
-    NA_character_
-  )
-}
-
-#' Attach optional N column for univariate forests
-#' @noRd
-forestplot_attach_univariate_size <- function(panel_df, dat, n_var = FALSE) {
-  n_vals <- forestplot_n_values(dat, n_var)
-  if (is.null(n_vals)) {
-    return(panel_df)
-  }
-  panel_df$trial_size <- ifelse(
-    is.finite(n_vals),
-    as.character(as.integer(round(n_vals))),
-    ""
-  )
-  panel_df
-}
-
 split_ifrac_for_forest <- function(data, contrast_sep, group = "subgroup") {
   group <- match.arg(group, c("subgroup", "trial"))
-  is_contrast <- is_ifrac_contrast_row(data$subgroup, contrast_sep = contrast_sep)
+  level_col <- interactmeta_resolve_level_col(data)
+  is_contrast <- is_ifrac_contrast_row(data[[level_col]], contrast_sep = contrast_sep)
   subgroup <- data[!is_contrast, , drop = FALSE]
   interaction <- data[is_contrast, , drop = FALSE]
 
@@ -1596,11 +1448,12 @@ split_ifrac_for_forest <- function(data, contrast_sep, group = "subgroup") {
     )
   }
 
+  study_col <- interactmeta_resolve_study_col(subgroup)
   subgroup <- order_forest_rows(subgroup, group = group)
   interaction <- order_forest_rows(
     interaction,
     group = group,
-    by_trial = unique(subgroup$trial)
+    by_trial = unique(as.character(subgroup[[study_col]]))
   )
 
   list(subgroup = subgroup, interaction = interaction)
@@ -1612,14 +1465,14 @@ resolve_forest_reference <- function(subgroup, data, reference = NULL) {
     return(interactmeta_reference(
       if (is.data.frame(data)) data else subgroup,
       reference = reference,
-      subgroup_var = "subgroup"
+      subgroup_var = "level"
     ))
   }
   if (is.data.frame(data) && "reference" %in% names(data)) {
-    return(interactmeta_reference(data, subgroup_var = "subgroup"))
+    return(interactmeta_reference(data, subgroup_var = "level"))
   }
   if (is.data.frame(subgroup) && "reference" %in% names(subgroup)) {
-    return(interactmeta_reference(subgroup, subgroup_var = "subgroup"))
+    return(interactmeta_reference(subgroup, subgroup_var = "level"))
   }
   stop(
     "Cannot resolve forest reference: supply `reference` or a `reference` column.",
@@ -1629,22 +1482,24 @@ resolve_forest_reference <- function(subgroup, data, reference = NULL) {
 
 build_contrast_rows_from_subgroups <- function(subgroup, contrast_sep, reference) {
   ref <- reference[[1]]
-  trials <- unique(subgroup$trial)
-  others <- setdiff(sort(unique(as.character(subgroup$subgroup))), ref)
+  study_col <- interactmeta_resolve_study_col(subgroup)
+  level_col <- interactmeta_resolve_level_col(subgroup)
+  trials <- unique(subgroup[[study_col]])
+  others <- setdiff(sort(unique(as.character(subgroup[[level_col]]))), ref)
   if (!length(others)) {
     return(subgroup[0, , drop = FALSE])
   }
 
   wide <- subgroup |>
-    dplyr::select("trial", "subgroup", "yi", "vi") |>
+    dplyr::select(dplyr::all_of(study_col), dplyr::all_of(level_col), "yi", "vi") |>
     tidyr::pivot_wider(
-      names_from = "subgroup",
+      names_from = dplyr::all_of(level_col),
       values_from = c("yi", "vi"),
-      names_glue = "{.value}_{subgroup}"
+      names_glue = sprintf("{.value}_{%s}", level_col)
     )
 
   out <- lapply(trials, function(tr) {
-    row <- wide[wide$trial == tr, , drop = FALSE]
+    row <- wide[wide[[study_col]] == tr, , drop = FALSE]
     if (!nrow(row)) {
       return(NULL)
     }
@@ -1653,12 +1508,13 @@ build_contrast_rows_from_subgroups <- function(subgroup, contrast_sep, reference
       yi2 <- row[[paste0("yi_", ref)]]
       vi1 <- row[[paste0("vi_", lab)]]
       vi2 <- row[[paste0("vi_", ref)]]
-      dplyr::tibble(
-        trial = tr,
-        subgroup = paste0(lab, contrast_sep, ref),
+      row_out <- dplyr::tibble(
         yi = yi1 - yi2,
         vi = vi1 + vi2
       )
+      row_out[[study_col]] <- tr
+      row_out[[level_col]] <- paste0(lab, contrast_sep, ref)
+      row_out
     }))
   })
   dplyr::bind_rows(out)
@@ -1675,17 +1531,35 @@ align_interaction_to_subgroups <- function(subgroup, interaction, reference = NU
     return(list(subgroup = subgroup, interaction = blank))
   }
 
+  trial_col <- if ("trial" %in% names(subgroup)) {
+    "trial"
+  } else {
+    interactmeta_resolve_study_col(subgroup)
+  }
+  level_col <- if ("subgroup" %in% names(subgroup)) {
+    "subgroup"
+  } else {
+    interactmeta_resolve_level_col(subgroup)
+  }
+  if (!trial_col %in% names(interaction)) {
+    interaction$trial <- interaction[[interactmeta_resolve_study_col(interaction)]]
+  }
+
   int_one <- interaction |>
-    dplyr::group_by(.data$trial) |>
+    dplyr::group_by(.data[[trial_col]]) |>
     dplyr::slice(1L) |>
     dplyr::ungroup() |>
-    dplyr::select("trial", "yi", "vi")
+    dplyr::select(dplyr::all_of(c(trial_col, "yi", "vi")))
 
   joined <- dplyr::left_join(
-    subgroup |> dplyr::select("trial", "subgroup"),
+    subgroup |> dplyr::select(dplyr::all_of(c(trial_col, level_col))),
     int_one,
-    by = "trial"
+    by = trial_col
   )
+  names(joined)[names(joined) == level_col] <- "subgroup"
+  if (!identical(trial_col, "trial")) {
+    joined$trial <- joined[[trial_col]]
+  }
 
   if (!is.null(reference) && length(reference) == 1L && nzchar(reference)) {
     is_ref <- as.character(joined$subgroup) == reference
@@ -1703,11 +1577,27 @@ order_forest_rows <- function(df,
     return(df)
   }
   group <- match.arg(group, c("subgroup", "trial"))
+  trial_col <- if ("trial" %in% names(df)) {
+    "trial"
+  } else {
+    interactmeta_resolve_study_col(df)
+  }
+  level_col <- if ("subgroup" %in% names(df)) {
+    "subgroup"
+  } else {
+    interactmeta_resolve_level_col(df)
+  }
+  if (!trial_col %in% names(df)) {
+    stop("Forest data is missing a study / trial column.", call. = FALSE)
+  }
+  if (!level_col %in% names(df)) {
+    stop("Forest data is missing a level / subgroup column.", call. = FALSE)
+  }
   # Subgroup nesting uses alphabetical trial labels within each block (classic
   # metafor forest ordering). Trial nesting keeps first-appearance block order
   # unless `by_trial` is supplied.
   trial_ord <- if (is.null(by_trial)) {
-    tr <- unique(as.character(df$trial))
+    tr <- unique(as.character(df[[trial_col]]))
     if (identical(group, "subgroup")) {
       sort(tr)
     } else {
@@ -1716,21 +1606,31 @@ order_forest_rows <- function(df,
   } else {
     by_trial
   }
-  df$trial <- factor(as.character(df$trial), levels = trial_ord)
-  sg_was_factor <- is.factor(df$subgroup)
-  sg_levels <- if (sg_was_factor) levels(df$subgroup) else unique(as.character(df$subgroup))
-  df$subgroup <- factor(as.character(df$subgroup), levels = sg_levels)
+  df[[trial_col]] <- factor(as.character(df[[trial_col]]), levels = trial_ord)
+  sg_was_factor <- is.factor(df[[level_col]])
+  sg_levels <- if (sg_was_factor) {
+    levels(df[[level_col]])
+  } else {
+    unique(as.character(df[[level_col]]))
+  }
+  df[[level_col]] <- factor(as.character(df[[level_col]]), levels = sg_levels)
 
   if (identical(group, "subgroup")) {
-    df <- df[order(df$subgroup, df$trial), , drop = FALSE]
+    df <- df[order(df[[level_col]], df[[trial_col]]), , drop = FALSE]
   } else {
-    df <- df[order(df$trial, df$subgroup), , drop = FALSE]
+    df <- df[order(df[[trial_col]], df[[level_col]]), , drop = FALSE]
   }
-  df$trial <- as.character(df$trial)
+  df[[trial_col]] <- as.character(df[[trial_col]])
   if (sg_was_factor) {
-    df$subgroup <- factor(as.character(df$subgroup), levels = sg_levels)
+    df[[level_col]] <- factor(as.character(df[[level_col]]), levels = sg_levels)
   } else {
-    df$subgroup <- as.character(df$subgroup)
+    df[[level_col]] <- as.character(df[[level_col]])
+  }
+  if (!identical(trial_col, "trial") && !"trial" %in% names(df)) {
+    df$trial <- df[[trial_col]]
+  }
+  if (!identical(level_col, "subgroup") && !"subgroup" %in% names(df)) {
+    df$subgroup <- df[[level_col]]
   }
   df
 }
@@ -1812,7 +1712,13 @@ forestplot_nonref_subgroup <- function(subgroup_vals, ref = NULL) {
   )$subgroup
 }
 
-#' Block heading with optional non-reference subgroup, e.g. `"Combined (Older)"`
+#' Forest block heading for the combined population ([combined()] estimand)
+#' @noRd
+forestplot_combined_block_label <- function() {
+  "All"
+}
+
+#' Block heading with optional non-reference subgroup, e.g. `"All (Older)"`
 #' @noRd
 forestplot_heading_with_nonref <- function(base, subgroup) {
   base <- as.character(base)[[1L]]
@@ -1833,14 +1739,17 @@ forestplot_heading_is_interaction <- function(heading) {
 #' Whether a forest heading is a Combined block (possibly with subgroup)
 #' @noRd
 forestplot_heading_is_combined <- function(heading) {
-  grepl("^Combined(\\s*\\(|$)", as.character(heading))
+  lab <- forestplot_combined_block_label()
+  h <- as.character(heading)
+  grepl(paste0("^(", lab, "|Combined)(\\s*\\(|$)"), h)
 }
 
 #' Stack subgroup, interaction, and combined effects into one vertical forest panel
 #'
 #' Order: subgroup blocks (study / shrinkage / overall / prediction), then an
 #' Interaction block (one row per trial + optional shrinkage + summaries), then
-#' Combined (trial-level combined study / optional shrinkage + summary diamonds).
+#' Combined (**Overall** / **Prediction** for [combined()] at the reporting IF
+#' only; no trial-level rows in that block).
 #'
 #' @noRd
 forestplot_stack_panels <- function(resultsA,
@@ -1925,6 +1834,13 @@ forestplot_stack_panels <- function(resultsA,
   sg_ix <- which(
     rk %in% c("study", "shrinkage", "overall", "prediction") & !is_int_shr
   )
+  if ("colour_label" %in% names(row_labels)) {
+    cl <- as.character(row_labels$colour_label)
+    int_marg <- rk %in% c("overall", "prediction") &
+      !is.na(cl) &
+      cl == "Interaction"
+    sg_ix <- sg_ix[!int_marg[sg_ix]]
+  }
   for (i in sg_ix) {
     # Keep NA pooled/prediction placeholders so switched-off layers reserve
     # the same vertical space as the full plot.
@@ -2071,149 +1987,9 @@ forestplot_stack_panels <- function(resultsA,
     push_row(row, rl)
   }
 
-  ov_header <- "Combined"
+  ov_header <- forestplot_combined_block_label()
   # Include NA Combined placeholders so omitted pooled/prediction keep space.
   ov_ix <- which(rk == "combined")
-  ov_finite <- which(rk == "combined" & is.finite(resultsA$yi))
-
-  # Trial-level overall study (+ shrinkage) under Combined, parallel to the
-  # Interaction block: precision-weighted within-trial combination of subgroup
-  # endpoints (and of subgroup shrinkage when present).
-  if (length(ov_finite)) {
-    sg_study_ix <- which(
-      rk == "study" & is.finite(resultsA$yi) & is.finite(resultsA$vi) & !is_int_shr
-    )
-    sg_shr_ix <- which(
-      rk == "shrinkage" &
-        is.finite(resultsA$yi) &
-        is.finite(resultsA$vi) &
-        !is_int_shr &
-        !is.na(resultsA$shape)
-    )
-    ov_trials <- unique(trial_id[sg_study_ix])
-    ov_trials <- ov_trials[nzchar(ov_trials)]
-    if (isTRUE(nest_by_subgroup)) {
-      ov_trials <- sort(ov_trials)
-    }
-
-    for (tid in ov_trials) {
-      st_ii <- sg_study_ix[trial_id[sg_study_ix] == tid]
-      if (!length(st_ii)) {
-        next
-      }
-      yi_s <- resultsA$yi[st_ii]
-      vi_s <- pmax(resultsA$vi[st_ii], 1e-12)
-      w <- 1 / vi_s
-      ov_yi <- sum(yi_s * w) / sum(w)
-      ov_vi <- 1 / sum(w)
-
-      row <- blank_from(resultsA, resultsA[st_ii[[1L]], , drop = FALSE])
-      row$yi <- ov_yi
-      row$vi <- ov_vi
-      if ("ci.lb" %in% names(row) && "ci.ub" %in% names(row)) {
-        half <- stats::qnorm(0.975) * sqrt(ov_vi)
-        row$ci.lb <- ov_yi - half
-        row$ci.ub <- ov_yi + half
-      }
-      # Non-reference subgroup IF (with group label) + study size.
-      if ("ifrac" %in% names(row)) {
-        row$ifrac <- forestplot_nonref_ifrac_display(
-          ifrac_vals = if ("ifrac" %in% names(resultsA)) {
-            resultsA$ifrac[st_ii]
-          } else {
-            character(0)
-          },
-          subgroup_vals = colour_lab[st_ii],
-          ref = ref
-        )
-      }
-      if ("trial_size" %in% names(resultsA)) {
-        sizes <- resultsA$trial_size[st_ii]
-        sizes <- sizes[nzchar(as.character(sizes))]
-        row$trial_size <- if (length(sizes)) sizes[[1L]] else ""
-      }
-      row$row_kind <- "study"
-      row$shape <- if (!is.na(resultsA$shape[[st_ii[[1L]]]])) {
-        as.integer(resultsA$shape[[st_ii[[1L]]]])
-      } else {
-        15L
-      }
-      row$bold <- FALSE
-      rl <- row_labels[st_ii[[1L]], , drop = FALSE]
-      rl$heading <- ov_header
-      if ("subheading" %in% names(rl)) {
-        rl$subheading <- NA_character_
-      }
-      rl$label <- tid
-      if ("colour_label" %in% names(rl)) {
-        rl$colour_label <- ov_header
-      }
-      push_row(row, rl)
-
-      shr_ii <- sg_shr_ix[trial_id[sg_shr_ix] == tid]
-      ov_shr_hit <- NULL
-      if (!is.null(overall_shrinkage) && nrow(overall_shrinkage)) {
-        hit <- overall_shrinkage[
-          as.character(overall_shrinkage$trial) == tid,
-          ,
-          drop = FALSE
-        ]
-        if (nrow(hit) && is.finite(hit$yi[[1L]]) && is.finite(hit$vi[[1L]])) {
-          ov_shr_hit <- hit[1L, , drop = FALSE]
-        }
-      }
-      if (is.null(ov_shr_hit) && !length(shr_ii)) {
-        next
-      }
-      if (!is.null(ov_shr_hit)) {
-        shr_yi <- as.numeric(ov_shr_hit$yi[[1L]])
-        shr_vi <- pmax(as.numeric(ov_shr_hit$vi[[1L]]), 1e-12)
-        shr_template_ix <- if (length(shr_ii)) shr_ii[[1L]] else st_ii[[1L]]
-      } else {
-        yi_h <- resultsA$yi[shr_ii]
-        vi_h <- pmax(resultsA$vi[shr_ii], 1e-12)
-        wh <- 1 / vi_h
-        shr_yi <- sum(yi_h * wh) / sum(wh)
-        shr_vi <- 1 / sum(wh)
-        shr_template_ix <- shr_ii[[1L]]
-      }
-
-      row <- blank_from(resultsA, resultsA[shr_template_ix, , drop = FALSE])
-      row$yi <- shr_yi
-      row$vi <- shr_vi
-      if ("ci.lb" %in% names(row) && "ci.ub" %in% names(row)) {
-        half <- stats::qnorm(0.975) * sqrt(shr_vi)
-        row$ci.lb <- shr_yi - half
-        row$ci.ub <- shr_yi + half
-      }
-      if ("ifrac" %in% names(row)) {
-        row$ifrac <- ""
-      }
-      if ("trial_size" %in% names(row)) {
-        row$trial_size <- ""
-      }
-      row$row_kind <- "shrinkage"
-      row$shape <- if (!is.na(resultsA$shape[[shr_template_ix]])) {
-        as.integer(resultsA$shape[[shr_template_ix]])
-      } else {
-        15L
-      }
-      if ("point_scale" %in% names(resultsA)) {
-        row$point_scale <- resultsA$point_scale[[shr_template_ix]]
-      }
-      row$bold <- FALSE
-      rl <- row_labels[shr_template_ix, , drop = FALSE]
-      rl$heading <- ov_header
-      if ("subheading" %in% names(rl)) {
-        rl$subheading <- NA_character_
-      }
-      rl$label <- tid
-      if ("colour_label" %in% names(rl)) {
-        rl$colour_label <- ov_header
-      }
-      push_row(row, rl)
-    }
-  }
 
   for (i in ov_ix) {
     rl <- row_labels[i, , drop = FALSE]
@@ -2300,8 +2076,21 @@ forestplot_footnote_as_plotmath <- function(txt) {
   }
   tok_tg <- "<<TG>>"
   tok_tau <- "<<TAU>>"
+  tok_tau_hat <- "<<TAUHAT>>"
+  tok_tg_hat <- "<<TGHAT>>"
   tok_pi <- "<<PI>>"
   tok_dot <- "<<DOT>>"
+  txt <- gsub(
+    paste0("at fitted interaction heterogeneity ", "\u03c4", "_", "\u03b3"),
+    tok_tg_hat,
+    txt,
+    fixed = TRUE
+  )
+  txt <- gsub("at fitted interaction heterogeneity tau_gamma", tok_tg_hat, txt, fixed = TRUE)
+  txt <- gsub(paste0("at fitted heterogeneity ", "\u03c4"), tok_tau_hat, txt, fixed = TRUE)
+  txt <- gsub("at fitted heterogeneity tau", tok_tau_hat, txt, fixed = TRUE)
+  txt <- gsub(paste0("at fitted ", "\u03c4"), tok_tau_hat, txt, fixed = TRUE)
+  txt <- gsub("at fitted tau", tok_tau_hat, txt, fixed = TRUE)
   txt <- gsub("\u03c4_\u03b3", tok_tg, txt, fixed = TRUE)
   txt <- gsub("\u03c4_y", tok_tg, txt, fixed = TRUE)
   txt <- gsub("tau_gamma", tok_tg, txt, fixed = TRUE)
@@ -2311,6 +2100,8 @@ forestplot_footnote_as_plotmath <- function(txt) {
   txt <- gsub("\u00b7", tok_dot, txt, fixed = TRUE)
   txt <- gsub("\\", "\\\\", txt, fixed = TRUE)
   txt <- gsub("\"", "\\\"", txt, fixed = TRUE)
+  txt <- gsub(tok_tg_hat, '" * hat(tau[gamma]) * "', txt, fixed = TRUE)
+  txt <- gsub(tok_tau_hat, '" * hat(tau) * "', txt, fixed = TRUE)
   txt <- gsub(tok_tg, '" * tau[gamma] * "', txt, fixed = TRUE)
   txt <- gsub(tok_tau, '" * tau * "', txt, fixed = TRUE)
   txt <- gsub(tok_pi, '" * pi * "', txt, fixed = TRUE)
@@ -2326,13 +2117,141 @@ forestplot_footnote_as_plotmath <- function(txt) {
   }
 }
 
+#' Default / effective `include_shrinkage` for forest plots
+#'
+#' Shrinkage rows are Bayesian-only; frequentist fits never show them.
+#' @noRd
+forestplot_resolve_include_shrinkage <- function(fit,
+                                                   include_shrinkage,
+                                                   call) {
+  if (!interactmeta_is_bayesian_fit(fit)) {
+    return(FALSE)
+  }
+  if (is.null(call$include_shrinkage)) {
+    return(TRUE)
+  }
+  isTRUE(include_shrinkage)
+}
+
+#' Resolve `forestplot()` `type` for construction / CAMS fits
+#'
+#' AD forests only support the interaction block; when `type` is omitted,
+#' `"interaction"` is used. Explicit `type = "modifiers"` still errors.
+#' @noRd
+forestplot_resolve_fit_type <- function(
+    fit,
+    type = c("modifiers", "interaction", "subgroups"),
+    call = NULL) {
+  if (is.null(call)) {
+    call <- match.call(expand.dots = FALSE)
+  }
+  cap <- interactmeta_fit_capabilities(fit)
+  subgroup_panels <- isTRUE(cap$subgroups)
+  if (!subgroup_panels && is.null(call$type)) {
+    return("interaction")
+  }
+  type_user <- if (is.null(call$type)) {
+    "modifiers"
+  } else {
+    forestplot_parse_panel_type(type)
+  }
+  if (identical(type_user, "subgroups")) {
+    .Deprecated(msg = 'type = "subgroups" is deprecated; use type = "modifiers".')
+  }
+  type_resolved <- forestplot_resolve_type(type_user)
+  forestplot_assert_panel_type_for_fit(
+    fit = fit,
+    type_resolved = type_resolved,
+    type_user = type_user,
+    subgroup_panels = subgroup_panels
+  )
+  if (identical(type_resolved, "subgroups")) {
+    "modifiers"
+  } else {
+    type_resolved
+  }
+}
+
+#' Error when `forestplot()` `type` is not implemented for this analysis
+#' @noRd
+forestplot_assert_panel_type_for_fit <- function(fit,
+                                                 type_resolved,
+                                                 type_user,
+                                                 subgroup_panels = NULL) {
+  if (is.null(subgroup_panels)) {
+    subgroup_panels <- isTRUE(interactmeta_fit_capabilities(fit)$subgroups)
+  }
+  if (subgroup_panels || identical(type_resolved, "interaction")) {
+    return(invisible(type_resolved))
+  }
+  analysis <- interactmeta_fit_analysis(fit)
+  acr <- interactmeta_analysis_acronym(analysis)
+  stop(
+    acr,
+    " forests support only `type = \"interaction\"` ",
+    "(the interaction block). ",
+    "`type = \"modifiers\"` draws subgroup modifier panels and the optional ",
+    "**All** section (`include_combined`); those are not defined for ",
+    acr,
+    ". You passed `type = ", shQuote(type_user), "`.",
+    call. = FALSE
+  )
+}
+
+#' Parse `forestplot()` `type` (reject marginal-layer names and unknown values)
+#' @noRd
+forestplot_parse_panel_type <- function(type) {
+  if (missing(type) || !length(type)) {
+    return("modifiers")
+  }
+  raw <- as.character(type)[[1L]]
+  if (identical(raw, "subgroup")) {
+    raw <- "modifiers"
+  }
+  if (identical(raw, "combined")) {
+    stop(
+      "`type = \"combined\"` is no longer supported in `forestplot()`. ",
+      "Use `type = \"modifiers\"` with `include_combined = TRUE` (default) ",
+      "for the combined-population **All** section, or ",
+      "`include_combined = FALSE` to omit it.",
+      call. = FALSE
+    )
+  }
+  allowed <- c("modifiers", "interaction", "subgroups")
+  if (!raw %in% allowed) {
+    stop(
+      "`type` must be `\"modifiers\"` or `\"interaction\"`. ",
+      "You passed ", shQuote(raw), ".",
+      call. = FALSE
+    )
+  }
+  raw
+}
+
+#' Resolve `forestplot()` `type` (subgroups or interaction only)
+#' @noRd
+forestplot_resolve_type <- function(type) {
+  type <- forestplot_parse_panel_type(type)
+  if (identical(type, "interaction")) {
+    return("interaction")
+  }
+  if (type %in% c("modifiers", "subgroups")) {
+    return("subgroups")
+  }
+  stop(
+    "`type` must be `\"modifiers\"` or `\"interaction\"`.",
+    call. = FALSE
+  )
+}
+
 #' Keep only the requested forest type block(s) after stacking
 #' @noRd
 forestplot_filter_type <- function(resultsA,
                                        resultsB,
                                        row_labels,
-                                       type = c("subgroups", "interaction", "combined")) {
-  type <- comparison_resolve_effect_type(match.arg(type))
+                                       type = c("modifiers", "interaction", "subgroups"),
+                                       include_combined = TRUE) {
+  type <- forestplot_resolve_type(type)
   n <- nrow(resultsA)
   if (!n) {
     stop("Forest panel is empty after stacking.", call. = FALSE)
@@ -2354,13 +2273,13 @@ forestplot_filter_type <- function(resultsA,
   }
 
   idx <- if (identical(type, "subgroups")) {
-    # Subgroup blocks only; Combined is type = "combined".
-    !forestplot_heading_is_interaction(heading) &
-      !forestplot_heading_is_combined(heading)
-  } else if (identical(type, "interaction")) {
-    forestplot_heading_is_interaction(heading)
+    keep <- !forestplot_heading_is_interaction(heading)
+    if (!comparison_forest_layer_on(include_combined)) {
+      keep <- keep & !forestplot_heading_is_combined(heading)
+    }
+    keep
   } else {
-    forestplot_heading_is_combined(heading)
+    forestplot_heading_is_interaction(heading)
   }
   if (!any(idx)) {
     stop(
@@ -2383,26 +2302,25 @@ forestplot_filter_type <- function(resultsA,
 #' Drop annotation notes that do not belong to the active type
 #' @noRd
 forestplot_filter_annotations_type <- function(annotations,
-                                                  type = c("subgroups", "interaction", "combined")) {
-  type <- comparison_resolve_effect_type(match.arg(type))
+                                                  type = c("modifiers", "interaction", "subgroups"),
+                                                  fit_analysis = NULL) {
+  type <- forestplot_resolve_type(type)
   annotations <- forestplot_normalize_annotations(annotations)
   # `subgroups` keeps the full footnote stack (overall IF + both heterogeneity
-  # notes). Interaction / overall types keep only their slice.
+  # notes). Interaction keeps its slice; DA interaction uses subgroup-specific
+  # tau from the separate subgroup RE-MAs.
   if (identical(type, "subgroups")) {
     return(annotations)
   }
   het <- annotations$heterogeneity
-  ifrac <- annotations$ifrac
-  if (identical(type, "interaction")) {
-    ifrac <- character()
-    het <- het[intersect(names(het), "interaction")]
+  het_key <- if (identical(fit_analysis, "da") && identical(type, "interaction")) {
+    "combined"
   } else {
-    # overall: keep overall het; IF notes are subgroup-specific — keep as
-    # trailing unmatched notes (layout places them after remaining blocks).
-    het <- het[intersect(names(het), "combined")]
+    "interaction"
   }
+  het <- het[intersect(names(het), het_key)]
   annotations$heterogeneity <- het
-  annotations$ifrac <- ifrac
+  annotations$ifrac <- character()
   annotations
 }
 
@@ -2431,46 +2349,6 @@ forestplot_study_row_labels <- function(trial, subgroup, group = "subgroup") {
       colour_label = subgroup,
       stringsAsFactors = FALSE
     )
-  }
-}
-
-#' Plotmath expression for a forest footnote so Greek renders
-#'
-#' Footnotes are stored as UTF-8 (`π`, `τ`, `τ_γ`) for tests and print.
-#' grid / base graphics draw them with plotmath (`pi`, `tau`, `tau[gamma]`)
-#' so the Greek letters do not depend on the device font.
-#' @noRd
-forestplot_footnote_as_plotmath <- function(txt) {
-  txt <- paste(enc2utf8(as.character(txt)), collapse = " \u00b7 ")
-  txt <- txt[[1L]]
-  if (!nzchar(txt) || is.na(txt)) {
-    return("")
-  }
-  tok_tg <- "<<TG>>"
-  tok_tau <- "<<TAU>>"
-  tok_pi <- "<<PI>>"
-  tok_dot <- "<<DOT>>"
-  txt <- gsub("\u03c4_\u03b3", tok_tg, txt, fixed = TRUE)
-  txt <- gsub("\u03c4_y", tok_tg, txt, fixed = TRUE)
-  txt <- gsub("tau_gamma", tok_tg, txt, fixed = TRUE)
-  txt <- gsub("\u03c4", tok_tau, txt, fixed = TRUE)
-  txt <- gsub("\u03c0", tok_pi, txt, fixed = TRUE)
-  txt <- gsub(" \u00b7 ", tok_dot, txt, fixed = TRUE)
-  txt <- gsub("\u00b7", tok_dot, txt, fixed = TRUE)
-  txt <- gsub("\\", "\\\\", txt, fixed = TRUE)
-  txt <- gsub("\"", "\\\"", txt, fixed = TRUE)
-  txt <- gsub(tok_tg, '" * tau[gamma] * "', txt, fixed = TRUE)
-  txt <- gsub(tok_tau, '" * tau * "', txt, fixed = TRUE)
-  txt <- gsub(tok_pi, '" * pi * "', txt, fixed = TRUE)
-  txt <- gsub(tok_dot, '" %.% "', txt, fixed = TRUE)
-  expr <- tryCatch(
-    parse(text = paste0('"', txt, '"'))[[1L]],
-    error = function(e) NULL
-  )
-  if (is.null(expr)) {
-    paste(as.character(txt), collapse = "")
-  } else {
-    expr
   }
 }
 
@@ -2761,16 +2639,6 @@ forestplot_format_ifrac <- function(x, digits = 1) {
   out
 }
 
-#' @noRd
-forestplot_interleave_ifrac_display <- function(ifrac_display) {
-  if (!length(ifrac_display)) {
-    return(character(0))
-  }
-  out <- rep("", 2L * length(ifrac_display))
-  out[seq(1L, length(out), by = 2L)] <- ifrac_display
-  out
-}
-
 forestplot_panel_df <- function(df,
                                 prob,
                                 ifrac_display = NULL) {
@@ -2823,116 +2691,4 @@ forestplot_panel_df <- function(df,
   }
 
   out
-}
-
-validate_pooled <- function(pooled, contrast_sep) {
-  if (!is.list(pooled) || is.data.frame(pooled)) {
-    stop(
-      "`pooled` must be a named list with elements `subgroup` and/or `interaction`.",
-      call. = FALSE
-    )
-  }
-  nms <- names(pooled)
-  if (is.null(nms) || !any(nzchar(nms))) {
-    stop(
-      "`pooled` must be a named list with elements `subgroup` and/or `interaction`.",
-      call. = FALSE
-    )
-  }
-  allowed <- c("subgroup", "interaction")
-  unknown <- setdiff(nms[nzchar(nms)], allowed)
-  if (length(unknown)) {
-    stop(
-      "`pooled` has unknown element(s): ",
-      paste(unknown, collapse = ", "),
-      ". Use `subgroup` and/or `interaction` only.",
-      call. = FALSE
-    )
-  }
-  usable <- intersect(allowed, nms)
-  usable <- usable[vapply(usable, function(nm) !is.null(pooled[[nm]]), logical(1L))]
-  if (!length(usable)) {
-    stop(
-      "`pooled` must include at least one of `subgroup` or `interaction`.",
-      call. = FALSE
-    )
-  }
-  for (nm in usable) {
-    validate_forestplot_data(pooled[[nm]])
-  }
-  pooled
-}
-
-append_pooled_rows <- function(resultsA,
-                               resultsB,
-                               row_labels,
-                               pooled_subgroup,
-                               pooled_interaction,
-                               model_names,
-                               prob,
-                               study_labels) {
-  if (is.null(pooled_subgroup)) {
-    return(list(resultsA = resultsA, resultsB = resultsB, row_labels = row_labels))
-  }
-
-  num_subgroups <- length(unique(as.character(pooled_subgroup$subgroup)))
-  k <- nrow(pooled_subgroup)
-  n <- nrow(row_labels)
-  additional_rows <- num_subgroups * length(model_names)
-
-  pooled_sg <- forestplot_panel_df(pooled_subgroup, prob = prob)
-  rownames(pooled_sg) <- paste(pooled_subgroup$trial, pooled_subgroup$subgroup, sep = "|")
-
-  extra_labels <- data.frame(
-    subheading = rep(model_names, each = num_subgroups),
-    heading = sub("\\|.*", "", rownames(pooled_sg)),
-    label = sub(".*\\|", "", rownames(pooled_sg)),
-    stringsAsFactors = FALSE
-  )
-
-  row_labels <- rbind(
-    row_labels,
-    extra_labels[seq_len(additional_rows), , drop = FALSE]
-  )
-
-  pad <- function(df, n_add) {
-    if (!n_add) {
-      return(df)
-    }
-    blank <- df[1, , drop = FALSE]
-    for (col in names(blank)) {
-      if (col %in% c("ifrac", "trial_size")) {
-        blank[[col]] <- ""
-      } else if (is.character(blank[[col]])) {
-        blank[[col]] <- ""
-      } else if (is.logical(blank[[col]])) {
-        blank[[col]] <- FALSE
-      } else {
-        blank[[col]] <- NA
-      }
-    }
-    rbind(df, blank[rep(1L, n_add), , drop = FALSE])
-  }
-
-  resultsA <- pad(resultsA, additional_rows)
-  resultsB <- pad(resultsB, additional_rows)
-  resultsA[(n + 1):(n + additional_rows), ] <- pooled_sg[seq_len(additional_rows), ]
-
-  if (!is.null(pooled_interaction) && nrow(pooled_interaction)) {
-    rows_to_update <- which(extra_labels$subheading %in% model_names)
-    if (length(rows_to_update)) {
-      ref_idx <- 1L
-      include_indices <- seq(rows_to_update[1], rows_to_update[k], num_subgroups) + ref_idx - 1L
-      int_summ <- forestplot_panel_df(pooled_interaction, prob = prob)
-      n_int <- length(include_indices)
-      if (nrow(int_summ) >= 2 * n_int) {
-        resultsB[include_indices, c("yi", "ci.lb", "ci.ub")] <-
-          int_summ[seq(2, 2 * n_int, 2), c("yi", "ci.lb", "ci.ub")]
-      }
-    }
-  } else {
-    resultsB[(n + 1):(n + additional_rows), ] <- resultsA[(n + 1):(n + additional_rows), ]
-  }
-
-  list(resultsA = resultsA, resultsB = resultsB, row_labels = row_labels)
 }

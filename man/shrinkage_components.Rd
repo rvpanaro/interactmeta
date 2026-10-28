@@ -4,21 +4,21 @@
 \alias{shrinkage_components}
 \title{Audit components for CAMS shrinkage (observed, IF, m/g, subgroup draws)}
 \usage{
-shrinkage_components(fit, ..., contribution = NULL)
+shrinkage_components(fit, ..., at = NULL, contribution)
 }
 \arguments{
 \item{fit}{A \code{\link{interactmeta}}, or a shrinkage return value that already
 contains \verb{$components}.}
 
-\item{...}{Passed through when \code{fit} is an \code{interactmeta}: \code{max_draws},
-\code{ifrac}, \code{contrast_sep}, \code{contribution}.}
+\item{...}{Passed through when \code{fit} is an \code{interactmeta}: \code{max_support},
+\code{ifrac}, \code{contrast_sep}, \code{at}.}
 }
 \value{
 A list with:
 \itemize{
 \item \code{pi}: named trial information fractions
 \item \code{observed}: named vectors \code{y_A}, \code{y_B}, \code{m}, \code{g} and sampling variances
-\item \code{draws}: draws × trial matrices \code{y_A}, \code{y_B}, \code{m}, \code{g} at \eqn{\pi_j}
+\item \code{support}: support × trial matrices \code{y_A}, \code{y_B}, \code{m}, \code{g} at \eqn{\pi_j}
 \item \code{reference}, \code{nonref}, \code{trials}, \code{interaction_label}
 }
 }

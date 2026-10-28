@@ -15,10 +15,10 @@
 )
 }
 \arguments{
-\item{x}{A Bayesian \code{\link{interactmeta}} from \code{\link[=cam]{cam()}}
+\item{x}{A Bayesian \code{\link{interactmeta}} from \code{\link[=cams]{cams()}}
 (\code{engine = "bayesmeta"}).}
 
-\item{type}{\code{"interaction"} or \code{"combined"}. \code{"subgroups"} is rejected:
+\item{type}{\code{"interaction"} or \code{"combined"}. \code{"modifiers"} / \code{"subgroups"} are rejected:
 Bayesian CAMS does not store
 separate per-subgroup meta-analyses.}
 
@@ -31,7 +31,7 @@ separate per-subgroup meta-analyses.}
 interaction and \code{"heterogeneity τ"} for combined.}
 
 \item{tau.prior}{Ignored. Retained for compatibility; the stored native
-objects already use the CAMS priors from the original \code{\link[=cam]{cam()}} fit.}
+objects already use the CAMS priors from the original \code{\link[=cams]{cams()}} fit.}
 
 \item{X}{Optional design row for \link[bayesmeta:traceplot.bmr]{bayesmeta::traceplot.bmr}. Default is
 intercept plus mean trial information fraction from the \strong{stored}
@@ -47,7 +47,7 @@ Invisibly, a named list of the native \code{\link[bayesmeta:bayesmeta]{bayesmeta
 \description{
 Draws \code{\link[bayesmeta:traceplot]{bayesmeta::traceplot()}} diagnostics from the \strong{native}
 \code{bayesmeta} / \code{bmr} objects stored on a Bayesian CAMS fit
-(study-specific shrinkage means vs heterogeneity τ, with the τ posterior
+(trial-specific shrinkage means vs heterogeneity τ, with the τ posterior
 underneath). Available \code{type} values are \strong{interaction} (the
 interaction-block \code{bayesmeta} fit) and \strong{combined} (the combined-population
 effects represented by the overall-block \code{bmr} fit).
@@ -57,13 +57,13 @@ This method does \strong{not} fit auxiliary \code{\link[bayesmeta:bayesmeta]{bay
 Frequentist CAMS fits have no native bayesmeta objects; \code{traceplot()}
 returns an informative error rather than substituting another
 implementation. Per-subgroup traceplots are not stored by the orthogonal
-CAMS factorization (\code{type = "subgroups"} errors).
+CAMS factorization (\code{type = "modifiers"} or \code{"subgroups"} errors).
 }
 \examples{
 \dontrun{
 library(interact)
-es <- escalc(measure = "IRR", yi = age$yi, vi = age$vi, data = age)
-fit <- cam(es, reference = "Younger")
+es <- escalc(measure = "IRR", yi = edss$yi, vi = edss$vi, data = edss)
+fit <- cams(es, reference = "Lower")
 traceplot(fit, type = "interaction")
 traceplot(fit, type = "combined", prior = TRUE)
 }
@@ -71,5 +71,5 @@ traceplot(fit, type = "combined", prior = TRUE)
 }
 \seealso{
 \code{\link[=forestplot]{forestplot()}}, \code{\link[bayesmeta:traceplot]{bayesmeta::traceplot()}}, \code{\link[=plot_heterogeneity]{plot_heterogeneity()}},
-\code{\link[=native_fit]{native_fit()}}, \code{vignette("introduction-to-interact")}
+\code{\link[=native_fit]{native_fit()}}, \code{vignette("cams")}
 }

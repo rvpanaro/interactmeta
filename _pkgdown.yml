@@ -1,3 +1,5 @@
+url: https://rvpanaro.github.io/interactmeta/
+
 template:
   bootstrap: 5
 
@@ -18,7 +20,7 @@ reference:
   - cams
   - ifrac
   - interactions
-  - subgroups
+  - modifiers
   - combined
   - heterogeneity
   - shrinkage
@@ -33,12 +35,11 @@ reference:
   - ad
   - swada
   - conventional
-  - bayescams
 
 - title: Comparison functions
   contents:
   - compare_interactions
-  - compare_subgroups
+  - compare_modifiers
   - compare_combined
   - compare_heterogeneity
   - compare_ifrac
@@ -54,7 +55,7 @@ reference:
 
 - title: Additional plots
   contents:
-  - plot_subgroups
+  - plot_modifiers
   - plot_heterogeneity
   - forestplot_height
 

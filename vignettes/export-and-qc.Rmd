@@ -1,0 +1,199 @@
+---
+title: "Export and QC of CAMS results"
+bibliography: references.bib
+link-citations: true
+output:
+  rmarkdown::html_vignette:
+    css:
+      - !expr system.file("rmarkdown/templates/html_vignette/resources/vignette.css", package = "rmarkdown")
+      - vignette.css
+vignette: >
+  %\VignetteIndexEntry{Export and QC of CAMS results}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options:
+  markdown:
+    wrap: 72
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 8,
+  fig.height = 4,
+  fig.align = "center",
+  fig.retina = 2,
+  out.width = "100%"
+)
+```
+
+This vignette shows how to **export structured results** from
+**`interact`** for quality control, reporting, or downstream tables.
+The idea matches **“calculate once, use many times”**: fit the model,
+then take all display numbers from **`tidy()`** (and comparison helpers),
+not from re-typing forest-plot labels.
+
+Getting started with **`cams()`**:
+[`vignette("cams")`](cams.html).
+
+## Setup and fits
+
+We use the **`steroids`** IV/NIV example (same data path as
+[`vignette("cams")`](cams.html)). **CAMS** uses **`method = "REML"`**
+here; sensitivity analyses add **DA**, **AD**, and **SWADA**.
+
+```{r setup, cache = TRUE}
+library(interact)
+library(dplyr)
+
+steroids_obs <- steroids |> filter(n > 0)
+steroids_es <- escalc(
+  measure = "OR",
+  ai = treat.events,
+  bi = treat.total - treat.events,
+  ci = cont.events,
+  di = cont.total - cont.events,
+  data = steroids_obs
+)
+des <- ifrac(steroids_es, reference = "NIV")
+
+fit_cam <- cams(des, reference = "NIV", method = "REML")
+fit_da <- da(des, reference = "NIV", method = "REML")
+fit_ad <- ad(des, reference = "NIV", method = "REML")
+fit_sw <- swada(des, reference = "NIV", method = "REML")
+```
+
+## Canonical export: `tidy(fit)`
+
+**`tidy(fit)`** binds interaction, modifier, combined, and (optionally)
+heterogeneity rows in one tibble. You can still call **`tidy(interactions(...))`**
+when you need a single estimand. Typical columns:
+
+| Column | Meaning |
+|--------|---------|
+| **`estimate`**, **`std.error`**, **`conf.low`**, **`conf.high`** | Point and interval on the requested scale |
+| **`type`** | e.g. **`Overall`**, **`Prediction`** |
+| **`subgroup`** / **`level`** | Modifier label ( **`modifiers()`** ) |
+| **`interaction`** | Contrast label ( **`interactions()`** ) |
+| **`parameter`**, **`label`** | Heterogeneity summaries ( **`heterogeneity()`** ) |
+
+```{r export-estimands}
+results <- tidy(
+  fit_cam,
+  estimands = c("interaction", "modifiers", "combined", "heterogeneity"),
+  type = "Overall",
+  exponentiate = TRUE
+)
+knitr::kable(
+  results |>
+    filter(estimand != "heterogeneity", type == "Overall") |>
+    select(estimand, level, interaction, type, estimate, conf.low, conf.high),
+  digits = 2
+)
+```
+
+Add run metadata once (reference, inference, reporting IF) for audit
+trails:
+
+```{r metadata}
+meta <- tibble::tibble(
+  package = "interact",
+  method = "CAMS",
+  inference = "REML",
+  reference = "NIV",
+  scale = "OR",
+  reporting_if = as.numeric(ifrac(fit_cam, ifrac = "interaction"))
+)
+knitr::kable(meta, digits = 3)
+```
+
+## Pre-specified sensitivity analyses
+
+**`sensitivity()`** fits **DA**, **AD**, **SWADA**, and **CAMS** on the same
+data; **`compare()`** aligns them on one table—useful as **sensitivity** rows
+in a report (not as a single “consensus” estimate).
+
+```{r compare-interactions}
+sens <- sensitivity(des, reference = "NIV", method = "REML", silent = 2)
+cmp_ix <- compare(
+  sens,
+  estimand = "interaction",
+  exponentiate = TRUE,
+  type = "Overall"
+)
+knitr::kable(cmp_ix, digits = 2, caption = "Interaction OR: construction sensitivity")
+```
+
+```{r compare-modifiers}
+cmp_sg <- compare(
+  sens,
+  estimand = "modifiers",
+  exponentiate = TRUE,
+  type = "Overall"
+)
+knitr::kable(cmp_sg, digits = 2, caption = "Modifier ORs: DA vs SWADA vs CAMS")
+```
+
+**Note.** Under default weights, **SWADA** matches **AD** for the
+interaction; both appear in the interaction sensitivity table because they
+answer different construction definitions.
+
+## QC: one row lookup vs the printed summary
+
+QC should recover the same **Overall** interaction as **`print()`** /
+**`interactions()`**:
+
+```{r qc}
+from_tidy <- cmp_ix |>
+  filter(approach == "CAMS") |>
+  pull(estimate)
+from_api <- tidy(
+  fit_cam,
+  estimands = "interaction",
+  type = "Overall"
+)$estimate
+stopifnot(
+  length(from_tidy) == 1L,
+  length(from_api) == 1L,
+  isTRUE(all.equal(from_tidy, from_api, tolerance = 1e-6))
+)
+```
+
+## Handoff to layout tools
+
+**`interact`** does not render regulatory TLGs. After **`tidy()`**, use
+your table package of choice (**`gt`**, **`gtsummary`**, **`flextable`**, …)
+on the tibble. Keep **computation** (this export) separate from
+**layout**, in line with CDISC **Analysis Results Data** thinking: structured
+statistics first, formatted output second.
+
+Minimal **gt** example (skip if **`gt`** is not installed):
+
+```{r gt, eval=requireNamespace("gt", quietly = TRUE)}
+results |>
+  filter(estimand != "heterogeneity", type == "Overall") |>
+  select(estimand, level, estimate, conf.low, conf.high) |>
+  gt::gt() |>
+  gt::fmt_number(columns = c(estimate, conf.low, conf.high), decimals = 2)
+```
+
+## Forest plots and exported numbers
+
+Pooled **Overall** diamonds on **`forestplot(fit_cam)`** match
+**`modifiers()`** / **`combined()`** at the reporting IF shown under the
+axis. When QC fails, check **`exponentiate`**, **`type`**, and
+**`reference`** match between the plot and **`tidy()`** calls.
+
+```{r forest-qc, fig.width = 8, fig.height = 5, cache = TRUE}
+forestplot(
+  fit_cam,
+  exponentiate = TRUE,
+  favours = c("Lower mortality", "Higher mortality")
+)
+```
+
+## Related reading
+
+- [`vignette("cams")`](cams.html) — estimands, assumptions, Bayesian vs REML.
+- [`vignette("worked-examples")`](worked-examples.html) — `age`, `edss`, and other shipped tables.

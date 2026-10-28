@@ -1,5 +1,7 @@
 ---
 title: "Getting started with CAMS"
+bibliography: references.bib
+link-citations: true
 output:
   rmarkdown::html_vignette:
     css:
@@ -9,8 +11,8 @@ vignette: >
   %\VignetteIndexEntry{Getting started with CAMS}
   %\VignetteEncoding{UTF-8}
   %\VignetteEngine{knitr::rmarkdown}
-editor_options: 
-  markdown: 
+editor_options:
+  markdown:
     wrap: 72
 ---
 
@@ -19,279 +21,157 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
   fig.width = 8,
+  fig.height = 4,
   fig.align = "center",
   fig.retina = 2,
   out.width = "100%"
 )
 ```
 
-## What the interact package adds
+This vignette is the short path to **`cams()`**: estimands, assumptions,
+Bayesian and REML inference on the same model, and the main summaries.
+Contribution-adjusted meta-analysis (CAMS) is the treatment-by-subgroup
+interaction model developed in @panaro2025cams. For additional shipped
+datasets (`age`, `edss`, `il6`, RESPIRE), see
+[`vignette("worked-examples")`](worked-examples.html). For tables you can
+QC or hand to reporting, see
+[`vignette("export-and-qc")`](export-and-qc.html).
 
-Contribution-adjusted meta-analysis (CAMS) is a model for
-treatment-by-subgroup interactions from subgroup-level aggregate data
-(Panaro, Röver & Friede 2025): [*Consistent Bayesian meta-analysis on
-subgroup specific effects and
-interactions*](https://arxiv.org/abs/2512.18785).
+## Estimands (what CAMS reports)
 
-Many meta-analyses report treatment effects separately for paired
-subgroups, such as younger and older patients or women and men.
-Pooling the two subgroup series separately (Difference of Averages,
-DA) and pooling the within-trial subgroup contrasts (Average
-Difference, AD) generally assign different weights to studies and
-therefore need not produce matching subgroup and interaction
-summaries. CAMS addresses this problem by deriving an information
-fraction from each trial's subgroup precisions, fitting an
-overall-effect meta-regression and an interaction meta-analysis with
-separate heterogeneity parameters, and reconstructing subgroup and
-combined-population effects as functions of the information fraction.
-For reporting, these functions can be evaluated at a pooled
-information fraction.
+| Estimand | Function | Depends on reporting IF? |
+|----------|----------|--------------------------|
+| Treatment-by-subgroup **interaction** $\gamma$ | **`interactions()`** | No |
+| **Modifier-level** mean effects $\mu_A(\pi)$, $\mu_B(\pi)$ | **`modifiers()`** | Yes (default pooled $\widetilde{\pi}$) |
+| **Combined-population** mean $M(\pi)$ | **`combined()`** | Yes |
+| Trial **information fractions** $\pi_j$ | **`ifrac()`** (optional before fit) | Built inside **`cams()`** by default |
 
-The work the package does is this map:
+The **reference** modifier (e.g. NIV vs IV) sets the direction of
+$\gamma$. All fits are on the **escalc** scale (`yi`, `vi`); use
+**`exponentiate = TRUE`** for odds ratios, hazard ratios, or other
+ratio measures.
 
-$$
-(y_{Aj},y_{Bj})
-\;\rightarrow\;
-(m_j,g_j,\pi_j)
-\;\rightarrow\;
-\text{overall and interaction blocks}
-\;\rightarrow\;
-\{\gamma,\;\mu_A(\pi),\;\mu_B(\pi),\;M(\pi)\}.
-$$
+## Scope and key assumptions
 
-`bayesmeta` and `metafor` can be used to fit the two blocks, but they
-do not construct $\pi_j$, rotate the observations, reconstruct
-subgroup estimands, or guarantee $\mu_B(\pi)-\mu_A(\pi)=\gamma$ by
-design. This additional machinery is implemented by the `interact`
-package through its main fitting function, `cams()`. In this
-context, Difference of Averages (DA) and Average Difference (AD) are
-distinct constructions (Panaro, Röver & Friede, 2026) and should not
-be conflated with CAMS; see
-[`vignette("consistent-interactions")`](consistent-interactions.html).
+**Intended use.** CAMS synthesises **aggregate subgroup effects across
+trials** (published tables, systematic reviews, HTA-style evidence
+pools). It is **not** a substitute for a pre-specified subgroup analysis
+in a single randomised trial SAP.
 
-## Subgroup-level inputs
+**Data.** Long format: one row per trial × modifier with **`yi`** and
+**`vi`**. Use **`escalc()`** (re-exported from **metafor** [@viechtbauer2010])
+when starting from event counts.
 
-Input data use long format: each row contains one subgroup-specific
-effect estimate, with multiple rows belonging to each trial. The
-following example uses the `age` dataset supplied with the package.
-Each trial reports treatment-effect estimates for Younger and Older
-patients. The `metafor` package's `escalc()` function prepares the
-existing log incidence-rate ratio estimates (`yi`) and their sampling
-variances (`vi`) for analysis.
+**Within-trial sampling.** The implementation treats the two modifier
+estimates in a trial as **conditionally independent** with variances
+**`vi`**, and uses precision-based **information fractions** $\pi_j$.
+Shared control arms, nested subgroups, or other **within-trial
+dependence** are **not** modelled yet (see **`?cams`**, section on sampling
+assumption).
 
-```{r data}
+**Between-trial heterogeneity.** Separate random-effects components for
+the interaction contrasts and the combined-effect meta-regression
+[@panaro2025cams]; see **`heterogeneity()`** after fit.
+
+## Example: COVID steroids (IV / NIV)
+
+The **`steroids`** data are mortality **odds ratios** by ventilation
+subgroup (IV vs NIV) from the REACT meta-analysis [@stern2020react]. Rows with **`n = 0`**
+mark unreported subgroups; **`ifrac()`** completes the table for CAMS
+(see [`vignette("worked-examples")`](worked-examples.html), **`il6`**
+section).
+
+```{r data, warning=FALSE, message=FALSE}
 library(interact)
-library(bayesmeta)
-library(metafor)
+library(dplyr)
 
-age_es <- escalc(measure = "IRR", yi = yi, vi = vi, data = age)
-head(age_es)
+steroids_obs <- steroids |> filter(n > 0)
+steroids_es <- escalc(
+  measure = "OR",
+  ai = treat.events,
+  bi = treat.total - treat.events,
+  ci = cont.events,
+  di = cont.total - cont.events,
+  data = steroids_obs
+)
+des <- ifrac(steroids_es, reference = "NIV")
 ```
 
-## Information fraction and orthogonal summaries
+## One model, two inference backends
 
-For a trial that reports subgroups $A$ (reference) and $B$,
+**`cams()`** specifies the same CAMS likelihood; choose **Bayesian**
+(default, **bayesmeta** [@rover2020]) or **frequentist**
+(**`method = "REML"`**, **metafor** [@viechtbauer2010]). Below we fit
+both on **`des`** with **`reference = "NIV"`**. The half-normal scales on
+$\tau_m$ and $\tau_g$ follow @panaro2026priors (not the package defaults,
+which are improper uniform priors on heterogeneity).
 
-$$
-\pi_j = \frac{1/\sigma_{Bj}^2}{1/\sigma_{Aj}^2 + 1/\sigma_{Bj}^2}.
-$$
-
-This $\pi_j$ is an **information fraction (IF)**: the proportion of a
-trial's total precision contributed by subgroup $B$. It is not a
-survey share or a target-population mixing proportion. For each
-trial's pair of observed subgroup effects, CAMS defines two
-transformed coordinates: the within-trial interaction and the
-IF-weighted combined-population effect,
-
-$$
-g_j = y_{Bj}-y_{Aj},\qquad
-m_j = (1-\pi_j)y_{Aj}+\pi_j y_{Bj}.
-$$
-
-Write the observed subgroup estimates as
-$y_{Aj}=\theta_{Aj}+\epsilon_{Aj}$ and
-$y_{Bj}=\theta_{Bj}+\epsilon_{Bj}$. CAMS assumes that their sampling
-errors are independent conditional on the trial-specific true effects,
-
-$$
-\mathrm{Cov}(\epsilon_{Aj},\epsilon_{Bj}\mid
-\theta_{Aj},\theta_{Bj})=0.
-$$
-
-The sampling variance of $g_j$ is then
-$\sigma_{Aj}^2+\sigma_{Bj}^2$, and its sampling covariance with $m_j$
-is zero if and only if $\pi_j$ is chosen as this information fraction.
-Under conditional normality, this orthogonality makes the within-trial
-sampling likelihood factorize into an overall term in $m_j$ and an
-interaction term in $g_j$. Marginal dependence may still arise through
-the trial-level effects and their heterogeneity. Conditional
-independence of the subgroup sampling errors is the assumption used by
-`cams()`.
-
-```{r ifrac}
-age_if <- ifrac(age_es, reference = "Younger")
+```{r fit-both, cache = TRUE}
+fit_bayes <- cams(
+  des,
+  reference = "NIV",
+  tau.prior = function(tau) bayesmeta::dhalfnormal(tau, scale = 0.5),
+  tau.interaction.prior = function(tau) bayesmeta::dhalfnormal(tau, scale = 0.1)
+)
+fit_reml <- cams(des, reference = "NIV", method = "REML")
 ```
 
-```{r ifrac-head}
-head(age_if)
-```
+The interaction **does not** depend on the reporting information
+fraction. Modifier and combined summaries **do**; they use the pooled
+reporting $\widetilde{\pi}$ from **`ifrac(fit)`** by default.
 
-## Fit the two blocks
-
-The overall series in $m_j$ and the interaction series in $g_j$ are
-fitted as independent blocks, after which the CAMS estimands are
-reconstructed. Inference may be Bayesian or frequentist; that choice
-is considered only after establishing the identities below. In the
-Bayesian case, Markov chain Monte Carlo (MCMC) is not inherently
-required for random-effects meta-analysis (Röver, 2020).
-
-Package Bayesian defaults use bayesmeta's improper uniform prior for
-each heterogeneity parameter and $N(0,10)$ priors for the
-population-level mean parameters. Here we set the
-weakly informative / empirical half-normal scales from Panaro, Röver &
-Friede (arXiv:2606.23968) explicitly: HN(0.5) on overall heterogeneity
-and HN(0.1) on interaction heterogeneity (interaction $\tau$ is typically
-smaller).
-
-The following call fits Bayesian CAMS to the age data, treats Younger
-patients as the reference subgroup, and explicitly assigns half-normal
-priors with scales 0.5 and 0.1 to the overall and interaction
-heterogeneity parameters, respectively.
-
-```{r fit, cache = TRUE}
-fit <- cams(
-  age_es,
-  reference = "Younger",
-  tau.prior = function(tau) dhalfnormal(tau, scale = 0.5),
-  tau.interaction.prior = function(tau) dhalfnormal(tau, scale = 0.1)
+```{r mirror-interaction}
+ix_b <- tidy(interactions(fit_bayes, type = "Overall", exponentiate = TRUE))
+ix_r <- tidy(interactions(fit_reml, type = "Overall", exponentiate = TRUE))
+knitr::kable(
+  bind_rows(Bayesian = ix_b, REML = ix_r, .id = "inference") |>
+    select(inference, type, estimate, conf.low, conf.high),
+  digits = 2,
+  caption = "Interaction (OR scale): Bayesian credible vs REML confidence intervals"
 )
 ```
 
-```{r fit-print}
-fit
+Bayesian and REML CAMS intervals are comparable. Bayesian credible
+intervals use the DIRECT quadrature mixture [@rover2017direct]; they
+reflect heterogeneity uncertainty and the priors above. REML intervals
+are Wald confidence intervals from the stored **`metafor`** fit
+[@viechtbauer2010].
+
+```{r estimands-reml}
+interactions(fit_reml, type = "Overall", exponentiate = TRUE)
+modifiers(fit_reml, type = "Overall", exponentiate = TRUE)
+combined(fit_reml, type = "Overall", exponentiate = TRUE)
+ifrac(fit_reml, ifrac = "interaction")
 ```
 
-## Identities the model preserves
+## Forest plot (reporting checklist)
 
-Let $\alpha$ denote the reference-subgroup effect at information
-fraction zero, $\gamma$ the constant treatment-by-subgroup
-interaction, and $\theta$ the slope of the combined-population effect.
-The common slope of the two subgroup-effect curves is
-$\beta=\theta-\gamma$. The subgroup and combined-population effects
-are therefore
+**`forestplot()`** draws observed modifier estimates, optional shrinkage,
+and **Overall** / **Prediction** summaries at $\widetilde{\pi}$. For
+publication-style figures, set **`exponentiate = TRUE`**, **`favours`**
+text, and keep table numbers from **`tidy(modifiers(...))`** aligned
+with the pooled diamonds.
 
-\begin{align}
-\mu_A(\pi)&=\alpha+\pi\beta,\\
-\mu_B(\pi)&=\alpha+\pi\beta+\gamma,\\
-M(\pi)&=(1-\pi)\mu_A(\pi)+\pi\mu_B(\pi)
-       =\alpha+\pi\theta.
-\end{align}
-
-In the fitted object, these parameters are stored as
-`b_Intercept` ($\alpha$), `b_subgroup*` ($\gamma$), and `b_ifrac*`
-($\beta$). The crucial identities that make CAMS a
-contribution-adjusted model rather than two independent subgroup
-meta-analyses are
-
-$$
-\mu_B(\pi)-\mu_A(\pi)=\gamma,
-\qquad
-M(\pi)=(1-\pi)\mu_A(\pi)+\pi\mu_B(\pi).
-$$
-
-The subgroup and combined-population effects vary with the information
-fraction, whereas the interaction $\gamma$ remains constant.
-Explicitly modelling this dependence helps prevent an across-trial
-association between subgroup composition and treatment effect from
-being misinterpreted as a within-trial treatment-by-subgroup
-interaction.
-
-The subgroup lines are parallel with gap $\gamma$. $M(\pi)$ is its own linear predictor, not the average of the two subgroup median curves. Intervals for $M(\pi)$ keep the joint $(\alpha,\theta)$ structure of the overall block.
-
-## Estimating effects and interactions
-
-`interactions()` estimates the treatment-by-subgroup interaction
-$\gamma$, which does not depend on the reporting information fraction.
-By default, `subgroups()` and `combined()` estimate effects at the
-**reporting information fraction** $\widetilde{\pi}$. `type = "Overall"`
-returns the across-study mean effect at that information fraction,
-whereas `type = "Prediction"` gives the effect for a new trial by
-additionally incorporating a trial-level random effect. Here,
-**Combined** is reserved for the combined-population estimand
-$M(\widetilde{\pi})$ returned by `combined()`. The model itself is fitted
-on the log scale; use
-`exponentiate = TRUE` only when ratio-scale results are desired for
-reporting.
-
-```{r estimands-interactions}
-interactions(fit, exponentiate = TRUE)
+```{r forest, fig.width = 8, fig.height = 5, cache = TRUE}
+forestplot(
+  fit_reml,
+  exponentiate = TRUE,
+  favours = c("Lower mortality", "Higher mortality")
+)
 ```
 
-```{r estimands-subgroups}
-subgroups(fit, exponentiate = TRUE)
-```
+**Caption ingredients:** population (critically ill COVID-19), estimand
+(OR for mortality by ventilation subgroup), **CAMS** with **`method =
+"REML"`**, reference **NIV**, reporting IF from **`ifrac(fit_reml)`**,
+interval type (Wald CI for REML).
 
-```{r estimands-combined}
-combined(fit, exponentiate = TRUE)
-```
+## Next steps
 
-A scalar `contribution` is a plug-in $\pi$; leaving it `NULL` mixes the posterior of $\widetilde{\pi}$.
-
-```{r plug-in}
-subgroups(fit, contribution = 0.5, type = "Overall", exponentiate = TRUE)
-```
-
-## Forest plot
-
-The forest draws the observed subgroup table with **Overall** and **Prediction** diamonds. The IF column is each row's share of that trial's precision. Default `type = "subgroups"` is the two subgroup blocks. Use `type = "interaction"` or `type = "combined"` for those CAMS blocks.
-
-```{r forest, fig.height = 6}
-forestplot(fit, exponentiate = TRUE)
-```
-
-## Effects across $\pi$
-
-The contribution plot is the CAMS meta-regression: $\mu_A(\pi)$, $\mu_B(\pi)$, and $M(\pi)$ over the observed information-fraction range. Study points sit at each trial's own $\pi_j$.
-
-A nonzero fitted line does not by itself establish an ecological
-association. Uncertainty in the ecological slope is reported as
-`Ecological_Older` in the fitted summary and represented by the plot's
-interval band. In this example its 95% credible interval includes zero,
-so the apparent slope should not be interpreted as clear evidence of
-ecological bias.
-
-```{r contribution, fig.height = 5}
-plot_contribution(fit, exponentiate = TRUE)
-```
-
-## Bayesian or frequentist inference
-
-CAMS can be fitted using Bayesian or frequentist inference. These are
-not two different models. Bayesian inference is implemented using the
-bayesmeta / discrete approximation of a mixture distribution via
-restricted divergence (DIRECT) quadrature approach (the default;
-Röver and Friede 2017). Frequentist inference is implemented using
-the metafor approach (restricted maximum likelihood, REML, or
-maximum likelihood, ML). Extractors return the same CAMS quantities
-in either case; credible intervals come from the DIRECT mixture, and
-confidence intervals from the `rma` covariance. Default pooled
-diamonds mix \(\omega(\tau)\) on the DIRECT support (Bayesian) or
-plug in \(\omega(\tau)\) (frequentist). See
-`vignette("engine-comparison")`. Remaining extractors, plots, and
-the posterior workflow are `vignette("further")`.
+- **Sensitivity to other constructions:** **`da()`**, **`ad()`**, and
+  **`swada()`** (DA and AD are distinct estimators
+  [@panaro2026subgroup]; see also @fisher2017bmj), plus **`compare()`**
+  on **`sensitivity()`** output — worked in
+  [`vignette("export-and-qc")`](export-and-qc.html).
+- **Other datasets:** [`vignette("worked-examples")`](worked-examples.html).
 
 ## References
-
-Panaro RV, Röver C, Friede T (2025). *Consistent Bayesian meta-analysis on subgroup specific effects and interactions.* arXiv:2512.18785. <https://doi.org/10.48550/arXiv.2512.18785>
-
-Panaro RV, Röver C, Friede T (2026). Subgroup comparisons within and across studies in meta-analysis. *Research Synthesis Methods* (in press). arXiv:2508.15531.
-
-Panaro RV, Röver C, Friede T (2026). Empirical prior distributions for treatment-by-subgroup interaction heterogeneity in random-effects meta-analysis. arXiv:2606.23968. <https://doi.org/10.48550/arXiv.2606.23968>
-
-Röver C, Friede T (2017). Discrete approximation of a mixture
-distribution via restricted divergence. *Journal of Computational and
-Graphical Statistics*, 26(1), 217--222.
-
-Röver C (2020). Bayesian random-effects meta-analysis using the bayesmeta R package. *Journal of Statistical Software*, 93(6), 1--51. <https://doi.org/10.18637/jss.v093.i06>
-
-Heesen C, Röver C, Salem S, et al. (2024). Treatment effect modifiers of immunotherapies for relapsing-remitting multiple sclerosis: a systematic review and meta-analysis. *Mult Scler J Exp Transl Clin*, 10(4), 20552173241274618.

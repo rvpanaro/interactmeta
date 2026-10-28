@@ -2,42 +2,43 @@
 % Please edit documentation in R/shrinkage.R
 \name{shrinkage}
 \alias{shrinkage}
-\title{Shrinkage (study-level) effects from a CAMS fit}
+\title{Shrinkage (trial-level) effects from a CAMS fit}
 \usage{
 shrinkage(
   fit,
-  type = c("subgroups", "interaction", "combined"),
+  type = c("modifiers", "interaction", "combined", "subgroups"),
   format = c("list", "summary"),
   prob = 0.95,
-  max_draws = NULL,
+  max_support = NULL,
   summary = TRUE,
   contrast_sep = "-",
   ifrac = c("interaction", "overall"),
-  contribution = NULL,
+  at = NULL,
   exponentiate = FALSE,
-  component = NULL
+  component = NULL,
+  contribution
 )
 }
 \arguments{
-\item{fit}{A \code{\link{interactmeta}} from \code{\link[=cam]{cam()}}.}
+\item{fit}{A \code{\link{interactmeta}} from \code{\link[=cams]{cams()}}.}
 
 \item{type}{Which estimand (same labels as \code{\link[=forestplot]{forestplot()}}):
 \itemize{
-\item \code{"subgroups"} (default; \code{"subgroup"} accepted): \eqn{\mu_{A,j}, \mu_{B,j}}
+\item \code{"modifiers"} (default; \code{"subgroup"} / deprecated \code{"subgroups"} accepted): \eqn{\mu_{A,j}, \mu_{B,j}}
 \item \code{"interaction"}: \eqn{g_j}
 \item \code{"combined"}: \eqn{m_j}
 }}
 
 \item{format}{Output representation:
 \itemize{
-\item \code{"list"} (default): S3 object with long \verb{$draws}, optional \verb{$summary},
+\item \code{"list"} (default): S3 object with long \verb{$support}, optional \verb{$summary},
 and \verb{$components} (observed / shrunk matrices)
 \item \code{"summary"}: summary data frame only
 }}
 
 \item{prob}{Coverage probability for intervals when a summary is built.}
 
-\item{max_draws}{Optional cap on unweighted posterior rows. Rejected for
+\item{max_support}{Optional cap on unweighted posterior rows. Rejected for
 Bayesian CAMS DIRECT supports; omit it.}
 
 \item{summary}{If \code{TRUE} (default), attach / build a summary when
@@ -46,16 +47,17 @@ Bayesian CAMS DIRECT supports; omit it.}
 \item{contrast_sep}{Passed to contrast resolution (default \code{"-"}).}
 
 \item{ifrac}{How overall IF \eqn{\omega} is pooled via \code{\link[=ifrac]{ifrac()}} when
-\code{contribution} is \code{NULL} (metadata / annotations only for shrinkage;
-draws themselves use \eqn{\pi_j}): \code{"interaction"} (default) or \code{"overall"}.}
+\code{at} is \code{NULL} (metadata / annotations only for shrinkage; draws themselves
+use \eqn{\pi_j}): \code{"interaction"} (default) or \code{"overall"}.}
 
-\item{contribution}{Optional combined-population information fraction
-(same as \code{\link[=subgroups]{subgroups()}}).}
+\item{at}{Optional reporting information fraction (same as \code{\link[=modifiers]{modifiers()}}).}
 
 \item{exponentiate}{If \code{TRUE}, transform posterior draws with \code{exp()} after
 the linear-scale reconstruction (for reporting only).}
 
 \item{component}{Soft-deprecated alias for \code{type}.}
+
+\item{contribution}{Deprecated; use \verb{\code{at}}.}
 }
 \value{
 Depends on \code{format}. For \code{format = "list"}, see \verb{$components} and
@@ -93,5 +95,5 @@ overall IF \eqn{\omega}; see \code{\link[=subgroups]{subgroups()}} and
 }
 \seealso{
 \code{\link[=shrinkage_components]{shrinkage_components()}}, \code{\link[=standardized_trial_effects]{standardized_trial_effects()}},
-\code{\link[=subgroups]{subgroups()}}, \code{\link[=interactions]{interactions()}}, \code{\link[=combined]{combined()}}, \code{\link[=forestplot]{forestplot()}}
+\code{\link[=modifiers]{modifiers()}}, \code{\link[=interactions]{interactions()}}, \code{\link[=combined]{combined()}}, \code{\link[=forestplot]{forestplot()}}
 }

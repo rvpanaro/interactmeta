@@ -1,7 +1,7 @@
 cams_latent_example_data <- function() {
   data.frame(
-    trial = rep(paste0("T", 1:4), each = 2),
-    subgroup = factor(rep(c("Younger", "Older"), 4), levels = c("Younger", "Older")),
+    study = rep(paste0("T", 1:4), each = 2),
+    level = factor(rep(c("Younger", "Older"), 4), levels = c("Younger", "Older")),
     yi = c(0.10, 0.25, 0.12, 0.28, 0.08, 0.22, 0.15, 0.30),
     vi = c(0.04, 0.02, 0.05, 0.03, 0.03, 0.04, 0.02, 0.025)
   )
@@ -15,7 +15,7 @@ test_that("trial-effect blocks match the CAMS IV rotation and are orthogonal", {
   pi <- (1 / vB) / (1 / vA + 1 / vB)
   dat <- data.frame(
     trial = "T",
-    subgroup = c("Younger", "Older"),
+    level = c("Younger", "Older"),
     yi = c(yA, yB),
     vi = c(vA, vB),
     ifrac_Older = pi
@@ -79,8 +79,7 @@ test_that("CDF pairing induces comonotonic dependence unlike the product", {
   fit <- suppressWarnings(bayescam(
     es,
     reference = "Younger",
-    engine = "bayesmeta",
-    silent = 2
+        silent = 2
   ))
   ov <- interact:::interactmeta_bmr_support_table(fit$bayesmeta$overall)
   int <- interact:::interactmeta_bayesmeta_support_table(fit$bayesmeta$interaction)
@@ -111,15 +110,14 @@ test_that("bayesmeta latent posteriors exist and beta matches convolve", {
   fit <- suppressWarnings(bayescam(
     dat,
     reference = "Younger",
-    engine = "bayesmeta",
-    silent = 2
+        silent = 2
   ))
   elapsed <- proc.time()[["elapsed"]] - t0
 
   ov_n <- length(fit$bayesmeta$overall$support$weight)
   int_n <- nrow(as.data.frame(fit$bayesmeta$interaction$support))
-  expect_equal(nrow(fit$draws), ov_n * int_n)
-  expect_true(abs(sum(fit$draws$.weight) - 1) < 1e-8)
+  expect_equal(nrow(fit$support), ov_n * int_n)
+  expect_true(abs(sum(fit$support$.weight) - 1) < 1e-8)
   expect_equal(fit$latent$independence, "cross_block")
   expect_true(grepl("Marginal posteriors only", fit$latent$note, fixed = TRUE))
 
@@ -129,7 +127,7 @@ test_that("bayesmeta latent posteriors exist and beta matches convolve", {
     fit$latent$beta$convolve$quantile,
     fit$latent$beta$convolve$cdf,
     prob = 0.95,
-    interval.type = "shortest",
+    interval.type = fit$interval.type,
     tol = fit$latent$tol.uniroot
   )
   expect_equal(c(sm_mix$lower, sm_mix$upper), bounds, tolerance = 1e-6)
@@ -172,7 +170,7 @@ test_that("bayesmeta latent posteriors exist and beta matches convolve", {
   }
 
   # $mu stays the fixed-effect linpred, not the shrunken trial posterior
-  mu_mean <- colSums(fit$draws$.weight * fit$mu)
+  mu_mean <- colSums(fit$support$.weight * fit$mu)
   tr1 <- trials[[1L]]
   sm_A1 <- interact:::interactmeta_posterior_1d_summary(fit$latent$mu_A[[tr1]])
   expect_gt(abs(mu_mean[[1L]] - sm_A1$mean), 1e-4)
@@ -181,19 +179,18 @@ test_that("bayesmeta latent posteriors exist and beta matches convolve", {
   expect_lt(elapsed, 120)
 })
 
-test_that("subgroups() at fixed pi* uses joint (alpha, theta) plus independent gamma", {
+test_that("modifiers() at fixed pi* uses joint (alpha, theta) plus independent gamma", {
   skip_if_not_installed("bayesmeta")
 
   dat <- cams_latent_example_data()
   fit <- suppressWarnings(bayescam(
     dat,
     reference = "Younger",
-    engine = "bayesmeta",
-    silent = 2
+        silent = 2
   ))
   pi_star <- 0.35
-  sg <- subgroups(fit, contribution = pi_star, type = "Overall")
-  post <- as.data.frame(fit$draws)
+  sg <- modifiers(fit, at = pi_star, type = "Overall")
+  post <- as.data.frame(fit$support)
   post <- post[order(post$.draw), , drop = FALSE]
   gamma_col <- grep("^b_subgroup", names(post), value = TRUE)
   expect_length(gamma_col, 1L)
@@ -207,8 +204,8 @@ test_that("subgroups() at fixed pi* uses joint (alpha, theta) plus independent g
   M_star <- post$b_Intercept + pi_star * theta
   mu_A <- M_star - pi_star * post[[gamma_col]]
   mu_B <- M_star + (1 - pi_star) * post[[gamma_col]]
-  dA <- sg$draws[sg$draws$subgroup == "Younger" & sg$draws$type == "Overall", ]
-  dB <- sg$draws[sg$draws$subgroup == "Older" & sg$draws$type == "Overall", ]
+  dA <- sg$support[sg$support$level == "Younger" & sg$support$type == "Overall", ]
+  dB <- sg$support[sg$support$level == "Older" & sg$support$type == "Overall", ]
   dA <- dA[order(dA$.draw), , drop = FALSE]
   dB <- dB[order(dB$.draw), , drop = FALSE]
   expect_equal(unname(dA$effect), unname(mu_A), tolerance = 1e-10)
@@ -264,27 +261,27 @@ test_that("engine-native latent intervals follow bayesmeta post.interval and con
   fit <- suppressWarnings(bayescam(
     dat,
     reference = "Younger",
-    engine = "bayesmeta",
-    silent = 2
+        silent = 2
   ))
-  expect_equal(fit$interval.type, "shortest")
+  expect_equal(fit$interval.type, "central")
   prob <- 0.95
+  it <- fit$interval.type
 
-  # Public extractors and native summaries both use shortest intervals.
+  # Public extractors and native summaries both use fit interval.type.
   int <- interactions(fit, prob = prob)
   pooled <- int$summary[int$summary$type == "Overall", ]
   native_g <- fit$bayesmeta$interaction$post.interval(
     mu.level = prob,
-    method = "shortest"
+    method = it
   )
-  # Public extractor intervals follow the shortest interval of the mixture.
-  post <- as.data.frame(fit$draws)
+  post <- as.data.frame(fit$support)
   g_col <- grep("^b_subgroup", names(post), value = TRUE)[[1L]]
   qi_g <- interact:::comparison_draw_moments(
     post[[g_col]],
     prob = prob,
     weight = post$.weight,
-    cond_sd = post$.cond_sd_gamma
+    cond_sd = post$.cond_sd_gamma,
+    interval.type = it
   )
   expect_equal(pooled$lci, qi_g$lci, tolerance = 1e-8)
   expect_equal(pooled$uci, qi_g$uci, tolerance = 1e-8)
@@ -299,7 +296,7 @@ test_that("engine-native latent intervals follow bayesmeta post.interval and con
   native_a <- ov$post.interval(
     beta.level = prob,
     which.beta = which_a,
-    method = "shortest"
+    method = it
   )
   expect_equal(
     unname(pars[c("95% lower", "95% upper"), "Intercept"]),
@@ -312,7 +309,7 @@ test_that("engine-native latent intervals follow bayesmeta post.interval and con
     fit$latent$beta$convolve$quantile,
     fit$latent$beta$convolve$cdf,
     prob = prob,
-    interval.type = "shortest",
+    interval.type = it,
     tol = fit$latent$tol.uniroot
   )
   expect_equal(unname(pars[c("95% lower", "95% upper"), eco]), eco_bounds, tolerance = 1e-6)
@@ -326,31 +323,31 @@ test_that("engine-native latent intervals follow bayesmeta post.interval and con
   )
 
   expect_error(
-    bayescam(dat, reference = "Younger", engine = "bayesmeta", silent = 2,
+    bayescam(dat, reference = "Younger", silent = 2,
              interval.type = "evidentiary"),
     "derived CAMS sum"
   )
   bad <- dat
   bad$vi[1] <- 0
   expect_error(
-    bayescam(bad, reference = "Younger", engine = "bayesmeta", silent = 2),
+    bayescam(bad, reference = "Younger", silent = 2),
     "strictly positive"
   )
   expect_error(
-    bayescam(dat, reference = "Younger", engine = "bayesmeta", silent = 2,
+    bayescam(dat, reference = "Younger", silent = 2,
              convolve_derived = FALSE),
     "convolve_derived"
   )
 
   out <- paste(utils::capture.output(print(fit, digits = 2)), collapse = "\n")
-  expect_match(out, "shortest credible intervals", fixed = TRUE)
+  expect_match(out, "central credible intervals", fixed = TRUE)
 
   # Conditional-mean quantiles are not the published ecological interval.
-  beta_col <- grep("^b_ifrac", names(fit$draws), value = TRUE)
+  beta_col <- grep("^b_ifrac", names(fit$support), value = TRUE)
   beta_col <- beta_col[!grepl("ifrac2", beta_col)]
   expect_length(beta_col, 1L)
   wq <- interact:::interactmeta_weighted_quantile(
-    fit$draws[[beta_col]], fit$draws$.weight, c(0.025, 0.975)
+    fit$support[[beta_col]], fit$support$.weight, c(0.025, 0.975)
   )
   expect_gt(max(abs(eco_bounds - wq)), 1e-4)
 })

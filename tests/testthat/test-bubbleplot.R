@@ -12,13 +12,13 @@ test_that("resolve_bubbleplot_settings() uses comparison fit attribute", {
       trial = "A",
       ifrac_Older = 0.4
     )),
-    class = c("interactmeta", "cam", "list")
+    class = c("interactmeta", "list")
   )
   attr(fit, "interactmeta") <- list(
     ifrac_var = "ifrac_Older",
     ifrac2_var = "ifrac2_Older",
-    trial_var = "trial",
-    subgroup_var = "subgroup",
+    trial_var = "study",
+    subgroup_var = "level",
     effects = "ifrac_Older:subgroup",
     ifrac_data = data.frame(
       trial = "A",
@@ -32,7 +32,7 @@ test_that("resolve_bubbleplot_settings() uses comparison fit attribute", {
   st <- interact:::resolve_bubbleplot_settings(fit)
   expect_equal(st$ifrac_var, "ifrac_Older")
   expect_equal(st$effects, "ifrac_Older:subgroup")
-  expect_equal(st$trial_var, "trial")
+  expect_equal(st$trial_var, "study")
 })
 
 test_that("resolve_bubbleplot_limits() pads xlim; leaves ylim default", {
@@ -44,9 +44,9 @@ test_that("resolve_bubbleplot_limits() pads xlim; leaves ylim default", {
     x_breaks = NULL,
     y_breaks = NULL
   )
-  expect_true(lim$xlim[1] < 0.3)
-  expect_true(lim$xlim[2] > 0.5)
-  expect_true(lim$xlim[2] < 1)
+  expect_true(lim$xlim[1] < 30)
+  expect_true(lim$xlim[2] > 50)
+  expect_true(lim$xlim[2] < 100)
   expect_null(lim$ylim)
   expect_null(lim$y_breaks)
 
@@ -76,21 +76,19 @@ test_that("bubbleplot_ifrac_grid() follows observed IF, not always 0-1", {
   expect_equal(g0, seq(0, 1, length.out = 5))
 })
 
-test_that("bubbleplot_default_xlab() matches overall_ifrac style", {
+test_that("bubbleplot_default_xlab() is the IF axis label", {
   xlab <- interact:::bubbleplot_default_xlab("ifrac_Older")
-  oi_xlab <- interact:::overall_ifrac_default_xlab("Older")
-  expect_equal(xlab, oi_xlab)
-  expect_equal(xlab, "Information fraction (Older)")
+  expect_equal(xlab, "Information fraction (IF) (%)")
 })
 
 test_that("default IF xlab does not leak plotmath tildes", {
   xlab <- interact:::overall_ifrac_default_xlab(">=65")
   expect_type(xlab, "character")
   expect_false(grepl("~", xlab, fixed = TRUE))
-  expect_equal(xlab, "Information fraction (>=65)")
+  expect_equal(xlab, "Information fraction (>=65) (%)")
   expect_equal(
     interact:::bubbleplot_default_xlab("ifrac_>=65"),
-    "Information fraction (>=65)"
+    "Information fraction (IF) (%)"
   )
 })
 
@@ -113,14 +111,14 @@ test_that("bubbleplot_ce_estimates() is safe for empty conditional-effects data"
 
 test_that("resolve_bubbleplot_level_keys() maps display labels to subgroup levels", {
   raw_df <- data.frame(
-    subgroup = c("Younger", "Older", "Younger"),
+    level = c("Younger", "Older", "Younger"),
     display = factor(c("Ref", "Other", "Ref"), levels = c("Ref", "Other")),
     yi = c(0, 0, 0)
   )
   keys <- interact:::resolve_bubbleplot_level_keys(
     raw_df = raw_df,
     display_levels = c("Ref", "Other"),
-    subgroup_var = "subgroup"
+    subgroup_var = "level"
   )
   expect_equal(keys, c("Younger", "Older"))
 })

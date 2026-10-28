@@ -2,7 +2,6 @@
 % Please edit documentation in R/contribution.R
 \name{predict_cams_by_if}
 \alias{predict_cams_by_if}
-\alias{predict_cam_by_if}
 \title{CAMS subgroup and overall effects on an information-fraction grid}
 \usage{
 predict_cams_by_if(
@@ -11,18 +10,9 @@ predict_cams_by_if(
   level = 0.95,
   ifrac_var = NULL,
   resolution = 200,
-  max_draws = NULL,
-  exponentiate = FALSE
-)
-
-predict_cam_by_if(
-  fit,
-  if_grid = NULL,
-  level = 0.95,
-  ifrac_var = NULL,
-  resolution = 200,
-  max_draws = NULL,
-  exponentiate = FALSE
+  max_support = NULL,
+  exponentiate = FALSE,
+  interval.type = NULL
 )
 }
 \arguments{
@@ -37,10 +27,14 @@ observed study IF range with a small margin (see \code{\link[=plot_contribution]
 
 \item{resolution}{Grid length when \code{if_grid} is \code{NULL}.}
 
-\item{max_draws}{Optional cap on unweighted posterior rows. Rejected for
+\item{max_support}{Optional cap on unweighted posterior rows. Rejected for
 Bayesian CAMS DIRECT supports; omit it.}
 
 \item{exponentiate}{If \code{TRUE}, summarize on the exponential scale.}
+
+\item{interval.type}{\code{"central"} or \code{"shortest"} mixture interval on
+Bayesian DIRECT nodes (default: \code{fit$interval.type}, usually \code{"central"}).
+Pass \code{"shortest"} for the narrowest equal-probability interval.}
 }
 \value{
 A data frame with one row per grid point and subgroup:
@@ -62,11 +56,11 @@ Stored \code{b_Intercept} is \eqn{\alpha}, stored \code{b_ifrac} is
 gap \eqn{\gamma}.
 }
 \details{
-Pointwise \code{estimate} / \code{lower} / \code{upper} use shortest intervals from the
+Pointwise \code{estimate} / \code{lower} / \code{upper} use mixture intervals from the
 DIRECT-node Gaussian mixture (weights \code{.weight}, within-node SDs
 \verb{.cond_*}). Alpha and theta stay on the joint overall-block support
 (never convolved with each other).
 }
 \seealso{
-\code{\link[=subgroups]{subgroups()}}, \code{\link[=combined]{combined()}}, \code{\link[=plot_contribution]{plot_contribution()}}
+\code{\link[=modifiers]{modifiers()}}, \code{\link[=combined]{combined()}}, \code{\link[=plot_contribution]{plot_contribution()}}
 }

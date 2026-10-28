@@ -2,14 +2,14 @@
 % Please edit documentation in R/shrinkage.R
 \name{shrinkage_diagnostics}
 \alias{shrinkage_diagnostics}
-\title{Diagnostic table for study-specific CAMS shrinkage}
+\title{Diagnostic table for trial-specific CAMS shrinkage}
 \usage{
 shrinkage_diagnostics(fit, ...)
 }
 \arguments{
 \item{fit}{A \code{\link{interactmeta}}.}
 
-\item{...}{Passed to \code{\link[=shrinkage_components]{shrinkage_components()}} (\code{max_draws}, \code{ifrac}, …).}
+\item{...}{Passed to \code{\link[=shrinkage_components]{shrinkage_components()}} (\code{max_support}, \code{ifrac}, …).}
 }
 \value{
 A data frame with one row per trial.

@@ -1,20 +1,19 @@
 predict_cam_example_fit <- function() {
   dat <- data.frame(
-    trial = rep(paste0("T", 1:4), each = 2),
-    subgroup = factor(rep(c("Younger", "Older"), 4), levels = c("Younger", "Older")),
+    study = rep(paste0("T", 1:4), each = 2),
+    level = factor(rep(c("Younger", "Older"), 4), levels = c("Younger", "Older")),
     yi = c(0.10, 0.25, 0.12, 0.28, 0.08, 0.22, 0.15, 0.30),
     vi = c(0.04, 0.02, 0.05, 0.03, 0.03, 0.04, 0.02, 0.025)
   )
   suppressWarnings(bayescam(
     dat,
     reference = "Younger",
-    engine = "bayesmeta",
-    silent = 2
+        silent = 2
   ))
 }
 
 cams_if_draw_effects <- function(fit, pi) {
-  post <- interact:::comparison_posterior_df(fit)
+  post <- interact:::comparison_support_df(fit)
   design <- interact:::comparison_marginal_design(fit)
   sg <- interact:::comparison_subgroup_coef_terms(fit, design)
   ref <- design$reference
@@ -39,15 +38,15 @@ cams_if_draw_effects <- function(fit, pi) {
   )
 }
 
-test_that("predict_cams_by_if() uses shortest mixture intervals", {
+test_that("predict_cams_by_if() uses central mixture intervals by default", {
   skip_if_not_installed("bayesmeta")
 
   fit <- predict_cam_example_fit()
   pi_star <- 0.35
   pred <- predict_cams_by_if(fit, if_grid = pi_star, level = 0.95)
   expect_s3_class(pred, "interactmeta_cam_if_pred")
-  expect_equal(attr(pred, "interval.rule"), "mixture_shortest")
-  expect_equal(sort(unique(pred$subgroup)), c("Older", "Younger"))
+  expect_equal(attr(pred, "interval.rule"), "mixture_equal_tail")
+  expect_equal(sort(unique(pred)), c("Older", "Younger"))
   expect_true(all(c("ifrac", "estimate", "lower", "upper") %in% names(pred)))
   expect_true(all(c("overall_estimate", "overall_lower", "overall_upper") %in% names(pred)))
 
@@ -65,8 +64,8 @@ test_that("predict_cams_by_if() uses shortest mixture intervals", {
   qi_B <- interact:::interactmeta_mixture_moments(
     mean = d$mu_B, weight = w, cond_sd = sd_B, prob = 0.95
   )
-  dA <- pred[pred$subgroup == "Younger", ]
-  dB <- pred[pred$subgroup == "Older", ]
+  dA <- pred[pred == "Younger", ]
+  dB <- pred[pred == "Older", ]
   expect_equal(dA$estimate, qi_A$estimate, tolerance = 1e-8)
   expect_equal(dA$lower, qi_A$lci, tolerance = 1e-8)
   expect_equal(dA$upper, qi_A$uci, tolerance = 1e-8)
@@ -164,7 +163,7 @@ test_that("bayesmeta pointwise IF intervals are mixture quantiles of the draws",
   )
 
   pred <- predict_cams_by_if(fit, if_grid = pi, level = 0.95)
-  row_A <- pred[pred$subgroup == "Younger", ]
+  row_A <- pred[pred == "Younger", ]
   expect_equal(row_A$overall_estimate, qi_mix$estimate, tolerance = 1e-8)
   expect_equal(row_A$overall_lower, qi_mix$lci, tolerance = 1e-8)
   expect_equal(row_A$overall_upper, qi_mix$uci, tolerance = 1e-8)
@@ -173,7 +172,6 @@ test_that("bayesmeta pointwise IF intervals are mixture quantiles of the draws",
   )
   expect_equal(row_A$lower, qi_A$lci, tolerance = 1e-8)
   expect_equal(row_A$upper, qi_A$uci, tolerance = 1e-8)
-  # Native / convolve remains available as a concept (population_location).
   expect_true(is.list(
     interact:::interactmeta_bayesmeta_population_location(
       fit, pi = pi, gamma_scale = -pi, predictive = FALSE, prob = 0.95
@@ -181,12 +179,55 @@ test_that("bayesmeta pointwise IF intervals are mixture quantiles of the draws",
   ))
 })
 
+test_that("predict_cams_by_if(interval.type = central) uses equal-tail mixture rule", {
+  skip_if_not_installed("bayesmeta")
+
+  fit <- predict_cam_example_fit()
+  pi_star <- 0.35
+  pred <- predict_cams_by_if(
+    fit,
+    if_grid = pi_star,
+    level = 0.95,
+    interval.type = "central"
+  )
+  expect_equal(attr(pred, "interval.rule"), "mixture_equal_tail")
+  expect_equal(attr(pred, "interval.type"), "central")
+
+  d <- cams_if_draw_effects(fit, pi_star)
+  w <- d$post$.weight
+  sd_A <- interact:::interactmeta_lincomb_cond_sd(d$post, 1, pi_star, -pi_star)
+  qi_A <- interact:::interactmeta_mixture_moments(
+    mean = d$mu_A,
+    weight = w,
+    cond_sd = sd_A,
+    prob = 0.95,
+    interval.type = "central"
+  )
+  row_A <- pred[pred == "Younger", ]
+  expect_equal(row_A$lower, qi_A$lci, tolerance = 1e-8)
+  expect_equal(row_A$upper, qi_A$uci, tolerance = 1e-8)
+
+  pred_short <- predict_cams_by_if(
+    fit,
+    if_grid = pi_star,
+    level = 0.95,
+    interval.type = "shortest"
+  )
+  expect_equal(attr(pred_short, "interval.rule"), "mixture_shortest")
+})
+
 test_that("plot_contribution() uses predict_cam_by_if()", {
   skip_if_not_installed("bayesmeta")
   skip_if_not_installed("ggplot2")
 
   fit <- predict_cam_example_fit()
-  pred <- predict_cam_by_if(fit, if_grid = NULL, resolution = 11, level = 0.95)
+  pred <- predict_cam_by_if(
+    fit,
+    if_grid = NULL,
+    resolution = 11,
+    level = 0.95,
+    interval.type = "central"
+  )
 
   p_prev <- plot_contribution(fit, resolution = 11, show_footnote = FALSE)
   built <- ggplot2::ggplot_build(p_prev)
@@ -196,7 +237,11 @@ test_that("plot_contribution() uses predict_cam_by_if()", {
     logical(1)
   ))[[1L]]
   rib <- built$data[[ribbon_i]]
-  expect_equal(sort(unique(rib$x)), sort(unique(pred$ifrac)), tolerance = 1e-10)
+  expect_equal(
+    sort(unique(rib$x)),
+    sort(100 * unique(pred$ifrac)),
+    tolerance = 1e-8
+  )
 })
 
 test_that("plot_contribution() uses the IF grid and study-level points", {
@@ -223,7 +268,8 @@ test_that("plot_contribution() uses the IF grid and study-level points", {
     fit,
     interact:::resolve_bubbleplot_settings(fit)
   )
-  expect_equal(sort(xs), sort(unique(raw$ifrac_Older)), tolerance = 1e-8)
+  if_frac_pct <- 100 * sort(unique(raw$ifrac_Older))
+  expect_equal(sort(xs), if_frac_pct, tolerance = 1e-6)
   expect_gt(length(xs), 1L)
   pts <- built$data[[point_layer[[1L]]]]
   expect_true(all(is.na(pts$fill) | pts$fill %in% c("NA", "transparent")))

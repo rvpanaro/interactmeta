@@ -6,28 +6,29 @@
 \usage{
 standardized_trial_effects(
   fit,
-  type = c("subgroups", "interaction", "combined"),
+  type = c("modifiers", "interaction", "combined", "subgroups"),
   format = c("list", "summary"),
   prob = 0.95,
-  max_draws = NULL,
+  max_support = NULL,
   summary = TRUE,
   contrast_sep = "-",
   ifrac = c("interaction", "overall"),
-  contribution = NULL,
+  at = NULL,
   exponentiate = FALSE,
-  component = NULL
+  component = NULL,
+  contribution
 )
 }
 \arguments{
-\item{fit}{A \code{\link{interactmeta}} from \code{\link[=cam]{cam()}}.}
+\item{fit}{A \code{\link{interactmeta}} from \code{\link[=cams]{cams()}}.}
 
-\item{type}{Which estimand: \code{"subgroups"}, \code{"interaction"}, or \code{"combined"}.}
+\item{type}{Which estimand: \code{"modifiers"}, \code{"interaction"}, or \code{"combined"}.}
 
 \item{format}{Output representation (same choices as \code{\link[=shrinkage]{shrinkage()}}).}
 
 \item{prob}{Coverage probability for intervals when a summary is built.}
 
-\item{max_draws}{Optional cap on unweighted posterior rows. Rejected for
+\item{max_support}{Optional cap on unweighted posterior rows. Rejected for
 Bayesian CAMS DIRECT supports; omit it.}
 
 \item{summary}{If \code{TRUE} (default), attach / build a summary when
@@ -36,26 +37,27 @@ Bayesian CAMS DIRECT supports; omit it.}
 \item{contrast_sep}{Passed to contrast resolution (default \code{"-"}).}
 
 \item{ifrac}{How overall IF \eqn{\omega} is pooled via \code{\link[=ifrac]{ifrac()}} when
-\code{contribution} is \code{NULL}: \code{"interaction"} (default) or \code{"overall"}.}
+\code{at} is \code{NULL}: \code{"interaction"} (default) or \code{"overall"}.}
 
-\item{contribution}{Optional combined-population information fraction
-(same as \code{\link[=subgroups]{subgroups()}}).}
+\item{at}{Optional reporting information fraction (same as \code{\link[=modifiers]{modifiers()}}).}
 
 \item{exponentiate}{If \code{TRUE}, transform posterior draws with \code{exp()}.}
 
 \item{component}{Soft-deprecated alias for \code{type}.}
+
+\item{contribution}{Deprecated; use \verb{\code{at}}.}
 }
 \value{
 Same structure as \code{\link[=shrinkage]{shrinkage()}} for the chosen \code{type} / \code{format}.
 }
 \description{
-Same stored random effects as \code{\link[=shrinkage]{shrinkage()}}, but evaluated at the overall
-information fraction \eqn{\omega} rather than each trial's \eqn{\pi_j}:
-\deqn{\mu_{ij}=\alpha+u_j+\beta\omega+(x_i-\omega)v_j+\gamma\,1(i=B).}
-This is \strong{trial-specific standardization to the target population}, not
-shrinkage. Prefer \code{\link[=shrinkage]{shrinkage()}} for forest greys and study-specific
-posterior means.
+Evaluates the CAMS fixed-effect reconstruction at the overall information
+fraction \eqn{\omega}, rather than using each trial's \eqn{\pi_j} and
+engine-native trial latent effect:
+\deqn{\mu_i=\alpha+\beta\omega+\gamma\,1(i=B).}
+This is standardization to the target population, not shrinkage. Prefer
+\code{\link[=shrinkage]{shrinkage()}} for forest greys and trial-specific posterior means.
 }
 \seealso{
-\code{\link[=shrinkage]{shrinkage()}}, \code{\link[=subgroups]{subgroups()}}
+\code{\link[=shrinkage]{shrinkage()}}, \code{\link[=modifiers]{modifiers()}}
 }

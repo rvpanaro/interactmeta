@@ -1,9 +1,10 @@
 test_that("pi is non-reference IF, not 1-pi / reference IF", {
+  slow()
   skip_if_not_installed("bayesmeta")
 
   dat <- data.frame(
-    trial = rep(c("A", "B"), each = 2),
-    subgroup = factor(rep(c("Younger", "Older"), 2), levels = c("Younger", "Older")),
+    study = rep(c("A", "B"), each = 2),
+    level = factor(rep(c("Younger", "Older"), 2), levels = c("Younger", "Older")),
     yi = c(0.10, 0.40, -0.05, 0.30),
     # Unequal precision so IF_Older != 0.5 and != IF_Younger
     vi = c(0.08, 0.02, 0.02, 0.08),
@@ -14,15 +15,15 @@ test_that("pi is non-reference IF, not 1-pi / reference IF", {
   )
   # Design columns must match precision shares
   expect_equal(
-    unname(1 / dat$vi[dat$subgroup == "Older"] /
-      (1 / dat$vi[dat$subgroup == "Younger"] + 1 / dat$vi[dat$subgroup == "Older"])),
+    unname(1 / dat$vi[dat == "Older"] /
+      (1 / dat$vi[dat == "Younger"] + 1 / dat$vi[dat == "Older"])),
     c(0.8, 0.2),
     tolerance = 1e-12
   )
 
-  fit <- suppressWarnings(cam(
+  fit <- suppressWarnings(cams(
     dat, reference = "Younger",
-    engine = "bayesmeta"))
+    ))
   cmp <- shrinkage_components(fit)
   expect_equal(cmp$nonref, "Older")
   expect_equal(unname(cmp$pi[["A"]]), 0.8, tolerance = 1e-10)
@@ -38,20 +39,21 @@ test_that("pi is non-reference IF, not 1-pi / reference IF", {
   # Flipped IF weight would disagree with reconstructed y_A
   for (tr in cmp$trials) {
     pi_j <- unname(cmp$pi[[tr]])
-    yA_wrong <- cmp$draws$m[, tr] - (1 - pi_j) * cmp$draws$g[, tr]
+    yA_wrong <- cmp$support$m[, tr] - (1 - pi_j) * cmp$support$g[, tr]
     expect_gt(
-      max(abs(yA_wrong - cmp$draws$y_A[, tr])),
+      max(abs(yA_wrong - cmp$support$y_A[, tr])),
       1e-3
     )
   }
 })
 
 test_that("CAMS shrinkage g orientation is nonref - ref (Older - Younger)", {
+  slow()
   skip_if_not_installed("bayesmeta")
 
   dat <- data.frame(
-    trial = rep(c("A", "B"), each = 2),
-    subgroup = factor(rep(c("Younger", "Older"), 2), levels = c("Younger", "Older")),
+    study = rep(c("A", "B"), each = 2),
+    level = factor(rep(c("Younger", "Older"), 2), levels = c("Younger", "Older")),
     yi = c(0.10, 0.40, -0.05, 0.30),
     vi = c(0.08, 0.08, 0.02, 0.02),
     reference = "Younger",
@@ -59,17 +61,17 @@ test_that("CAMS shrinkage g orientation is nonref - ref (Older - Younger)", {
     ifrac2_Older = c(-0.5, 0.5, -0.3, 0.7),
     n = 10
   )
-  fit <- suppressWarnings(cam(
+  fit <- suppressWarnings(cams(
     dat, reference = "Younger",
-    engine = "bayesmeta"))
+    ))
   cmp <- shrinkage_components(fit)
   expect_equal(cmp$reference, "Younger")
   expect_equal(cmp$nonref, "Older")
   expect_equal(cmp$interaction_label, "Older-Younger")
   for (tr in cmp$trials) {
     expect_equal(
-      cmp$draws$g[, tr],
-      cmp$draws$y_B[, tr] - cmp$draws$y_A[, tr],
+      cmp$support$g[, tr],
+      cmp$support$y_B[, tr] - cmp$support$y_A[, tr],
       tolerance = 1e-12
     )
     expect_equal(
@@ -81,11 +83,12 @@ test_that("CAMS shrinkage g orientation is nonref - ref (Older - Younger)", {
 })
 
 test_that("draw-level reconstruction and round-trip identities hold", {
+  slow()
   skip_if_not_installed("bayesmeta")
 
   dat <- data.frame(
-    trial = rep(c("A", "B"), each = 2),
-    subgroup = factor(rep(c("Younger", "Older"), 2), levels = c("Younger", "Older")),
+    study = rep(c("A", "B"), each = 2),
+    level = factor(rep(c("Younger", "Older"), 2), levels = c("Younger", "Older")),
     yi = c(0.10, 0.40, -0.05, 0.30),
     vi = c(0.08, 0.08, 0.02, 0.02),
     reference = "Younger",
@@ -93,17 +96,17 @@ test_that("draw-level reconstruction and round-trip identities hold", {
     ifrac2_Older = c(-0.5, 0.5, -0.3, 0.7),
     n = 10
   )
-  fit <- suppressWarnings(cam(
+  fit <- suppressWarnings(cams(
     dat, reference = "Younger",
-    engine = "bayesmeta"))
+    ))
   cmp <- shrinkage_components(fit)
 
   for (tr in cmp$trials) {
     pi_j <- unname(cmp$pi[[tr]])
-    m <- cmp$draws$m[, tr]
-    g <- cmp$draws$g[, tr]
-    y_A <- cmp$draws$y_A[, tr]
-    y_B <- cmp$draws$y_B[, tr]
+    m <- cmp$support$m[, tr]
+    g <- cmp$support$g[, tr]
+    y_A <- cmp$support$y_A[, tr]
+    y_B <- cmp$support$y_B[, tr]
 
     # Independent reconstruction at study-specific π_j
     y_A_reconstructed <- m - pi_j * g
@@ -122,11 +125,12 @@ test_that("draw-level reconstruction and round-trip identities hold", {
 })
 
 test_that("observed m,g recover original subgroup estimates", {
+  slow()
   skip_if_not_installed("bayesmeta")
 
   dat <- data.frame(
-    trial = rep(c("A", "B"), each = 2),
-    subgroup = factor(rep(c("Younger", "Older"), 2), levels = c("Younger", "Older")),
+    study = rep(c("A", "B"), each = 2),
+    level = factor(rep(c("Younger", "Older"), 2), levels = c("Younger", "Older")),
     yi = c(0.10, 0.40, -0.05, 0.30),
     vi = c(0.08, 0.08, 0.02, 0.02),
     reference = "Younger",
@@ -134,9 +138,9 @@ test_that("observed m,g recover original subgroup estimates", {
     ifrac2_Older = c(-0.5, 0.5, -0.3, 0.7),
     n = 10
   )
-  fit <- suppressWarnings(cam(
+  fit <- suppressWarnings(cams(
     dat, reference = "Younger",
-    engine = "bayesmeta"))
+    ))
   cmp <- shrinkage_components(fit)
   for (tr in cmp$trials) {
     pi_j <- cmp$pi[[tr]]
@@ -156,11 +160,12 @@ test_that("observed m,g recover original subgroup estimates", {
 })
 
 test_that("trial order and draw permutation do not change summaries", {
+  slow()
   skip_if_not_installed("bayesmeta")
 
   dat <- data.frame(
-    trial = rep(c("B", "A"), each = 2),
-    subgroup = factor(rep(c("Younger", "Older"), 2), levels = c("Younger", "Older")),
+    study = rep(c("B", "A"), each = 2),
+    level = factor(rep(c("Younger", "Older"), 2), levels = c("Younger", "Older")),
     yi = c(-0.05, 0.30, 0.10, 0.40),
     vi = c(0.02, 0.02, 0.08, 0.08),
     reference = "Younger",
@@ -168,20 +173,20 @@ test_that("trial order and draw permutation do not change summaries", {
     ifrac2_Older = c(-0.3, 0.7, -0.5, 0.5),
     n = 10
   )
-  fit_ba <- suppressWarnings(cam(
+  fit_ba <- suppressWarnings(cams(
     dat, reference = "Younger",
-    engine = "bayesmeta"))
-  dat_ab <- dat[order(dat$trial, dat$subgroup), , drop = FALSE]
+    ))
+  dat_ab <- dat[order(dat, dat), , drop = FALSE]
   # Same fit object: permute trial column order of components matrices
   cmp <- shrinkage_components(fit_ba)
-  sg <- shrinkage(fit_ba, type = "subgroups", summary = TRUE)
+  sg <- shrinkage(fit_ba, type = "modifiers", summary = TRUE)
 
   # Permute draw rows consistently
   set.seed(42)
-  ord <- sample.int(nrow(cmp$draws$m))
-  m_perm <- cmp$draws$m[ord, , drop = FALSE]
-  g_perm <- cmp$draws$g[ord, , drop = FALSE]
-  yA_perm <- cmp$draws$y_A[ord, , drop = FALSE]
+  ord <- sample.int(nrow(cmp$support$m))
+  m_perm <- cmp$support$m[ord, , drop = FALSE]
+  g_perm <- cmp$support$g[ord, , drop = FALSE]
+  yA_perm <- cmp$support$y_A[ord, , drop = FALSE]
   for (tr in cmp$trials) {
     pi_j <- unname(cmp$pi[[tr]])
     expect_equal(
@@ -190,7 +195,7 @@ test_that("trial order and draw permutation do not change summaries", {
       tolerance = 1e-12
     )
     row <- sg$summary[
-      sg$summary$trial == tr & sg$summary$subgroup == "Younger",
+      sg$summary$trial == tr & sg$summary$level == "Younger",
       ,
       drop = FALSE
     ]
@@ -199,19 +204,20 @@ test_that("trial order and draw permutation do not change summaries", {
   }
 
   # Named trial indexing: results for "A" match regardless of column order
-  expect_true("A" %in% colnames(cmp$draws$m))
-  expect_true("B" %in% colnames(cmp$draws$m))
+  expect_true("A" %in% colnames(cmp$support$m))
+  expect_true("B" %in% colnames(cmp$support$m))
   expect_equal(unname(cmp$pi[["A"]]), 0.5, tolerance = 1e-12)
   expect_equal(unname(cmp$pi[["B"]]), 0.3, tolerance = 1e-12)
 })
 
 test_that("forest shrinkage greys equal canonical accessor posterior QI", {
+  slow()
   skip_if_not_installed("bayesmeta")
   skip_if_not_installed("bayesmeta")
 
   dat <- data.frame(
-    trial = rep(c("A", "B"), each = 2),
-    subgroup = factor(rep(c("Younger", "Older"), 2), levels = c("Younger", "Older")),
+    study = rep(c("A", "B"), each = 2),
+    level = factor(rep(c("Younger", "Older"), 2), levels = c("Younger", "Older")),
     yi = c(0.10, 0.40, -0.05, 0.30),
     vi = c(0.08, 0.08, 0.02, 0.02),
     reference = "Younger",
@@ -219,10 +225,10 @@ test_that("forest shrinkage greys equal canonical accessor posterior QI", {
     ifrac2_Older = c(-0.5, 0.5, -0.3, 0.7),
     n = 10
   )
-  fit <- suppressWarnings(cam(
+  fit <- suppressWarnings(cams(
     dat, reference = "Younger",
-    engine = "bayesmeta"))
-  sg <- shrinkage(fit, type = "subgroups", summary = TRUE, exponentiate = FALSE)
+    ))
+  sg <- shrinkage(fit, type = "modifiers", summary = TRUE, exponentiate = FALSE)
   panels <- interact:::comparison_forest_build_fit_panels(
     fit,
     prob = 0.95,
@@ -238,7 +244,7 @@ test_that("forest shrinkage greys equal canonical accessor posterior QI", {
   labs <- panels$row_labels
   for (tr in c("A", "B")) {
     row <- sg$summary[
-      sg$summary$trial == tr & sg$summary$subgroup == "Younger",
+      sg$summary$trial == tr & sg$summary$level == "Younger",
       ,
       drop = FALSE
     ]
@@ -266,11 +272,12 @@ test_that("forest shrinkage greys equal canonical accessor posterior QI", {
 })
 
 test_that("reconstruction identities hold with study-specific pi_j", {
+  slow()
   skip_if_not_installed("bayesmeta")
 
   dat <- data.frame(
-    trial = rep(c("A", "B"), each = 2),
-    subgroup = factor(rep(c("Younger", "Older"), 2), levels = c("Younger", "Older")),
+    study = rep(c("A", "B"), each = 2),
+    level = factor(rep(c("Younger", "Older"), 2), levels = c("Younger", "Older")),
     yi = c(0.2, 0.8, 0.1, 0.4),
     vi = c(0.05, 0.05, 0.04, 0.03),
     reference = "Younger",
@@ -278,24 +285,25 @@ test_that("reconstruction identities hold with study-specific pi_j", {
     ifrac2_Older = c(-0.25, 0.75, -0.45, 0.55),
     n = 10
   )
-  fit <- suppressWarnings(cam(
+  fit <- suppressWarnings(cams(
     dat, reference = "Younger",
-    engine = "bayesmeta"))
+    ))
   cmp <- shrinkage_components(fit)
   expect_equal(unname(cmp$pi[["A"]]), 0.25, tolerance = 1e-12)
   pi_j <- unname(cmp$pi[["A"]])
-  m <- cmp$draws$m[, "A"]
-  g <- cmp$draws$g[, "A"]
-  expect_equal(cmp$draws$y_A[, "A"], m - pi_j * g, tolerance = 1e-10)
-  expect_equal(cmp$draws$y_B[, "A"], m + (1 - pi_j) * g, tolerance = 1e-10)
+  m <- cmp$support$m[, "A"]
+  g <- cmp$support$g[, "A"]
+  expect_equal(cmp$support$y_A[, "A"], m - pi_j * g, tolerance = 1e-10)
+  expect_equal(cmp$support$y_B[, "A"], m + (1 - pi_j) * g, tolerance = 1e-10)
 })
 
 test_that("exponentiation happens only after draw-level reconstruction", {
+  slow()
   skip_if_not_installed("bayesmeta")
 
   dat <- data.frame(
-    trial = rep(c("A", "B"), each = 2),
-    subgroup = factor(rep(c("Younger", "Older"), 2), levels = c("Younger", "Older")),
+    study = rep(c("A", "B"), each = 2),
+    level = factor(rep(c("Younger", "Older"), 2), levels = c("Younger", "Older")),
     yi = c(0.1, 0.5, 0.12, 0.28),
     vi = c(0.04, 0.02, 0.05, 0.03),
     reference = "Younger",
@@ -303,37 +311,38 @@ test_that("exponentiation happens only after draw-level reconstruction", {
     ifrac2_Older = c(-0.4, 0.6, -0.55, 0.45),
     n = 10
   )
-  fit <- suppressWarnings(cam(
+  fit <- suppressWarnings(cams(
     dat, reference = "Younger",
-    engine = "bayesmeta"))
-  lin <- shrinkage(fit, type = "subgroups", summary = FALSE, exponentiate = FALSE)
-  expd <- shrinkage(fit, type = "subgroups", summary = FALSE, exponentiate = TRUE)
+    ))
+  lin <- shrinkage(fit, type = "modifiers", summary = FALSE, exponentiate = FALSE)
+  expd <- shrinkage(fit, type = "modifiers", summary = FALSE, exponentiate = TRUE)
   cmp <- shrinkage_components(fit)
   # Components stay on model scale
-  expect_true(all(is.finite(cmp$draws$y_A)))
-  expect_lt(max(abs(cmp$draws$y_A)), 20)
+  expect_true(all(is.finite(cmp$support$y_A)))
+  expect_lt(max(abs(cmp$support$y_A)), 20)
   # Exponentiated draws = exp(linear reconstructed draws)
-  ya_lin <- lin$draws$effect[
-    lin$draws$trial == "A" & lin$draws$subgroup == "Younger"
+  ya_lin <- lin$support$effect[
+    lin$support$trial == "A" & lin$support$level == "Younger"
   ]
-  ya_exp <- expd$draws$effect[
-    expd$draws$trial == "A" & expd$draws$subgroup == "Younger"
+  ya_exp <- expd$support$effect[
+    expd$support$trial == "A" & expd$support$level == "Younger"
   ]
   expect_equal(ya_exp, exp(ya_lin), tolerance = 1e-10)
   # Not equal to reconstructing from exponentiated m,g
-  m <- cmp$draws$m[, "A"]
-  g <- cmp$draws$g[, "A"]
+  m <- cmp$support$m[, "A"]
+  g <- cmp$support$g[, "A"]
   pi_j <- cmp$pi[["A"]]
   wrong <- exp(m) - pi_j * exp(g)
   expect_false(isTRUE(all.equal(ya_exp, wrong, tolerance = 1e-3)))
 })
 
 test_that("shrinkage_diagnostics table and Younger change identity", {
+  slow()
   skip_if_not_installed("bayesmeta")
 
   dat <- data.frame(
-    trial = rep(c("A", "B"), each = 2),
-    subgroup = factor(rep(c("Younger", "Older"), 2), levels = c("Younger", "Older")),
+    study = rep(c("A", "B"), each = 2),
+    level = factor(rep(c("Younger", "Older"), 2), levels = c("Younger", "Older")),
     yi = c(0.10, 0.40, -0.05, 0.30),
     vi = c(0.08, 0.08, 0.02, 0.02),
     reference = "Younger",
@@ -341,9 +350,9 @@ test_that("shrinkage_diagnostics table and Younger change identity", {
     ifrac2_Older = c(-0.5, 0.5, -0.3, 0.7),
     n = 10
   )
-  fit <- suppressWarnings(cam(
+  fit <- suppressWarnings(cams(
     dat, reference = "Younger",
-    engine = "bayesmeta"))
+    ))
   tab <- shrinkage_diagnostics(fit)
   expect_equal(nrow(tab), 2L)
   expect_true(all(tab$g_orientation == "Older - Younger"))
@@ -356,12 +365,13 @@ test_that("shrinkage_diagnostics table and Younger change identity", {
 })
 
 test_that("forest does not use pooled/prediction as study shrinkage", {
+  slow()
   skip_if_not_installed("bayesmeta")
   skip_if_not_installed("bayesmeta")
 
   dat <- data.frame(
-    trial = rep(c("A", "B"), each = 2),
-    subgroup = factor(rep(c("Younger", "Older"), 2), levels = c("Younger", "Older")),
+    study = rep(c("A", "B"), each = 2),
+    level = factor(rep(c("Younger", "Older"), 2), levels = c("Younger", "Older")),
     yi = c(0.10, 0.40, -0.05, 0.30),
     vi = c(0.08, 0.08, 0.02, 0.02),
     reference = "Younger",
@@ -369,9 +379,9 @@ test_that("forest does not use pooled/prediction as study shrinkage", {
     ifrac2_Older = c(-0.5, 0.5, -0.3, 0.7),
     n = 10
   )
-  fit <- suppressWarnings(cam(
+  fit <- suppressWarnings(cams(
     dat, reference = "Younger",
-    engine = "bayesmeta"))
+    ))
   panels <- interact:::comparison_forest_build_fit_panels(
     fit,
     prob = 0.95,

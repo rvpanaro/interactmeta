@@ -86,7 +86,9 @@ test_that("DA, AD, and SWADA use the documented weight vectors", {
   expect_equal(w$da_reference, w_ref, tolerance = 1e-12)
   expect_equal(w$da_nonref, w_non, tolerance = 1e-12)
   expect_equal(w$ad, w_ad, tolerance = 1e-12)
-  expect_equal(w$swada, w$ad, tolerance = 1e-10)
+  expect_equal(w$swada_reference, w$ad, tolerance = 1e-10)
+  expect_equal(w$swada_nonref, w$ad, tolerance = 1e-10)
+  expect_equal(w$swada_reference, w$swada_nonref, tolerance = 1e-12)
   expect_false(isTRUE(all.equal(w$da_reference, w$da_nonref, tolerance = 1e-8)))
 })
 
@@ -101,9 +103,11 @@ test_that("interaction sign is non-reference minus reference", {
   da_sex <- da(respire_sex, reference = "Male")
   ad_sex <- ad(respire_sex, reference = "Male")
   expect_equal(da_sex$nonref, "Female")
-  r1 <- subset(respire_sex, trial == "RESPIRE 1")
-  g_manual <- as.numeric(r1$yi[r1$subgroup == "Female"] - r1$yi[r1$subgroup == "Male"])
-  expect_equal(ad_sex$pairs$g[ad_sex$pairs$trial == "RESPIRE 1"], g_manual, tolerance = 1e-12)
+  r1 <- subset(respire_sex, study == "RESPIRE 1")
+  g_manual <- as.numeric(
+    r1$yi[r1$subgroup == "Female"] - r1$yi[r1$subgroup == "Male"]
+  )
+  expect_equal(ad_sex$pairs$g[ad_sex$pairs$study == "RESPIRE 1"], g_manual, tolerance = 1e-12)
 })
 
 test_that("compare helpers label DA, AD, SWADA, CAMS", {
@@ -112,13 +116,12 @@ test_that("compare helpers label DA, AD, SWADA, CAMS", {
   da_fit <- da(respire_age, reference = "<65")
   ad_fit <- ad(respire_age, reference = "<65")
   sw <- swada(respire_age, reference = "<65")
-  cam <- suppressWarnings(cam(
+  cam <- suppressWarnings(cams(
     respire_age,
     reference = "<65",
-    engine = "bayesmeta",
-    silent = 2
+        silent = 2
   ))
-  tab <- suppressWarnings(compare_subgroups(da_fit, sw, cam))
+  tab <- suppressWarnings(compare_modifiers(da_fit, sw, cam))
   expect_equal(sort(unique(as.character(tab$approach))), c("CAMS", "DA", "SWADA"))
   ix <- suppressWarnings(compare_interactions(da_fit, ad_fit, sw, cam))
   expect_equal(as.character(ix$approach), c("DA", "AD", "SWADA", "CAMS"))
@@ -141,11 +144,10 @@ test_that("exponentiated comparison SEs are delta-method, not blank", {
   da_fit <- da(respire_age, reference = "<65")
   ad_fit <- ad(respire_age, reference = "<65")
   sw <- swada(respire_age, reference = "<65")
-  cam <- suppressWarnings(cam(
+  cam <- suppressWarnings(cams(
     respire_age,
     reference = "<65",
-    engine = "bayesmeta",
-    silent = 2
+        silent = 2
   ))
   log_ix <- suppressWarnings(compare_interactions(da_fit, ad_fit, sw, cam, exponentiate = FALSE))
   hr_ix <- suppressWarnings(compare_interactions(da_fit, ad_fit, sw, cam, exponentiate = TRUE))
@@ -164,18 +166,17 @@ test_that("compare_interactions warns when CAMS is not metafor REML", {
   da_fit <- da(respire_age, reference = "<65")
   ad_fit <- ad(respire_age, reference = "<65")
   sw <- swada(respire_age, reference = "<65")
-  cam <- suppressWarnings(cam(
+  cam <- suppressWarnings(cams(
     respire_age,
     reference = "<65",
-    engine = "bayesmeta",
-    silent = 2
+        silent = 2
   ))
   expect_warning(
     compare_interactions(da_fit, ad_fit, sw, cam),
     "not like-for-like"
   )
   expect_warning(
-    compare_subgroups(da_fit, sw, cam),
+    compare_modifiers(da_fit, sw, cam),
     "not like-for-like"
   )
 })
@@ -185,11 +186,11 @@ test_that("compare_interactions is silent when every fit is metafor REML", {
   da_fit <- da(age, reference = "Younger")
   ad_fit <- ad(age, reference = "Younger")
   sw <- swada(age, reference = "Younger")
-  cam <- cam(age, reference = "Younger", engine = "metafor", silent = 2)
-  expect_equal(da_fit$engine, "metafor")
-  expect_equal(cam$engine, "metafor")
+  cam <- cams(age, reference = "Younger", method = "REML", silent = 2)
+  expect_equal(interactmeta_fit_backend(da_fit), "metafor")
+  expect_equal(interactmeta_fit_backend(cam), "metafor")
   expect_equal(cam$method, "REML")
   expect_silent(compare_interactions(da_fit, ad_fit, sw, cam))
-  expect_silent(compare_subgroups(da_fit, sw, cam))
+  expect_silent(compare_modifiers(da_fit, sw, cam))
   expect_silent(compare_weights(da_fit, ad_fit, sw))
 })

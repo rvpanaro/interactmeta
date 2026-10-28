@@ -1,11 +1,13 @@
+# ---- forestplot_comparison.R ----
 #' Forest plot for a fitted CAMS model
 #'
 #' Layers observed study rows with optional grey **shrinkage** from
-#' [shrinkage()], then **Overall** / **Prediction** / **Combined** diamonds at
-#' the overall information fraction. Drawn via the bayesmeta / forestplot
+#' [shrinkage()], then **Overall** / **Prediction** summaries. The Combined
+#' section (when enabled) shows only those population summaries for [combined()],
+#' not trial-level rows. Drawn via the bayesmeta / forestplot
 #' backend (see [forestplot.interactmeta]).
 #'
-#' @param fit A CAMS fit from [cam()] (`interactmeta`).
+#' @param fit A CAMS fit from [cams()] (`interactmeta`).
 #' @param model_names Optional character vector of model row labels. When `NULL`
 #'   (default), built from `include_shrinkage`, `include_overall`, and
 #'   `include_prediction`.
@@ -55,13 +57,13 @@ comparison_forestplot_from_fit <- function(fit,
                                     ...) {
   check_comparison_fit(fit)
   if (!inherits(fit, "interactmeta")) {
-    stop("`fit` must be a CAMS fit from `cam()`.", call. = FALSE)
+    stop("`fit` must be a CAMS fit from `cams()`.", call. = FALSE)
   }
 
   st <- attr(fit, "interactmeta", exact = TRUE)
   if (is.null(st) || is.null(st$ifrac_data)) {
     stop(
-      "Fit has no `ifrac_data` in attribute `\"interactmeta\"`; refit with `cam()`.",
+      "Fit has no `ifrac_data` in attribute `\"interactmeta\"`; refit with `cams()`.",
       call. = FALSE
     )
   }
@@ -72,20 +74,16 @@ comparison_forestplot_from_fit <- function(fit,
     dots$exponentiate <- NULL
   }
   exponentiate <- isTRUE(exponentiate)
-  type <- "subgroups"
+  type <- "modifiers"
   if ("type" %in% names(dots)) {
-    type <- match.arg(
-      as.character(dots$type)[[1L]],
-      c("subgroups", "interaction", "combined")
-    )
+    type <- forestplot_resolve_type(as.character(dots$type)[[1L]])
     dots$type <- NULL
+  } else {
+    type <- forestplot_resolve_type(type)
   }
   if ("result" %in% names(dots)) {
     warning("`result` is deprecated; use `type` instead.", call. = FALSE)
-    type <- match.arg(
-      as.character(dots$result)[[1L]],
-      c("subgroups", "interaction", "combined")
-    )
+    type <- forestplot_resolve_type(as.character(dots$result)[[1L]])
     dots$result <- NULL
   }
   # Legacy printplot / quiet ignored — draw via print() / forestplot_draw().
@@ -137,7 +135,7 @@ comparison_forestplot_from_fit <- function(fit,
     fit = fit,
     ifrac = ifrac,
     prob = prob,
-    max_draws = max_ifrac_draws,
+    max_support = max_ifrac_draws,
     contrast_sep = contrast_sep,
     include_shrinkage = include_shrinkage,
     include_overall = include_overall,
@@ -221,7 +219,7 @@ comparison_forestplot_from_fit <- function(fit,
 comparison_forest_effect_bundle <- function(fit,
                                       ifrac = c("interaction", "overall"),
                                       prob = 0.95,
-                                      max_draws = NULL,
+                                      max_support = NULL,
                                       contrast_sep = "-",
                                       include_shrinkage = TRUE,
                                       include_overall = TRUE,
@@ -236,7 +234,7 @@ comparison_forest_effect_bundle <- function(fit,
   rot <- if (need_shrinkage) {
     comparison_shrinkage_rotation_bundle(
       fit,
-      max_draws = max_draws,
+      max_support = max_support,
       contrast_sep = contrast_sep,
       ifrac = ifrac,
       overall_ifrac = oi
@@ -247,7 +245,7 @@ comparison_forest_effect_bundle <- function(fit,
   shrinkage_effects <- if (!is.null(rot)) {
     list(
       subgroups = comparison_shrinkage_effect_from_bundle(
-        rot, type = "subgroups", prob = prob, summary = TRUE, exponentiate = FALSE
+        rot, type = "modifiers", prob = prob, summary = TRUE, exponentiate = FALSE
       ),
       interaction = comparison_shrinkage_effect_from_bundle(
         rot, type = "interaction", prob = prob, summary = TRUE, exponentiate = FALSE
@@ -265,7 +263,7 @@ comparison_forest_effect_bundle <- function(fit,
     model_names = model_names,
     prob = prob,
     ifrac = ifrac,
-    max_draws = max_draws,
+    max_support = max_support,
     contrast_sep = contrast_sep,
     include_overall = include_overall,
     include_prediction = include_prediction,
@@ -326,7 +324,7 @@ forestplot_fit_annotations <- function(fit,
                                        prob = 0.95,
                                        digits = 2,
                                        show_heterogeneity = TRUE,
-                                       show_ifrac = TRUE,
+                                       show_ifrac = FALSE,
                                        overall_ifrac = NULL,
                                        heterogeneity_obj = NULL) {
   ifrac <- match.arg(ifrac)
@@ -369,7 +367,8 @@ forestplot_fit_annotations <- function(fit,
         if (!nzchar(piece)) {
           next
         }
-        if (isTRUE(comparison_is_mle(fit))) {
+        if (!interactmeta_is_bayesian_fit(fit) &&
+              identical(toupper(as.character(fit$method)[[1L]]), "ML")) {
           piece <- paste0(piece, " (MLE)")
         }
         ty <- as.character(summ$type[[i]])
@@ -441,17 +440,13 @@ forestplot_overall_ifrac_annotations <- function(fit,
     }
     sg <- as.character(sg)[[1L]]
     est <- fmt(summ$estimate[[1L]])
-    sg_tag <- if (length(vars) > 1L) {
-      paste0(" (", sg, ")")
-    } else {
-      ""
-    }
+    sg_tag <- paste0(" for ", sg)
     if (isTRUE(plugin_fit)) {
-      note <- if (identical(fit$engine, "metafor")) {
+      note <- if (!interactmeta_is_bayesian_fit(fit)) {
         if (identical(ifrac, "interaction")) {
-          " (plug-in at fitted \u03c4_\u03b3)"
+          " (at fitted \u03c4_\u03b3)"
         } else {
-          " (plug-in at fitted \u03c4)"
+          " (at fitted \u03c4)"
         }
       } else {
         " (\u03c4 MLE plug-in)"
@@ -499,6 +494,118 @@ forestplot_overall_ifrac_annotations <- function(fit,
 forestplot_ifrac_annotation_prefix <- function(ifrac = c("interaction", "overall")) {
   match.arg(ifrac)
   "Information fraction (\u03c0)"
+}
+
+#' Reporting IF for the Combined `Overall` diamond IF column
+#'
+#' Percent estimate with a credible interval when `ifrac()` is posterior
+#' (Bayesian); point estimate only for plug-in metafor IF.
+#' @noRd
+forestplot_reporting_if_cell <- function(fit,
+                                         prob = 0.95,
+                                         digits = 1L,
+                                         ifrac = c("interaction", "overall"),
+                                         overall_ifrac = NULL,
+                                         ifrac_var = NULL,
+                                         reference_subgroup = FALSE) {
+  ifrac <- match.arg(ifrac)
+  st <- attr(fit, "interactmeta", exact = TRUE)
+  if (is.null(ifrac_var) || !nzchar(ifrac_var)) {
+    vars <- character()
+    if (!is.null(st$ifrac_vars) && length(st$ifrac_vars)) {
+      vars <- as.character(st$ifrac_vars)
+    } else if (!is.null(st$ifrac_vars_std) && length(st$ifrac_vars_std)) {
+      vars <- as.character(st$ifrac_vars_std)
+    } else if (!is.null(st$ifrac_data)) {
+      vars <- detect_ifrac_vars(st$ifrac_data)
+    } else if (!is.null(st$ifrac_var) && nzchar(st$ifrac_var)) {
+      vars <- st$ifrac_var
+    }
+    vars <- unique(vars[nzchar(vars)])
+    ifrac_var <- vars[[1L]]
+  }
+  if (is.null(ifrac_var) || !nzchar(ifrac_var)) {
+    return("")
+  }
+  oi <- overall_ifrac
+  if (is.null(oi)) {
+    oi <- tryCatch(
+      interactmeta_eval_ifrac(
+        fit,
+        ifrac_var = ifrac_var,
+        ifrac = ifrac,
+        summary = FALSE,
+        prob = prob
+      ),
+      error = function(e) NULL
+    )
+  }
+  if (is.null(oi)) {
+    return("")
+  }
+  summ <- attr(oi, "summary", exact = TRUE)
+  if (is.null(summ) || !nrow(summ)) {
+    draws <- if (is.numeric(oi)) oi else NULL
+    if (is.null(draws) || !length(draws)) {
+      return("")
+    }
+    w <- interactmeta_ifrac_draw_weights(fit, draws)
+    summ <- overall_ifrac_summary_df(draws, prob = prob, weight = w)
+  }
+  if (is.null(summ) || !nrow(summ)) {
+    return("")
+  }
+  if (isTRUE(reference_subgroup)) {
+    draws <- if (is.numeric(oi)) oi else NULL
+    if (!is.null(draws) && length(draws)) {
+      w <- interactmeta_ifrac_draw_weights(fit, draws)
+      summ <- overall_ifrac_summary_df(
+        1 - as.numeric(draws),
+        prob = prob,
+        weight = w
+      )
+    } else if (is.finite(summ$estimate[[1L]])) {
+      summ$estimate[[1L]] <- 1 - as.numeric(summ$estimate[[1L]])
+      if (all(c("lci", "uci") %in% names(summ)) &&
+            is.finite(summ$lci[[1L]]) &&
+            is.finite(summ$uci[[1L]])) {
+        lci <- 1 - as.numeric(summ$uci[[1L]])
+        uci <- 1 - as.numeric(summ$lci[[1L]])
+        summ$lci[[1L]] <- lci
+        summ$uci[[1L]] <- uci
+      }
+    }
+  }
+  forestplot_format_reporting_if_summary(summ, fit = fit, digits = digits)
+}
+
+#' @noRd
+forestplot_format_reporting_if_summary <- function(summ, fit, digits = 1L) {
+  if (is.null(summ) || !nrow(summ)) {
+    return("")
+  }
+  fmt_pct <- function(v) {
+    forestplot_format_ifrac(as.numeric(v), digits = digits)[[1L]]
+  }
+  est <- fmt_pct(summ$estimate[[1L]])
+  if (!is.finite(as.numeric(summ$estimate[[1L]]))) {
+    return("")
+  }
+  plugin_fit <- isTRUE(interactmeta_ifrac_is_plugin(fit))
+  if (isTRUE(plugin_fit) ||
+        !all(c("lci", "uci") %in% names(summ)) ||
+        !is.finite(summ$lci[[1L]]) ||
+        !is.finite(summ$uci[[1L]])) {
+    return(est)
+  }
+  paste0(
+    est,
+    " [",
+    fmt_pct(summ$lci[[1L]]),
+    ", ",
+    fmt_pct(summ$uci[[1L]]),
+    "]"
+  )
 }
 
 #' Treat include-layer flags as on unless explicitly `FALSE`
@@ -665,8 +772,8 @@ comparison_forest_build_fit_panels <- function(fit,
   group <- match.arg(group, c("subgroup", "trial"))
   ifrac <- match.arg(ifrac)
   st <- attr(fit, "interactmeta", exact = TRUE)
-  trial_var <- if (!is.null(st$trial_var)) st$trial_var else "trial"
-  subgroup_var <- if (!is.null(st$subgroup_var)) st$subgroup_var else "subgroup"
+  trial_var <- st$trial_var %||% interactmeta_study_column()
+  subgroup_var <- st$subgroup_var %||% interactmeta_level_column()
 
   model_names <- comparison_forest_resolve_model_names(
     model_names = model_names,
@@ -680,7 +787,11 @@ comparison_forest_build_fit_panels <- function(fit,
     contrast_sep = contrast_sep,
     group = group
   )
-  ref <- interactmeta_reference(fit)
+  ref <- if (interactmeta_is_non_cams_analysis(fit) && !is.null(fit$reference)) {
+    as.character(fit$reference)[[1L]]
+  } else {
+    interactmeta_reference(fit)
+  }
   # Keep data$reference aligned with the fit attribute
   if ("reference" %in% names(data)) {
     interactmeta_assert_reference_agrees(
@@ -709,8 +820,8 @@ comparison_forest_build_fit_panels <- function(fit,
   resultsA <- forestplot_attach_trial_size(
     resultsA,
     aligned$subgroup,
-    trial_col = trial_var,
-    subgroup_col = subgroup_var,
+    trial_col = "trial",
+    subgroup_col = "subgroup",
     n_var = n_var,
     contrast_sep = contrast_sep
   )
@@ -743,7 +854,7 @@ comparison_forest_build_fit_panels <- function(fit,
       fit,
       prob = prob,
       contrast_sep = contrast_sep,
-      max_draws = max_ifrac_draws,
+      max_support = max_ifrac_draws,
       ifrac = ifrac,
       group = group,
       shrinkage_effects = effect_bundle$shrinkage
@@ -812,7 +923,7 @@ comparison_forest_build_fit_panels <- function(fit,
       model_names = marginal_names,
       prob = prob,
       ifrac = ifrac,
-      max_draws = max_ifrac_draws,
+      max_support = max_ifrac_draws,
       contrast_sep = contrast_sep,
       include_overall = include_overall,
       include_prediction = include_prediction,
@@ -860,6 +971,7 @@ comparison_forest_build_fit_panels <- function(fit,
     obs_row_index = ix_obs,
     include_shrinkage = comparison_forest_layer_on(include_shrinkage),
     include_prediction = comparison_forest_layer_on(include_prediction),
+    include_combined = comparison_forest_layer_on(include_combined),
     overall_shrinkage = overall_shrinkage
   )
 }
@@ -991,7 +1103,7 @@ comparison_forest_apply_effect_styles <- function(resultsA,
 comparison_forest_shrinkage_data <- function(fit,
                                        prob,
                                        contrast_sep = "-",
-                                       max_draws = NULL,
+                                       max_support = NULL,
                                        ifrac = c("interaction", "overall"),
                                        group = "subgroup",
                                        shrinkage_effects = NULL) {
@@ -1005,13 +1117,13 @@ comparison_forest_shrinkage_data <- function(fit,
   if (is.null(shrinkage_effects)) {
     rot <- comparison_shrinkage_rotation_bundle(
       fit,
-      max_draws = max_draws,
+      max_support = max_support,
       contrast_sep = contrast_sep,
       ifrac = match.arg(ifrac)
     )
     shrinkage_effects <- list(
       subgroups = comparison_shrinkage_effect_from_bundle(
-        rot, type = "subgroups", prob = prob, summary = TRUE, exponentiate = FALSE
+        rot, type = "modifiers", prob = prob, summary = TRUE, exponentiate = FALSE
       ),
       interaction = comparison_shrinkage_effect_from_bundle(
         rot, type = "interaction", prob = prob, summary = TRUE, exponentiate = FALSE
@@ -1070,7 +1182,7 @@ comparison_forest_shrinkage_data <- function(fit,
 #'
 #' Uses the median and posterior QI of reconstructed overall (`m_j`) draws.
 #' @noRd
-comparison_forest_overall_shrinkage_yivi <- function(summary, trial_var = "trial") {
+comparison_forest_overall_shrinkage_yivi <- function(summary, trial_var = "study") {
   if (is.null(summary) || !nrow(summary)) {
     return(data.frame(
       trial = character(0),
@@ -1126,7 +1238,7 @@ comparison_forest_summary_blocks <- function(fit,
                                        model_names,
                                        prob,
                                        ifrac = c("interaction", "overall"),
-                                       max_draws = NULL,
+                                       max_support = NULL,
                                        contrast_sep = "-",
                                        include_overall = TRUE,
                                        include_prediction = TRUE,
@@ -1165,23 +1277,23 @@ comparison_forest_summary_blocks <- function(fit,
 
   if (show_overall) {
     overall_sg <- comparison_forest_marginal_subgroup_block(
-      fit, oi, "Overall", overall_label, prob, max_draws, contrast_sep,
+      fit, oi, "Overall", overall_label, prob, max_support, contrast_sep,
       subgroup_order = subgroup_order,
       ifrac = ifrac
     )
     overall_int <- comparison_forest_marginal_interaction_block(
-      fit, oi, "Overall", overall_label, prob, max_draws, contrast_sep,
+      fit, oi, "Overall", overall_label, prob, max_support, contrast_sep,
       ifrac = ifrac
     )
   }
   if (show_prediction) {
     pred_sg <- comparison_forest_marginal_subgroup_block(
-      fit, oi, "Prediction", overall_label, prob, max_draws, contrast_sep,
+      fit, oi, "Prediction", overall_label, prob, max_support, contrast_sep,
       subgroup_order = subgroup_order,
       ifrac = ifrac
     )
     pred_int <- comparison_forest_marginal_interaction_block(
-      fit, oi, "Prediction", overall_label, prob, max_draws, contrast_sep,
+      fit, oi, "Prediction", overall_label, prob, max_support, contrast_sep,
       ifrac = ifrac
     )
   }
@@ -1194,6 +1306,32 @@ comparison_forest_summary_blocks <- function(fit,
     reference = ref,
     include_overall = show_overall,
     include_prediction = show_prediction
+  )
+  ref_chr <- as.character(ref)[[1L]]
+  reporting_if_for_row <- function(colour_lab) {
+    forestplot_reporting_if_cell(
+      fit = fit,
+      prob = prob,
+      digits = 1L,
+      ifrac = ifrac,
+      overall_ifrac = oi,
+      reference_subgroup = identical(as.character(colour_lab)[[1L]], ref_chr)
+    )
+  }
+  is_overall <- combined$subgroup$row_kind == "overall"
+  combined$subgroup$ifrac <- ifelse(
+    is_overall,
+    vapply(
+      seq_len(nrow(combined$subgroup)),
+      function(i) {
+        if (!is_overall[[i]]) {
+          return("")
+        }
+        reporting_if_for_row(combined$subgroup$colour_label[[i]])
+      },
+      character(1)
+    ),
+    ""
   )
 
   if (comparison_forest_layer_on(include_combined)) {
@@ -1210,13 +1348,15 @@ comparison_forest_summary_blocks <- function(fit,
         types = overall_types,
         overall_label = overall_label,
         prob = prob,
-        max_draws = max_draws,
+        max_support = max_support,
         ifrac = ifrac,
         include_types = c(
           if (show_overall) "Overall",
           if (show_prediction) "Prediction"
         )
       )
+      # Combined Overall / Prediction: no IF column label (use footnotes for ω).
+      overall_extra$subgroup$ifrac <- ""
       if (nrow(overall_extra$subgroup)) {
         combined$subgroup <- dplyr::bind_rows(
           combined$subgroup,
@@ -1258,17 +1398,17 @@ comparison_forest_marginal_subgroup_block <- function(fit,
                                                 type,
                                                 overall_label,
                                                 prob,
-                                                max_draws,
+                                                max_support,
                                                 contrast_sep,
                                                 subgroup_order = NULL,
                                                 ifrac = c("interaction", "overall")) {
-  sg_me <- subgroups(
+  sg_me <- modifiers(
     fit,
-    contribution = overall_ifrac,
+    at = overall_ifrac,
     ifrac = ifrac,
     type = type,
     prob = prob,
-    max_draws = max_draws,
+    max_support = max_support,
     summary = TRUE,
     contrast_sep = contrast_sep,
     exponentiate = FALSE
@@ -1287,16 +1427,16 @@ comparison_forest_marginal_interaction_block <- function(fit,
                                                  type,
                                                  overall_label,
                                                  prob,
-                                                 max_draws,
+                                                 max_support,
                                                  contrast_sep,
                                                  ifrac = c("interaction", "overall")) {
   int_me <- interactions(
     fit,
-    contribution = overall_ifrac,
+    at = overall_ifrac,
     ifrac = ifrac,
     type = type,
     prob = prob,
-    max_draws = max_draws,
+    max_support = max_support,
     summary = TRUE,
     contrast_sep = contrast_sep,
     exponentiate = FALSE
@@ -1319,7 +1459,7 @@ comparison_forest_overall_rows <- function(fit,
                                             types,
                                             overall_label,
                                             prob,
-                                            max_draws,
+                                            max_support,
                                             ifrac = c("interaction", "overall"),
                                             include_types = types) {
   empty <- data.frame(
@@ -1337,11 +1477,11 @@ comparison_forest_overall_rows <- function(fit,
   me <- if (length(include_types)) {
     combined(
       fit,
-      contribution = overall_ifrac,
+      at = overall_ifrac,
       ifrac = ifrac,
       type = include_types,
       prob = prob,
-      max_draws = max_draws,
+      max_support = max_support,
       summary = TRUE,
       exponentiate = FALSE
     )
@@ -1359,7 +1499,7 @@ comparison_forest_overall_rows <- function(fit,
       return(data.frame(
         trial = overall_label,
         subgroup = ty,
-        colour_label = "Combined",
+        colour_label = forestplot_combined_block_label(),
         row_kind = "combined",
         yi = NA_real_,
         vi = NA_real_,
@@ -1371,9 +1511,9 @@ comparison_forest_overall_rows <- function(fit,
     data.frame(
       trial = overall_label,
       subgroup = ty,
-      colour_label = "Combined",
+      colour_label = forestplot_combined_block_label(),
       row_kind = "combined",
-      yi = row$mean[[1L]],
+      yi = comparison_forest_summary_point(row)[[1L]],
       vi = pmax(row$sd[[1L]]^2, 1e-12, na.rm = TRUE),
       ci.lb = comparison_forest_interval_col(row, "lci")[[1L]],
       ci.ub = comparison_forest_interval_col(row, "uci")[[1L]],
@@ -1593,6 +1733,39 @@ comparison_forest_interleave_overall_prediction <- function(overall_sg,
   list(subgroup = out, panel_b = panel_b)
 }
 
+#' Point estimate column on a marginal summary table
+#' @noRd
+comparison_forest_summary_point <- function(s) {
+  if ("estimate" %in% names(s)) {
+    return(as.numeric(s$estimate))
+  }
+  as.numeric(s$mean)
+}
+
+#' Level labels on a [modifiers()] summary table
+#' @noRd
+comparison_forest_summary_level <- function(s) {
+  if ("level" %in% names(s)) {
+    return(as.character(s$level))
+  }
+  if ("subgroup" %in% names(s)) {
+    return(as.character(s$subgroup))
+  }
+  stop("Marginal summary is missing a level / subgroup column.", call. = FALSE)
+}
+
+#' Interaction labels on an [interactions()] summary table
+#' @noRd
+comparison_forest_summary_interaction <- function(s) {
+  if ("interaction" %in% names(s)) {
+    return(as.character(s$interaction))
+  }
+  if ("subgroup" %in% names(s)) {
+    return(as.character(s$subgroup))
+  }
+  stop("Interaction summary is missing an interaction column.", call. = FALSE)
+}
+
 #' @noRd
 comparison_forest_overall_subgroup_block <- function(summary,
                                                type,
@@ -1601,8 +1774,8 @@ comparison_forest_overall_subgroup_block <- function(summary,
   s <- summary[summary$type == type, , drop = FALSE]
   out <- data.frame(
     trial = overall_label,
-    subgroup = s$subgroup,
-    yi = s$mean,
+    subgroup = comparison_forest_summary_level(s),
+    yi = comparison_forest_summary_point(s),
     vi = pmax(s$sd^2, 1e-12, na.rm = TRUE),
     ci.lb = comparison_forest_interval_col(s, "lci"),
     ci.ub = comparison_forest_interval_col(s, "uci"),
@@ -1640,8 +1813,8 @@ comparison_forest_overall_interaction_block <- function(summary, type, overall_l
   s <- summary[summary$type == type, , drop = FALSE]
   data.frame(
     trial = overall_label,
-    subgroup = s$interaction,
-    yi = s$mean,
+    subgroup = comparison_forest_summary_interaction(s),
+    yi = comparison_forest_summary_point(s),
     vi = pmax(s$sd^2, 1e-12, na.rm = TRUE),
     ci.lb = comparison_forest_interval_col(s, "lci"),
     ci.ub = comparison_forest_interval_col(s, "uci"),
@@ -1665,7 +1838,7 @@ comparison_forest_subgroup_rows <- function(dat, trial_var, subgroup_var, contra
 
 #' Reorder forest rows to match a trial-by-subgroup template
 #' @noRd
-comparison_forest_order_to_template <- function(df, template, trial_var = "trial", subgroup_var = "subgroup") {
+comparison_forest_order_to_template <- function(df, template, trial_var = "study", subgroup_var = "level") {
   if (!nrow(df) || !nrow(template)) {
     return(df)
   }
@@ -1915,6 +2088,9 @@ append_comparison_forest_block <- function(resultsA,
   if ("row_kind" %in% names(subgroup)) {
     sg_sum$row_kind <- subgroup$row_kind
   }
+  if ("ifrac" %in% names(subgroup)) {
+    sg_sum$ifrac <- as.character(subgroup$ifrac)
+  }
   group_lab <- if ("colour_label" %in% names(subgroup)) {
     as.character(subgroup$colour_label)
   } else {
@@ -1941,7 +2117,7 @@ append_comparison_forest_block <- function(resultsA,
 
   # Axis detail: block name, else Overall/Prediction from subgroup for overall
   # rows, else title-cased row_kind. Avoids NBSP placeholders and duplicate
-  # "Younger" / "Combined" axis ticks.
+  # "Younger" / "All" axis ticks.
   detail_lab <- if (nzchar(block_lab)) {
     rep(block_lab, n_add)
   } else {

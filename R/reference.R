@@ -1,3 +1,4 @@
+# ---- reference.R ----
 #' Resolve and validate the CAMS reference subgroup
 #'
 #' The reference subgroup is a single source of truth for design columns
@@ -20,7 +21,7 @@
 #' @noRd
 interactmeta_reference <- function(x,
                              reference = NULL,
-                             subgroup_var = "subgroup") {
+                             subgroup_var = "level") {
   if (is_comparison_fit(x) || inherits(x, "interactmeta")) {
     st <- attr(x, "interactmeta", exact = TRUE)
     stored <- if (!is.null(st) && !is.null(st$reference) &&
@@ -35,7 +36,7 @@ interactmeta_reference <- function(x,
     }
     if (is.null(stored) || !nzchar(stored)) {
       stop(
-        "Fit has no stored `reference`. Refit with `cam(..., reference = ...)`.",
+        "Fit has no stored `reference`. Refit with `cams(..., reference = ...)`.",
         call. = FALSE
       )
     }
@@ -86,7 +87,7 @@ interactmeta_reference <- function(x,
 #' @noRd
 interactmeta_nonref <- function(x,
                           reference = NULL,
-                          subgroup_var = "subgroup") {
+                          subgroup_var = "level") {
   ref <- interactmeta_reference(x, reference = reference, subgroup_var = subgroup_var)
   if (is_comparison_fit(x) || inherits(x, "interactmeta")) {
     st <- attr(x, "interactmeta", exact = TRUE)

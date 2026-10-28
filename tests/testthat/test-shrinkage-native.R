@@ -1,33 +1,5 @@
 # Engine-native CAMS shrinkage (bayesmeta DIRECT / metafor BLUP).
-# Public engines have no r_trial columns.
-
-cams_native_shrinkage_data <- function(reverse_rows = FALSE,
-                                       subgroup_levels = c("Younger", "Older")) {
-  dat <- data.frame(
-    trial = rep(c("ADVANCE", "AFFIRM", "DEFINE", "TEMSO"), each = 2),
-    subgroup = factor(
-      rep(c("Younger", "Older"), 4),
-      levels = subgroup_levels
-    ),
-    yi = c(
-      -0.3425, -0.6539,
-      -1.2730, -0.7985,
-      -0.9835, -0.4231,
-      -0.4403, -0.3272
-    ),
-    vi = c(
-      0.025, 0.068,
-      0.018, 0.030,
-      0.040, 0.047,
-      0.040, 0.033
-    ),
-    stringsAsFactors = FALSE
-  )
-  if (isTRUE(reverse_rows)) {
-    dat <- dat[rev(seq_len(nrow(dat))), , drop = FALSE]
-  }
-  dat
-}
+# Public engines expose shrinkage through their native latent-effect objects.
 
 parse_ifrac_display <- function(x) {
   x <- as.character(x)
@@ -90,34 +62,34 @@ expect_cams_identities <- function(cmp, tol = 1e-10) {
   for (tr in cmp$trials) {
     pi_j <- unname(cmp$pi[[tr]])
     expect_equal(
-      cmp$draws$y_B[, tr] - cmp$draws$y_A[, tr],
-      cmp$draws$g[, tr],
+      cmp$support$y_B[, tr] - cmp$support$y_A[, tr],
+      cmp$support$g[, tr],
       tolerance = tol
     )
     expect_equal(
-      (1 - pi_j) * cmp$draws$y_A[, tr] + pi_j * cmp$draws$y_B[, tr],
-      cmp$draws$m[, tr],
+      (1 - pi_j) * cmp$support$y_A[, tr] + pi_j * cmp$support$y_B[, tr],
+      cmp$support$m[, tr],
       tolerance = tol
     )
     expect_equal(
-      cmp$draws$y_A[, tr],
-      cmp$draws$m[, tr] - pi_j * cmp$draws$g[, tr],
+      cmp$support$y_A[, tr],
+      cmp$support$m[, tr] - pi_j * cmp$support$g[, tr],
       tolerance = tol
     )
     expect_equal(
-      cmp$draws$y_B[, tr],
-      cmp$draws$m[, tr] + (1 - pi_j) * cmp$draws$g[, tr],
+      cmp$support$y_B[, tr],
+      cmp$support$m[, tr] + (1 - pi_j) * cmp$support$g[, tr],
       tolerance = tol
     )
   }
 }
 
 expect_forest_equals_shrinkage <- function(fit) {
-  sg <- shrinkage(fit, type = "subgroups", summary = TRUE, exponentiate = FALSE)
+  sg <- shrinkage(fit, type = "modifiers", summary = TRUE, exponentiate = FALSE)
   fp <- forest_shrinkage_rows(fit)
   expect_equal(nrow(fp), nrow(sg$summary))
-  key_fp <- paste(fp$trial, fp$subgroup, sep = "\r")
-  key_sg <- paste(sg$summary$trial, sg$summary$subgroup, sep = "\r")
+  key_fp <- paste(fp$trial, fp, sep = "\r")
+  key_sg <- paste(sg$summary$trial, sg$summary$level, sep = "\r")
   m <- match(key_fp, key_sg)
   expect_false(any(is.na(m)))
   expect_equal(fp$yi, sg$summary$estimate[m], tolerance = 1e-8)
@@ -129,28 +101,27 @@ test_that("bayesmeta shrinkage equals DIRECT latent reconstruction, not FE fitte
   skip_if_not_installed("bayesmeta")
   skip_if_not_installed("metafor")
 
-  dat <- cams_native_shrinkage_data()
-  fit <- suppressWarnings(cam(
+  dat <- fixture_cams_native_shrinkage()
+  fit <- suppressWarnings(cams(
     dat,
     reference = "Younger",
-    engine = "bayesmeta",
-    silent = 2
+        silent = 2
   ))
   cmp <- shrinkage_components(fit)
   expect_equal(cmp$reference, "Younger")
   expect_equal(cmp$nonref, "Older")
   expect_cams_identities(cmp)
 
-  sg <- shrinkage(fit, type = "subgroups", summary = TRUE, exponentiate = FALSE)
+  sg <- shrinkage(fit, type = "modifiers", summary = TRUE, exponentiate = FALSE)
   fe <- fitted(fit, summary = TRUE)
   # Native trial latents must differ from the FE linpred at π_j
   max_fe <- 0
   for (i in seq_len(nrow(sg$summary))) {
     tr <- sg$summary$trial[[i]]
-    lab <- sg$summary$subgroup[[i]]
+    lab <- sg$summary[[i]]
     i_dat <- which(
-      as.character(fit$data$trial) == tr &
-        as.character(fit$data$subgroup) == lab
+      as.character(fit) == tr &
+        as.character(fit$data) == lab
     )[[1L]]
     max_fe <- max(max_fe, abs(sg$summary$estimate[[i]] - fe$Estimate[[i_dat]]))
   }
@@ -160,12 +131,12 @@ test_that("bayesmeta shrinkage equals DIRECT latent reconstruction, not FE fitte
     smA <- interact:::interactmeta_posterior_1d_summary(fit$latent$mu_A[[tr]])
     smB <- interact:::interactmeta_posterior_1d_summary(fit$latent$mu_B[[tr]])
     rowA <- sg$summary[
-      sg$summary$trial == tr & sg$summary$subgroup == "Younger",
+      sg$summary$trial == tr & sg$summary$level == "Younger",
       ,
       drop = FALSE
     ]
     rowB <- sg$summary[
-      sg$summary$trial == tr & sg$summary$subgroup == "Older",
+      sg$summary$trial == tr & sg$summary$level == "Older",
       ,
       drop = FALSE
     ]
@@ -183,17 +154,17 @@ test_that("bayesmeta shrinkage equals DIRECT latent reconstruction, not FE fitte
 test_that("metafor shrinkage equals BLUP reconstruction, not FE fitted()", {
   skip_if_not_installed("metafor")
 
-  dat <- cams_native_shrinkage_data()
-  fit <- suppressWarnings(cam(
+  dat <- fixture_cams_native_shrinkage()
+  fit <- suppressWarnings(cams(
     dat,
     reference = "Younger",
-    engine = "metafor",
+    method = "REML",
     silent = 2
   ))
   cmp <- shrinkage_components(fit)
   expect_cams_identities(cmp)
 
-  sg <- shrinkage(fit, type = "subgroups", summary = TRUE, exponentiate = FALSE)
+  sg <- shrinkage(fit, type = "modifiers", summary = TRUE, exponentiate = FALSE)
   bl_m <- metafor::blup(fit$metafor$overall)
   bl_g <- metafor::blup(fit$metafor$interaction)
   fe <- fitted(fit, summary = TRUE)
@@ -205,20 +176,20 @@ test_that("metafor shrinkage equals BLUP reconstruction, not FE fitted()", {
     muA <- interact:::interactmeta_muA_from_mg(bm$pred, bg$pred, pi_j)
     muB <- interact:::interactmeta_muB_from_mg(bm$pred, bg$pred, pi_j)
     rowA <- sg$summary[
-      sg$summary$trial == tr & sg$summary$subgroup == "Younger",
+      sg$summary$trial == tr & sg$summary$level == "Younger",
       ,
       drop = FALSE
     ]
     rowB <- sg$summary[
-      sg$summary$trial == tr & sg$summary$subgroup == "Older",
+      sg$summary$trial == tr & sg$summary$level == "Older",
       ,
       drop = FALSE
     ]
     expect_equal(rowA$estimate[[1L]], muA, tolerance = 1e-8)
     expect_equal(rowB$estimate[[1L]], muB, tolerance = 1e-8)
     iA <- which(
-      as.character(fit$data$trial) == tr &
-        as.character(fit$data$subgroup) == "Younger"
+      as.character(fit) == tr &
+        as.character(fit$data) == "Younger"
     )[[1L]]
     max_fe <- max(max_fe, abs(rowA$estimate[[1L]] - fe$Estimate[[iA]]))
   }
@@ -229,16 +200,16 @@ test_that("metafor shrinkage equals BLUP reconstruction, not FE fitted()", {
 test_that("displayed IF is the subgroup share; reconstruction uses non-reference pi_j", {
   skip_if_not_installed("bayesmeta")
 
-  dat <- cams_native_shrinkage_data()
-  fit <- suppressWarnings(cam(
-    dat, reference = "Younger", engine = "bayesmeta", silent = 2
+  dat <- fixture_cams_native_shrinkage()
+  fit <- suppressWarnings(cams(
+    dat, reference = "Younger", silent = 2
   ))
   cmp <- shrinkage_components(fit)
   disp <- forest_observed_ifrac(fit)
   for (tr in cmp$trials) {
     pi_j <- unname(cmp$pi[[tr]])
-    dA <- disp$ifrac[disp$trial == tr & disp$subgroup == "Younger"]
-    dB <- disp$ifrac[disp$trial == tr & disp$subgroup == "Older"]
+    dA <- disp$ifrac[disp$trial == tr & disp == "Younger"]
+    dB <- disp$ifrac[disp$trial == tr & disp == "Older"]
     expect_equal(dB, pi_j, tolerance = 5e-4)
     expect_equal(dA, 1 - pi_j, tolerance = 5e-4)
     expect_equal(unname(cmp$pi[[tr]]), pi_j, tolerance = 1e-12)
@@ -248,17 +219,17 @@ test_that("displayed IF is the subgroup share; reconstruction uses non-reference
 test_that("forest shrinkage matches shrinkage() after reordering input rows", {
   skip_if_not_installed("bayesmeta")
 
-  dat <- cams_native_shrinkage_data()
-  dat_rev <- cams_native_shrinkage_data(reverse_rows = TRUE)
-  fit <- suppressWarnings(cam(
-    dat, reference = "Younger", engine = "bayesmeta", silent = 2
+  dat <- fixture_cams_native_shrinkage()
+  dat_rev <- fixture_cams_native_shrinkage(reverse_rows = TRUE)
+  fit <- suppressWarnings(cams(
+    dat, reference = "Younger", silent = 2
   ))
-  fit_rev <- suppressWarnings(cam(
-    dat_rev, reference = "Younger", engine = "bayesmeta", silent = 2
+  fit_rev <- suppressWarnings(cams(
+    dat_rev, reference = "Younger", silent = 2
   ))
-  a <- shrinkage(fit, type = "subgroups", summary = TRUE, exponentiate = FALSE)$summary
-  b <- shrinkage(fit_rev, type = "subgroups", summary = TRUE, exponentiate = FALSE)$summary
-  key <- function(d) paste(d$trial, d$subgroup, sep = "\r")
+  a <- shrinkage(fit, type = "modifiers", summary = TRUE, exponentiate = FALSE)$summary
+  b <- shrinkage(fit_rev, type = "modifiers", summary = TRUE, exponentiate = FALSE)$summary
+  key <- function(d) paste(d$trial, d, sep = "\r")
   mb <- match(key(a), key(b))
   expect_false(any(is.na(mb)))
   expect_equal(a$estimate, b$estimate[mb], tolerance = 1e-6)
@@ -268,9 +239,9 @@ test_that("forest shrinkage matches shrinkage() after reordering input rows", {
 test_that("reversed reference keeps A/B reconstruction signs and forest matching", {
   skip_if_not_installed("bayesmeta")
 
-  dat <- cams_native_shrinkage_data(subgroup_levels = c("Older", "Younger"))
-  fit <- suppressWarnings(cam(
-    dat, reference = "Older", engine = "bayesmeta", silent = 2
+  dat <- fixture_cams_native_shrinkage(subgroup_levels = c("Older", "Younger"))
+  fit <- suppressWarnings(cams(
+    dat, reference = "Older", silent = 2
   ))
   cmp <- shrinkage_components(fit)
   expect_equal(cmp$reference, "Older")
@@ -278,20 +249,20 @@ test_that("reversed reference keeps A/B reconstruction signs and forest matching
   expect_cams_identities(cmp)
   # π_j is IF of the non-reference (Younger)
   for (tr in cmp$trials) {
-    rows <- fit$data[as.character(fit$data$trial) == tr, , drop = FALSE]
+    rows <- fit$data[as.character(fit) == tr, , drop = FALSE]
     if_col <- grep("^ifrac_", names(rows), value = TRUE)[[1L]]
     expect_equal(unname(cmp$pi[[tr]]), unique(rows[[if_col]])[[1L]], tolerance = 1e-10)
-    i_ref <- rows$subgroup == "Older"
-    i_non <- rows$subgroup == "Younger"
+    i_ref <- rows == "Older"
+    i_non <- rows == "Younger"
     prec <- 1 / rows$vi
     pi_non <- unname(prec[i_non] / sum(prec))
     expect_equal(unname(cmp$pi[[tr]]), pi_non, tolerance = 1e-8)
   }
-  sg <- shrinkage(fit, type = "subgroups", summary = TRUE, exponentiate = FALSE)
+  sg <- shrinkage(fit, type = "modifiers", summary = TRUE, exponentiate = FALSE)
   for (tr in cmp$trials) {
     smA <- interact:::interactmeta_posterior_1d_summary(fit$latent$mu_A[[tr]])
     rowA <- sg$summary[
-      sg$summary$trial == tr & sg$summary$subgroup == "Older",
+      sg$summary$trial == tr & sg$summary$level == "Older",
       ,
       drop = FALSE
     ]
@@ -303,12 +274,12 @@ test_that("reversed reference keeps A/B reconstruction signs and forest matching
 test_that("exponentiation happens only after CAMS reconstruction", {
   skip_if_not_installed("bayesmeta")
 
-  dat <- cams_native_shrinkage_data()
-  fit <- suppressWarnings(cam(
-    dat, reference = "Younger", engine = "bayesmeta", silent = 2
+  dat <- fixture_cams_native_shrinkage()
+  fit <- suppressWarnings(cams(
+    dat, reference = "Younger", silent = 2
   ))
-  lin <- shrinkage(fit, type = "subgroups", summary = TRUE, exponentiate = FALSE)
-  expd <- shrinkage(fit, type = "subgroups", summary = TRUE, exponentiate = TRUE)
+  lin <- shrinkage(fit, type = "modifiers", summary = TRUE, exponentiate = FALSE)
+  expd <- shrinkage(fit, type = "modifiers", summary = TRUE, exponentiate = TRUE)
   expect_equal(expd$summary$estimate, exp(lin$summary$estimate), tolerance = 1e-10)
   expect_equal(expd$summary$lci, exp(lin$summary$lci), tolerance = 1e-10)
   expect_equal(expd$summary$uci, exp(lin$summary$uci), tolerance = 1e-10)
@@ -316,10 +287,10 @@ test_that("exponentiation happens only after CAMS reconstruction", {
   cmp <- shrinkage_components(fit)
   tr <- cmp$trials[[1L]]
   pi_j <- unname(cmp$pi[[tr]])
-  wrong <- exp(stats::median(cmp$draws$m[, tr])) -
-    pi_j * exp(stats::median(cmp$draws$g[, tr]))
+  wrong <- exp(stats::median(cmp$support$m[, tr])) -
+    pi_j * exp(stats::median(cmp$support$g[, tr]))
   ya_exp <- expd$summary$estimate[
-    expd$summary$trial == tr & expd$summary$subgroup == "Younger"
+    expd$summary$trial == tr & expd$summary$level == "Younger"
   ]
   expect_false(isTRUE(all.equal(ya_exp, wrong, tolerance = 1e-3)))
 
@@ -343,6 +314,6 @@ test_that("exponentiation happens only after CAMS reconstruction", {
       !is.na(pan$shape)
   )
   expect_equal(pan$yi[[ix[[1L]]]], lin$summary$estimate[
-    lin$summary$trial == tr & lin$summary$subgroup == "Younger"
+    lin$summary$trial == tr & lin$summary$level == "Younger"
   ][[1L]], tolerance = 1e-8)
 })

@@ -22,8 +22,8 @@ test_that("CAMS identities hold by independent calculation (equal variances)", {
   expect_equal(muB, yB, tolerance = 1e-12)
 
   dat <- data.frame(
-    trial = "T",
-    subgroup = c("A", "B"),
+    study = "T",
+    level = c("A", "B"),
     yi = c(yA, yB),
     vi = c(vA, vB),
     ifrac_B = pi
@@ -59,8 +59,8 @@ test_that("CAMS identities hold with unequal variances and unbalanced IF", {
   expect_equal(g, 0.35, tolerance = 1e-12)
 
   dat <- data.frame(
-    trial = "T",
-    subgroup = c("A", "B"),
+    study = "T",
+    level = c("A", "B"),
     yi = c(yA, yB),
     vi = c(vA, vB),
     ifrac_B = pi

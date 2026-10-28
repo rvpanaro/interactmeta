@@ -3,69 +3,61 @@
 
 # interact
 
+<img src="man/figures/logo.png" align="right" width="139" alt="interact logo" />
+
 <!-- badges: start -->
 
+[![R-CMD-check](https://github.com/rvpanaro/interactmeta/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/rvpanaro/interactmeta/actions/workflows/R-CMD-check.yaml)
+[![pkgdown](https://github.com/rvpanaro/interactmeta/actions/workflows/pkgdown.yaml/badge.svg)](https://github.com/rvpanaro/interactmeta/actions/workflows/pkgdown.yaml)
 <!-- badges: end -->
 
-**interactmeta** implements **contribution-adjusted meta-analysis
-(CAMS)** for treatment-by-subgroup interactions from
-subgroup-level aggregate data (Panaro, Röver & Friede 2025):
-[*Consistent Bayesian meta-analysis on subgroup specific effects and interactions*](https://arxiv.org/abs/2512.18785).
+**interact** implements **contribution-adjusted meta-analysis (CAMS)**
+for treatment effect modification from modifier-level aggregate data
+(Panaro, Röver & Friede 2025): [*Consistent Bayesian meta-analysis on
+subgroup specific effects and
+interactions*](https://arxiv.org/abs/2512.18785).
 
-The package constructs trial information fractions π<sub>j</sub>, rotates
-(y<sub>Aj</sub>, y<sub>Bj</sub>) into orthogonal overall and interaction series
-(m<sub>j</sub>, g<sub>j</sub>), and reconstructs γ, μ<sub>A</sub>(π),
-μ<sub>B</sub>(π), and M(π). Subgroup-specific effects are inputs and
-derived outputs. The target is not a separate meta-analysis within each
-subgroup.
+`cams()` fits contribution-adjusted meta-analysis (CAMS) from
+modifier-level aggregate data. `interactions()`, `modifiers()`, and
+`combined()` report the main estimands; `forestplot()` and `plot()` and
+`tidy()` visualize and export a fitted model.
 
-`bayesmeta` and `metafor` fit the two blocks. interact adds the CAMS
-rotation, reconstruction, and contribution-adjusted estimands.
-`cams()` fits the model. `interactions()`, `subgroups()`, and `combined()`
-extract those estimands.
-`plot_contribution()` draws
-μ<sub>A</sub>(π), μ<sub>B</sub>(π), and M(π) across π.
-See `vignette("introduction-to-interact")`.
-
-**DA** (`da()`, Difference of Averages) and **AD** (`ad()`, Average
-Difference) are **different constructions** (Panaro, Röver & Friede
-2026); they need not agree. **SWADA** (`swada()`, Same Weighting Across
-Different Analyses) is a shared-weight principle for those
-constructions, not a fourth model. They are context for CAMS, not
-alternative CAMS models. See
-`vignette("introduction-to-interact")`.
+| Start here | More |
+|----|----|
+| `vignette("cams")` — **Getting started** (estimands, assumptions, Bayesian & REML on `steroids`) | `vignette("export-and-qc")` — tables & sensitivity QC; `vignette("worked-examples")` — `age`, `edss`, and other datasets |
 
 ## Installation
 
 ``` r
-# From a local clone (this checkout has no git remote configured):
-# remotes::install_local(".")
-# GitHub install requires a repository URL; none is assumed here.
+# install.packages("remotes")
+remotes::install_github("rvpanaro/interactmeta")
 ```
 
-CAMS can be fitted using Bayesian or frequentist inference. These are
-not two different scientific models. The approaches are bayesmeta /
-DIRECT quadrature (the default) and metafor (restricted maximum
-likelihood, REML, or maximum likelihood, ML). Bayesian heterogeneity
-defaults match bayesmeta (improper uniform on $\tau$); fixed effects
-use $N(0,10)$. Vignettes set empirical half-normal scales from
-arXiv:2606.23968 explicitly. See `vignette("introduction-to-interact")`.
+Documentation: <https://rvpanaro.github.io/interactmeta/>
+
+CAMS supports **Bayesian** (default) and **frequentist** inference
+(`method = "REML"`). See the getting-started vignette for the full
+workflow.
 
 ## Example
 
 ``` r
 library(interact)
 
-es <- escalc(measure = "IRR", yi = age$yi, vi = age$vi, data = age)
-fit <- cams(
-  es,
-  reference = "Younger",
-  tau.prior = function(tau) bayesmeta::dhalfnormal(tau, scale = 0.5),
-  tau.interaction.prior = function(tau) bayesmeta::dhalfnormal(tau, scale = 0.1)
+st <- steroids[steroids$n > 0, ]
+es <- escalc(
+  measure = "OR",
+  ai = treat.events,
+  bi = treat.total - treat.events,
+  ci = cont.events,
+  di = cont.total - cont.events,
+  data = st
 )
+both <- c("CAPE COVID", "COVID STEROID", "REMAP-CAP", "Steroids-SARI")
+fit <- cams(es[es$study %in% both, ], reference = "NIV", method = "REML")
 interactions(fit, exponentiate = TRUE)
-subgroups(fit, exponentiate = TRUE)
-plot_contribution(fit)
+modifiers(fit, exponentiate = TRUE)
+forestplot(fit, exponentiate = TRUE)
 ```
 
 ## Citation

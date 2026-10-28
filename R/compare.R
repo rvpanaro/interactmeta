@@ -1,3 +1,4 @@
+# ---- compare.R ----
 #' Display acronym for an analysis family
 #' @noRd
 interactmeta_analysis_acronym <- function(analysis) {
@@ -18,30 +19,19 @@ interactmeta_analysis_display <- function(x) {
   interactmeta_analysis_acronym(interactmeta_fit_analysis(x))
 }
 
-#' Inferential qualifier stored on a fit (`engine` / `method`)
+#' Inferential qualifier for compare / plot labels (same wording as `cams(method = )`)
 #'
-#' Bayesian CAMS is `"bayesmeta"`. Frequentist CAMS includes the estimator,
-#' e.g. `"metafor (REML)"`.
+#' Returns `"Bayesian"` or a frequentist estimator such as `"REML"`.
 #' @noRd
 interactmeta_inference_display <- function(x) {
-  engine <- as.character(x$engine %||% NA_character_)[[1L]]
-  method <- as.character(x$method %||% NA_character_)[[1L]]
-  inf <- as.character(x$inference %||% NA_character_)[[1L]]
-  if (identical(engine, "bayesmeta") || identical(inf, "bayesian") || identical(method, "bayes")) {
-    return("bayesmeta")
-  }
-  if (identical(engine, "metafor") || identical(inf, "frequentist") || method %in% c("REML", "ML")) {
-    meth <- if (method %in% c("REML", "ML")) method else "REML"
-    return(paste0("metafor (", meth, ")"))
-  }
-  interactmeta_fit_engine_method(x)
+  interactmeta_method_display(x)
 }
 
-#' Approach label for a single fit
+#' Display label for a single fit
 #'
 #' When every compared fit has a distinct analysis family, the short name
 #' (`CAMS`, `DA`, …) is enough. When the same analysis appears more than
-#' once, the approach is appended (`CAMS — bayesmeta`).
+#' once, the method is appended (`CAMS — Bayesian`).
 #' @noRd
 interactmeta_fit_display_label <- function(x, unique_analyses = TRUE) {
   base <- interactmeta_analysis_display(x)
@@ -216,7 +206,7 @@ interactmeta_compare_subgroups_fits <- function(fits,
   interactmeta_compare_extractor(
     fits,
     builder = function(fit, lab) {
-      sg <- subgroups(fit, type = type, exponentiate = exponentiate, summary = TRUE)
+      sg <- modifiers(fit, type = type, exponentiate = exponentiate, summary = TRUE)
       td <- tidy(sg)
       if ("type" %in% names(td)) {
         td <- td[td$type == type, , drop = FALSE]
@@ -227,25 +217,25 @@ interactmeta_compare_subgroups_fits <- function(fits,
     caller = "compare_subgroups",
     exponentiate = exponentiate,
     xlab = xlab,
-    id_cols = "subgroup"
+    id_cols = "level"
   )
 }
 
 #' Side-by-side combined-population effects
 #'
-#' [combined()] is a CAMS estimand. Pass two or more [cam()] fits (for
+#' [combined()] is a CAMS estimand. Pass two or more [cams()] fits (for
 #' example Bayesian vs frequentist CAMS). Approach labels keep the analysis
 #' family and, when the same family appears more than once, the approach
-#' (`CAMS — bayesmeta` vs `CAMS — metafor (REML)`).
+#' (`CAMS — Bayesian` vs `CAMS — REML`).
 #'
-#' @param ... Two or more [cam()] fits.
+#' @param ... Two or more [cams()] fits.
 #' @param exponentiate If `TRUE` (default), report on the exponentiated
 #'   (ratio) scale.
 #' @param type CAMS layer (`"Overall"` default).
 #' @return A tibble with class `interactmeta_compare_combined`. Print the
 #'   table; [plot()] draws a forest of the compared estimates.
-#' @seealso [compare_interactions()], [compare_subgroups()], [combined()]
-#' @export
+#' @seealso [compare()], [combined()]
+#' @keywords internal
 compare_combined <- function(..., exponentiate = TRUE, type = "Overall") {
   fits <- interactmeta_compact_fits(...)
   if (!interactmeta_all_cams(fits)) {
@@ -312,11 +302,11 @@ compare_heterogeneity <- function(..., component = "all") {
 #' heterogeneity for Bayesian CAMS, plug-in at \eqn{\hat\tau} for frequentist
 #' CAMS).
 #'
-#' @param ... Two or more [cam()] fits.
+#' @param ... Two or more [cams()] fits.
 #' @param ifrac `"interaction"` (default), `"overall"`, or both.
 #' @return A tibble with class `interactmeta_compare_ifrac`.
 #' @seealso [ifrac()], [compare_weights()]
-#' @export
+#' @keywords internal
 compare_ifrac <- function(..., ifrac = "interaction") {
   dots <- list(...)
   nms <- names(dots)
@@ -373,7 +363,7 @@ compare_ifrac <- function(..., ifrac = "interaction") {
 #' Plot a comparison table as a forest of estimates
 #'
 #' @param x A comparison object from [compare_interactions()],
-#'   [compare_subgroups()], [compare_combined()], [compare_heterogeneity()],
+#'   [compare_modifiers()], [compare_combined()], [compare_heterogeneity()],
 #'   [compare_ifrac()], or [compare_weights()].
 #' @param y Ignored.
 #' @param xlim Shared x-axis limits on the displayed scale.
@@ -494,7 +484,7 @@ interactmeta_plot_compare_forest <- function(x, xlim = NULL) {
 
 #' @noRd
 interactmeta_compare_facet_col <- function(tab) {
-  candidates <- c("subgroup", "parameter", "ifrac", "weight", "contrast")
+  candidates <- c("level", "subgroup", "parameter", "ifrac", "weight", "contrast")
   for (col in candidates) {
     if (col %in% names(tab) && length(unique(as.character(tab[[col]]))) > 1L) {
       return(col)

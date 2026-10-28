@@ -120,11 +120,11 @@ test_that("exponentiated Gaussian-mixture summaries keep a finite sd", {
     .cond_sd = s
   )
   fin <- interact:::interactmeta_summarize_effects(
-    draws = draws,
+    draws = support,
     group_cols = "type",
     prob = 0.95,
     exponentiate = TRUE,
-    fit = list(engine = "bayesmeta"),
+    fit = list(),
     quantity = "combined",
     omega = 0.4
   )
