@@ -5,7 +5,7 @@ predict_cam_example_fit <- function() {
     yi = c(0.10, 0.25, 0.12, 0.28, 0.08, 0.22, 0.15, 0.30),
     vi = c(0.04, 0.02, 0.05, 0.03, 0.03, 0.04, 0.02, 0.025)
   )
-  suppressWarnings(bayescam(
+  suppressWarnings(cams(
     dat,
     reference = "Younger",
         silent = 2

@@ -1,5 +1,22 @@
 url: https://rvpanaro.github.io/interactmeta/
 
+articles:
+- title: Getting started with CAMS
+  desc: Estimands, assumptions, Bayesian and REML on the steroids example.
+- title: Export and QC of CAMS results
+  desc: tidy() exports and construction sensitivity tables.
+- title: Other example datasets
+  desc: age, edss, il6, and RESPIRE with brief forest plots.
+
+redirects:
+- [articles/introduction-to-interact.html, articles/cams.html]
+- [articles/consistent-interactions.html, articles/export-and-qc.html]
+- [articles/convolution.html, articles/cams.html]
+- [articles/engine-comparison.html, articles/cams.html]
+- [articles/further.html, articles/export-and-qc.html]
+- [articles/single-subgroup-trials.html, articles/worked-examples.html]
+- [articles/trial-specific-effects-and-shrinkage.html, articles/cams.html]
+
 template:
   bootstrap: 5
 

@@ -12,7 +12,7 @@ test_that("method = mle is rejected", {
   )
 })
 
-test_that("bayescam() uses bayesmeta DIRECT", {
+test_that("cams() uses bayesmeta DIRECT", {
   skip_if_not_installed("bayesmeta")
 
   dat <- data.frame(
@@ -27,7 +27,7 @@ test_that("bayescam() uses bayesmeta DIRECT", {
   expect_equal(interactmeta_fit_backend(fit_bm), "bayesmeta")
   expect_equal(fit_bm$method, "Bayesian")
 
-  fit <- suppressWarnings(bayescam(
+  fit <- suppressWarnings(cams(
     dat,
         reference = "Younger",
     silent = 2

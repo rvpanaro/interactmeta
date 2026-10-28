@@ -76,7 +76,7 @@ test_that("CDF pairing induces comonotonic dependence unlike the product", {
   skip_if_not_installed("metafor")
 
   es <- metafor::escalc(measure = "IRR", yi = age$yi, vi = age$vi, data = age)
-  fit <- suppressWarnings(bayescam(
+  fit <- suppressWarnings(cams(
     es,
     reference = "Younger",
         silent = 2
@@ -107,7 +107,7 @@ test_that("bayesmeta latent posteriors exist and beta matches convolve", {
 
   dat <- cams_latent_example_data()
   t0 <- proc.time()[["elapsed"]]
-  fit <- suppressWarnings(bayescam(
+  fit <- suppressWarnings(cams(
     dat,
     reference = "Younger",
         silent = 2
@@ -183,7 +183,7 @@ test_that("modifiers() at fixed pi* uses joint (alpha, theta) plus independent g
   skip_if_not_installed("bayesmeta")
 
   dat <- cams_latent_example_data()
-  fit <- suppressWarnings(bayescam(
+  fit <- suppressWarnings(cams(
     dat,
     reference = "Younger",
         silent = 2
@@ -258,7 +258,7 @@ test_that("engine-native latent intervals follow bayesmeta post.interval and con
   skip_if_not_installed("bayesmeta")
 
   dat <- cams_latent_example_data()
-  fit <- suppressWarnings(bayescam(
+  fit <- suppressWarnings(cams(
     dat,
     reference = "Younger",
         silent = 2
@@ -323,18 +323,18 @@ test_that("engine-native latent intervals follow bayesmeta post.interval and con
   )
 
   expect_error(
-    bayescam(dat, reference = "Younger", silent = 2,
+    cams(dat, reference = "Younger", silent = 2,
              interval.type = "evidentiary"),
     "derived CAMS sum"
   )
   bad <- dat
   bad$vi[1] <- 0
   expect_error(
-    bayescam(bad, reference = "Younger", silent = 2),
+    cams(bad, reference = "Younger", silent = 2),
     "strictly positive"
   )
   expect_error(
-    bayescam(dat, reference = "Younger", silent = 2,
+    cams(dat, reference = "Younger", silent = 2,
              convolve_derived = FALSE),
     "convolve_derived"
   )
