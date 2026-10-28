@@ -3,7 +3,7 @@
 \name{interactmeta_palette}
 \alias{interactmeta_palette}
 \alias{subgroupmeta_palette}
-\title{Colour palette for interact figures}
+\title{Colour palette for interactmeta figures}
 \usage{
 interactmeta_palette(palette = NULL, n = 6L)
 

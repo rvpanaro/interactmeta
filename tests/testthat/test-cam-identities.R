@@ -28,7 +28,7 @@ test_that("CAMS identities hold by independent calculation (equal variances)", {
     vi = c(vA, vB),
     ifrac_B = pi
   )
-  blocks <- interact:::comparison_trial_effect_blocks(
+  blocks <- interactmeta:::comparison_trial_effect_blocks(
     data = dat,
     reference = "A",
     nonref = "B",
@@ -65,7 +65,7 @@ test_that("CAMS identities hold with unequal variances and unbalanced IF", {
     vi = c(vA, vB),
     ifrac_B = pi
   )
-  blocks <- interact:::comparison_trial_effect_blocks(
+  blocks <- interactmeta:::comparison_trial_effect_blocks(
     data = dat,
     reference = "A",
     nonref = "B",

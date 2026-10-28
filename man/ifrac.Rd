@@ -228,7 +228,7 @@ ifrac(
 )
 
 \dontrun{
-library(interact)
+library(interactmeta)
 e <- escalc(measure = "IRR", yi = edss$yi, vi = edss$vi, data = edss)
 d <- ifrac(e, reference = "Lower", include_interaction = TRUE)
 fit <- cams(d, reference = "Lower")

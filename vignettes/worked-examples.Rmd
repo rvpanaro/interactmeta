@@ -28,14 +28,14 @@ knitr::opts_chunk$set(
 )
 ```
 
-This vignette lists the **other** datasets shipped with **interact**.
+This vignette lists the **other** datasets shipped with **interactmeta**.
 The CAMS workflow (subgroup pairs, information fractions, **`cams()`**,
 **`forestplot()`**) is developed on **`steroids`** (IV / NIV) in
 [`vignette("cams")`](cams.html). Here we only note disease context,
 subgroup labels, and effect scale.
 
-```{r load-interact, warning=FALSE, message=FALSE}
-library(interact)
+```{r load-interactmeta, warning=FALSE, message=FALSE}
+library(interactmeta)
 library(dplyr)
 ```
 

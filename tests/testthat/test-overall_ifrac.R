@@ -8,7 +8,7 @@ test_that("overall_ifrac_compute() matches hand calculation for two trials", {
     ifrac_Older = c(0.3, 0.3, 0.6, 0.6)
   )
   tau <- c(0.1, 0.2)
-  oi <- interact:::overall_ifrac_compute(
+  oi <- interactmeta:::overall_ifrac_compute(
     data = dat,
     trial_var = "study",
     subgroup_var = "level",
@@ -69,7 +69,7 @@ test_that("interaction_ifrac_compute() uses inverse interaction variance weights
     ifrac_Older = c(0.3, 0.3, 0.6, 0.6)
   )
   tau_gamma <- 0.1
-  oi <- interact:::interaction_ifrac_compute(
+  oi <- interactmeta:::interaction_ifrac_compute(
     data = dat,
     trial_var = "study",
     subgroup_var = "level",
@@ -96,7 +96,7 @@ test_that("overall-weighted IF uses overall-block Var(m)", {
   fit <- cams(dat, reference = "Younger", method = "REML", silent = 2)
   st <- attr(fit, "interactmeta", exact = TRUE)
   tq <- cam_trial_quantities(fit)
-  comp <- interact:::overall_ifrac_trial_components(
+  comp <- interactmeta:::overall_ifrac_trial_components(
     data = st$data_fit,
     trial_var = st$trial_var,
     subgroup_var = st$subgroup_var,

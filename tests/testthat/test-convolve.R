@@ -5,7 +5,7 @@ test_that("convolve() recovers a normal sum", {
   dens2 <- function(x, log = FALSE) stats::dnorm(x, mean = 3, sd = 1, log = log)
   cdf1 <- function(x) stats::pnorm(x, mean = 1, sd = 2)
   cdf2 <- function(x) stats::pnorm(x, mean = 3, sd = 1)
-  conv <- interact:::interactmeta_convolve_sum(dens1, dens2, cdf1, cdf2)
+  conv <- interactmeta:::interactmeta_convolve_sum(dens1, dens2, cdf1, cdf2)
   # X+Y ~ N(4, sqrt(5))
   qs <- c(0.025, 0.5, 0.975)
   expect_equal(
@@ -28,9 +28,9 @@ test_that("convolve() recovers a normal difference", {
   dens_y <- function(x, log = FALSE) stats::dnorm(x, mean = 3, sd = 1, log = log)
   cdf_x <- function(x) stats::pnorm(x, mean = 1, sd = 2)
   cdf_y <- function(x) stats::pnorm(x, mean = 3, sd = 1)
-  dens_ny <- interact:::interactmeta_negate_density(dens_y)
-  cdf_ny <- interact:::interactmeta_negate_cdf(cdf_y)
-  conv <- interact:::interactmeta_convolve_sum(dens_x, dens_ny, cdf_x, cdf_ny)
+  dens_ny <- interactmeta:::interactmeta_negate_density(dens_y)
+  cdf_ny <- interactmeta:::interactmeta_negate_cdf(cdf_y)
+  conv <- interactmeta:::interactmeta_convolve_sum(dens_x, dens_ny, cdf_x, cdf_ny)
   # X-Y ~ N(-2, sqrt(5))
   qs <- c(0.025, 0.5, 0.975)
   expect_equal(
@@ -44,22 +44,22 @@ test_that("scale density uses the absolute Jacobian", {
   dens <- function(x, log = FALSE) stats::dnorm(x, mean = 1, sd = 2, log = log)
   cdf <- function(x) stats::pnorm(x, mean = 1, sd = 2)
 
-  dens_pos <- interact:::interactmeta_scale_density(dens, 2)
+  dens_pos <- interactmeta:::interactmeta_scale_density(dens, 2)
   z <- 3
   expect_equal(dens_pos(z), stats::dnorm(z / 2, mean = 1, sd = 2) / 2, tolerance = 1e-10)
 
-  dens_neg <- interact:::interactmeta_scale_density(dens, -2)
+  dens_neg <- interactmeta:::interactmeta_scale_density(dens, -2)
   expect_equal(dens_neg(z), stats::dnorm(z / -2, mean = 1, sd = 2) / 2, tolerance = 1e-10)
 
-  cdf_neg <- interact:::interactmeta_scale_cdf(cdf, -2)
+  cdf_neg <- interactmeta:::interactmeta_scale_cdf(cdf, -2)
   # Z = -2X, X ~ N(1, 4) => Z ~ N(-2, 16)
   expect_equal(cdf_neg(0), stats::pnorm(0, mean = -2, sd = 4), tolerance = 1e-8)
 })
 
 test_that("Gaussian mixture product weights are independent and normalized", {
-  gm_x <- interact:::interactmeta_gm(c(0, 2), c(1, 1), c(0.25, 0.75))
-  gm_y <- interact:::interactmeta_gm(c(-1, 1), c(0.5, 1.5), c(0.4, 0.6))
-  gm <- interact:::interactmeta_gm_linear_sum(gm_x, 1, gm_y, -1)
+  gm_x <- interactmeta:::interactmeta_gm(c(0, 2), c(1, 1), c(0.25, 0.75))
+  gm_y <- interactmeta:::interactmeta_gm(c(-1, 1), c(0.5, 1.5), c(0.4, 0.6))
+  gm <- interactmeta:::interactmeta_gm_linear_sum(gm_x, 1, gm_y, -1)
   expect_equal(sum(gm$weight), 1)
   expect_equal(length(gm$weight), 4L)
   expect_equal(
@@ -68,13 +68,13 @@ test_that("Gaussian mixture product weights are independent and normalized", {
     tolerance = 1e-12
   )
   expect_equal(
-    interact:::interactmeta_gm_mean(gm),
-    interact:::interactmeta_gm_mean(gm_x) - interact:::interactmeta_gm_mean(gm_y),
+    interactmeta:::interactmeta_gm_mean(gm),
+    interactmeta:::interactmeta_gm_mean(gm_x) - interactmeta:::interactmeta_gm_mean(gm_y),
     tolerance = 1e-12
   )
   expect_equal(
-    interact:::interactmeta_gm_var(gm),
-    interact:::interactmeta_gm_var(gm_x) + interact:::interactmeta_gm_var(gm_y),
+    interactmeta:::interactmeta_gm_var(gm),
+    interactmeta:::interactmeta_gm_var(gm_x) + interactmeta:::interactmeta_gm_var(gm_y),
     tolerance = 1e-12
   )
 })
@@ -82,20 +82,20 @@ test_that("Gaussian mixture product weights are independent and normalized", {
 test_that("mixture of two independent normals matches convolution", {
   skip_if_not_installed("bayesmeta")
 
-  gm_x <- interact:::interactmeta_gm(1, 2, 1)
-  gm_y <- interact:::interactmeta_gm(3, 1, 1)
-  gm <- interact:::interactmeta_gm_linear_sum(gm_x, 1, gm_y, -1)
-  sm <- interact:::interactmeta_gm_summary(gm)
+  gm_x <- interactmeta:::interactmeta_gm(1, 2, 1)
+  gm_y <- interactmeta:::interactmeta_gm(3, 1, 1)
+  gm <- interactmeta:::interactmeta_gm_linear_sum(gm_x, 1, gm_y, -1)
+  sm <- interactmeta:::interactmeta_gm_summary(gm)
   expect_equal(sm$mean, -2, tolerance = 1e-10)
   expect_equal(sm$sd, sqrt(5), tolerance = 1e-10)
 
   dens_x <- function(x, log = FALSE) stats::dnorm(x, 1, 2, log = log)
   dens_y <- function(x, log = FALSE) stats::dnorm(x, 3, 1, log = log)
-  conv <- interact:::interactmeta_convolve_sum(
+  conv <- interactmeta:::interactmeta_convolve_sum(
     dens_x,
-    interact:::interactmeta_negate_density(dens_y),
+    interactmeta:::interactmeta_negate_density(dens_y),
     function(x) stats::pnorm(x, 1, 2),
-    interact:::interactmeta_negate_cdf(function(x) stats::pnorm(x, 3, 1))
+    interactmeta:::interactmeta_negate_cdf(function(x) stats::pnorm(x, 3, 1))
   )
   qs <- c(0.025, 0.5, 0.975)
   expect_equal(conv$quantile(qs), unname(sm$q[c(1, 2, 3)]), tolerance = 0.03)
@@ -104,8 +104,8 @@ test_that("mixture of two independent normals matches convolution", {
 test_that("exponentiated Gaussian-mixture summaries keep a finite sd", {
   mu <- -0.62
   s <- 0.15
-  gm <- interact:::interactmeta_gm(mean = mu, sd = s, weight = 1)
-  ln <- interact:::interactmeta_gm_lognormal_moments(gm)
+  gm <- interactmeta:::interactmeta_gm(mean = mu, sd = s, weight = 1)
+  ln <- interactmeta:::interactmeta_gm_lognormal_moments(gm)
   expect_equal(ln$mean, exp(mu + 0.5 * s^2), tolerance = 1e-12)
   expect_equal(
     ln$sd,
@@ -119,7 +119,7 @@ test_that("exponentiated Gaussian-mixture summaries keep a finite sd", {
     .weight = 1,
     .cond_sd = s
   )
-  fin <- interact:::interactmeta_summarize_effects(
+  fin <- interactmeta:::interactmeta_summarize_effects(
     draws = support,
     group_cols = "type",
     prob = 0.95,
@@ -133,7 +133,7 @@ test_that("exponentiated Gaussian-mixture summaries keep a finite sd", {
   expect_equal(fin$summary$sd, ln$sd, tolerance = 1e-8)
   expect_equal(fin$summary$estimate, exp(mu), tolerance = 1e-6)
 
-  tab <- interact:::comparison_effects_print_df(fin$summary, digits = 2)
+  tab <- interactmeta:::comparison_effects_print_df(fin$summary, digits = 2)
   expect_false(any(grepl("NA", unlist(tab), fixed = TRUE)))
 })
 
@@ -152,17 +152,17 @@ test_that("CAMS reconstruction convolution matches analytic independent Gaussian
   cdf_M <- function(x) stats::pnorm(x, mu_M, sd_M)
   cdf_g <- function(x) stats::pnorm(x, mu_g, sd_g)
 
-  conv_A <- interact:::interactmeta_convolve_sum(
+  conv_A <- interactmeta:::interactmeta_convolve_sum(
     dens_M,
-    interact:::interactmeta_scale_density(dens_g, -pi_star),
+    interactmeta:::interactmeta_scale_density(dens_g, -pi_star),
     cdf_M,
-    interact:::interactmeta_scale_cdf(cdf_g, -pi_star)
+    interactmeta:::interactmeta_scale_cdf(cdf_g, -pi_star)
   )
-  conv_B <- interact:::interactmeta_convolve_sum(
+  conv_B <- interactmeta:::interactmeta_convolve_sum(
     dens_M,
-    interact:::interactmeta_scale_density(dens_g, 1 - pi_star),
+    interactmeta:::interactmeta_scale_density(dens_g, 1 - pi_star),
     cdf_M,
-    interact:::interactmeta_scale_cdf(cdf_g, 1 - pi_star)
+    interactmeta:::interactmeta_scale_cdf(cdf_g, 1 - pi_star)
   )
 
   mu_A <- mu_M - pi_star * mu_g
@@ -189,20 +189,20 @@ test_that("Monte Carlo reconstruction matches convolution quantiles", {
   pi_star <- 0.6
   dens_M <- function(x, log = FALSE) stats::dnorm(x, mu_M, sd_M, log = log)
   dens_g <- function(x, log = FALSE) stats::dnorm(x, mu_g, sd_g, log = log)
-  conv_A <- interact:::interactmeta_convolve_sum(
+  conv_A <- interactmeta:::interactmeta_convolve_sum(
     dens_M,
-    interact:::interactmeta_scale_density(dens_g, -pi_star),
+    interactmeta:::interactmeta_scale_density(dens_g, -pi_star),
     function(x) stats::pnorm(x, mu_M, sd_M),
-    interact:::interactmeta_scale_cdf(
+    interactmeta:::interactmeta_scale_cdf(
       function(x) stats::pnorm(x, mu_g, sd_g),
       -pi_star
     )
   )
-  conv_B <- interact:::interactmeta_convolve_sum(
+  conv_B <- interactmeta:::interactmeta_convolve_sum(
     dens_M,
-    interact:::interactmeta_scale_density(dens_g, 1 - pi_star),
+    interactmeta:::interactmeta_scale_density(dens_g, 1 - pi_star),
     function(x) stats::pnorm(x, mu_M, sd_M),
-    interact:::interactmeta_scale_cdf(
+    interactmeta:::interactmeta_scale_cdf(
       function(x) stats::pnorm(x, mu_g, sd_g),
       1 - pi_star
     )
@@ -223,23 +223,23 @@ test_that("Monte Carlo reconstruction matches convolution quantiles", {
 })
 
 test_that("gm_linear_sum refuses two mixtures from the same CAMS block", {
-  gm_a <- interact:::interactmeta_gm_tag_block(
-    interact:::interactmeta_gm(0, 1, 1),
+  gm_a <- interactmeta:::interactmeta_gm_tag_block(
+    interactmeta:::interactmeta_gm(0, 1, 1),
     "overall"
   )
-  gm_th <- interact:::interactmeta_gm_tag_block(
-    interact:::interactmeta_gm(1, 1, 1),
+  gm_th <- interactmeta:::interactmeta_gm_tag_block(
+    interactmeta:::interactmeta_gm(1, 1, 1),
     "overall"
   )
   expect_error(
-    interact:::interactmeta_gm_linear_sum(gm_a, 1, gm_th, 0.4),
+    interactmeta:::interactmeta_gm_linear_sum(gm_a, 1, gm_th, 0.4),
     "independent mixtures"
   )
-  gm_g <- interact:::interactmeta_gm_tag_block(
-    interact:::interactmeta_gm(0.2, 0.5, 1),
+  gm_g <- interactmeta:::interactmeta_gm_tag_block(
+    interactmeta:::interactmeta_gm(0.2, 0.5, 1),
     "interaction"
   )
-  expect_silent(interact:::interactmeta_gm_linear_sum(gm_th, 1, gm_g, -1))
+  expect_silent(interactmeta:::interactmeta_gm_linear_sum(gm_th, 1, gm_g, -1))
 })
 
 test_that("Var(alpha + pi theta) keeps Cov(alpha, theta); independent product does not", {
@@ -253,8 +253,8 @@ test_that("Var(alpha + pi theta) keeps Cov(alpha, theta); independent product do
 
   mean_M <- a + pi * th
   var_M_node <- va + (pi^2) * vt + 2 * pi * cat
-  gm_joint <- interact:::interactmeta_gm(mean_M, sqrt(pmax(var_M_node, 0)), w)
-  var_joint <- interact:::interactmeta_gm_var(gm_joint)
+  gm_joint <- interactmeta:::interactmeta_gm(mean_M, sqrt(pmax(var_M_node, 0)), w)
+  var_joint <- interactmeta:::interactmeta_gm_var(gm_joint)
 
   mu_a <- sum(w * a)
   mu_th <- sum(w * th)
@@ -264,11 +264,11 @@ test_that("Var(alpha + pi theta) keeps Cov(alpha, theta); independent product do
   expect_equal(var_joint, V_a + (pi^2) * V_th + 2 * pi * Cov, tolerance = 1e-12)
   expect_gt(abs(Cov), 1e-8)
 
-  gm_a <- interact:::interactmeta_gm(a, sqrt(va), w)
-  gm_th <- interact:::interactmeta_gm(th, sqrt(vt), w)
-  gm_ind <- interact:::interactmeta_gm_linear_sum(gm_a, 1, gm_th, pi)
+  gm_a <- interactmeta:::interactmeta_gm(a, sqrt(va), w)
+  gm_th <- interactmeta:::interactmeta_gm(th, sqrt(vt), w)
+  gm_ind <- interactmeta:::interactmeta_gm_linear_sum(gm_a, 1, gm_th, pi)
   expect_gt(
-    abs(interact:::interactmeta_gm_var(gm_ind) - var_joint),
+    abs(interactmeta:::interactmeta_gm_var(gm_ind) - var_joint),
     1e-6
   )
 })

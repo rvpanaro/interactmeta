@@ -211,7 +211,7 @@ Metafor-idiomatic entry point for a \code{\link[=cams]{cams()}} fit. Delegates t
 \details{
 For non-\link{interactmeta} input (e.g. \link[metafor:escalc]{metafor::escalc}), arguments are forwarded
 to \code{\link[forestplot:forestplot]{forestplot::forestplot()}}, which dispatches to
-\link[bayesmeta:forestplot.escalc]{bayesmeta::forestplot.escalc} when \strong{bayesmeta} is loaded (interact loads it
+\link[bayesmeta:forestplot.escalc]{bayesmeta::forestplot.escalc} when \strong{bayesmeta} is loaded (interactmeta loads it
 on attach).
 
 By default (\code{type = "modifiers"}) the plot shows \strong{modifier-level} panels

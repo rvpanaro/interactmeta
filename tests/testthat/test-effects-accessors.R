@@ -11,11 +11,11 @@ test_that("new-trial Prediction RE draws are reproducible", {
     ifrac2_var = "ifrac2_Older",
     ifrac2_vars_std = "ifrac2_Older"
   )
-  a <- interact:::comparison_new_trial_re_draws(fit, ifrac = 0.4, post = post)
-  b <- interact:::comparison_new_trial_re_draws(fit, ifrac = 0.4, post = post)
+  a <- interactmeta:::comparison_new_trial_re_draws(fit, ifrac = 0.4, post = post)
+  b <- interactmeta:::comparison_new_trial_re_draws(fit, ifrac = 0.4, post = post)
   expect_equal(a, b)
-  c <- interact:::comparison_new_trial_slope_re_draws(fit, post = post)
-  d <- interact:::comparison_new_trial_slope_re_draws(fit, post = post)
+  c <- interactmeta:::comparison_new_trial_slope_re_draws(fit, post = post)
+  d <- interactmeta:::comparison_new_trial_slope_re_draws(fit, post = post)
   expect_equal(c, d)
 })
 
@@ -32,7 +32,7 @@ test_that("interactions(shrinkage = TRUE) print shows one row per contrast", {
   fit <- fixture_cam_tiny_fit(variant = "interaction")
   me <- interactions(fit, shrinkage = TRUE)
   expect_equal(nrow(me$summary), 2L)
-  once <- interact:::comparison_interaction_shrinkage_summary_once(me$summary)
+  once <- interactmeta:::comparison_interaction_shrinkage_summary_once(me$summary)
   expect_equal(nrow(once), 1L)
   expect_equal(unique(once$interaction), "Older-Younger")
 })
@@ -298,11 +298,11 @@ test_that("max_support cannot thin a weighted DIRECT support", {
   set.seed(1L)
   want <- sample.int(10L, 4L)
   expect_identical(
-    interact:::comparison_marginal_draw_index(10L, max_support = 4L),
+    interactmeta:::comparison_marginal_draw_index(10L, max_support = 4L),
     want
   )
   expect_error(
-    interact:::comparison_marginal_draw_index(
+    interactmeta:::comparison_marginal_draw_index(
       n,
       max_support = 5L,
       weight = fit$support$.weight

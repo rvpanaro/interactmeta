@@ -193,6 +193,6 @@ test_that("comparison tables use DA, AD, SWADA, and CAMS labels", {
 })
 
 test_that("package datasets include respire_age and respire_sex", {
-  items <- utils::data(package = "interact")$results[, "Item"]
+  items <- utils::data(package = "interactmeta")$results[, "Item"]
   expect_true(all(c("respire_age", "respire_sex") %in% items))
 })

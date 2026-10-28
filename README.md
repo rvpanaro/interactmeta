@@ -1,9 +1,9 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# interact
+# interactmeta
 
-<img src="man/figures/logo.png" align="right" width="139" alt="interact logo" />
+<img src="man/figures/logo.png" align="right" width="139" alt="interactmeta logo" />
 
 <!-- badges: start -->
 
@@ -11,10 +11,10 @@
 [![pkgdown](https://github.com/rvpanaro/interactmeta/actions/workflows/pkgdown.yaml/badge.svg)](https://github.com/rvpanaro/interactmeta/actions/workflows/pkgdown.yaml)
 <!-- badges: end -->
 
-**interact** implements **contribution-adjusted meta-analysis (CAMS)**
-for treatment effect modification from modifier-level aggregate data
-(Panaro, Röver & Friede 2025): [*Consistent Bayesian meta-analysis on
-subgroup specific effects and
+**interactmeta** implements **contribution-adjusted meta-analysis
+(CAMS)** for treatment effect modification from modifier-level aggregate
+data (Panaro, Röver & Friede 2025): [*Consistent Bayesian meta-analysis
+on subgroup specific effects and
 interactions*](https://arxiv.org/abs/2512.18785).
 
 `cams()` fits contribution-adjusted meta-analysis (CAMS) from
@@ -42,7 +42,7 @@ workflow.
 ## Example
 
 ``` r
-library(interact)
+library(interactmeta)
 
 st <- steroids[steroids$n > 0, ]
 es <- escalc(

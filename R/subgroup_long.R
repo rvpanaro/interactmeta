@@ -1,6 +1,6 @@
 #' Reshape wide subgroup data to long format
 #'
-#' Shipped **interact** datasets are already long (one row per trial ×
+#' Shipped **interactmeta** datasets are already long (one row per trial ×
 #' subgroup). If your source tables are wide (one row per trial, columns
 #' suffixed by subgroup such as `yi_Younger` or `n_IV`), use this helper before
 #' [cams()] or [escalc()]. Metadata on wide tables (`subgroups`,

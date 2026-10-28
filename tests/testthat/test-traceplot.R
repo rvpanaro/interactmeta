@@ -55,14 +55,14 @@ test_that("traceplot() does not substitute bayesmeta on another engine", {
 })
 
 test_that("traceplot() axis labels depend on type", {
-  labs_int <- interact:::comparison_traceplot_axis_labels("interaction")
+  labs_int <- interactmeta:::comparison_traceplot_axis_labels("interaction")
   expect_equal(labs_int$ylab, "Interaction")
   expect_equal(
     as.character(labs_int$xlab),
     as.character(expression("heterogeneity " * tau[gamma]))
   )
 
-  labs_comb <- interact:::comparison_traceplot_axis_labels("combined")
+  labs_comb <- interactmeta:::comparison_traceplot_axis_labels("combined")
   expect_equal(labs_comb$ylab, "Effect")
   expect_equal(
     as.character(labs_comb$xlab),
@@ -70,7 +70,7 @@ test_that("traceplot() axis labels depend on type", {
   )
 
   expect_equal(
-    interact:::comparison_traceplot_axis_labels(
+    interactmeta:::comparison_traceplot_axis_labels(
       "interaction",
       ylab = "custom"
     )$ylab,
@@ -88,7 +88,7 @@ test_that("comparison_traceplot_default_bmr_X() uses stored trial IF", {
         reference = "Younger",
     silent = 2
   ))
-  X <- interact:::comparison_traceplot_default_bmr_X(fit)
+  X <- interactmeta:::comparison_traceplot_default_bmr_X(fit)
   expect_true(is.matrix(X))
   expect_equal(dim(X), c(1L, 2L))
   expect_equal(unname(X[1L, 1L]), 1)

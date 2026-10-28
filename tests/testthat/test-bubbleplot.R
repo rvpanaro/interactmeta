@@ -1,6 +1,6 @@
 test_that("detect_ifrac_vars() returns all non-ifrac2 columns", {
   dat <- data.frame(ifrac_a = 1, ifrac2_a = 0, ifrac_b = 2)
-  expect_equal(interact:::detect_ifrac_vars(dat), c("ifrac_a", "ifrac_b"))
+  expect_equal(interactmeta:::detect_ifrac_vars(dat), c("ifrac_a", "ifrac_b"))
 })
 
 test_that("resolve_bubbleplot_settings() uses comparison fit attribute", {
@@ -29,14 +29,14 @@ test_that("resolve_bubbleplot_settings() uses comparison fit attribute", {
       precision = 10
     )
   )
-  st <- interact:::resolve_bubbleplot_settings(fit)
+  st <- interactmeta:::resolve_bubbleplot_settings(fit)
   expect_equal(st$ifrac_var, "ifrac_Older")
   expect_equal(st$effects, "ifrac_Older:subgroup")
   expect_equal(st$trial_var, "study")
 })
 
 test_that("resolve_bubbleplot_limits() pads xlim; leaves ylim default", {
-  lim <- interact:::resolve_bubbleplot_limits(
+  lim <- interactmeta:::resolve_bubbleplot_limits(
     ifrac_vals = c(0.3, 0.5),
     y_vals = c(-1, -0.5),
     xlim = NULL,
@@ -50,7 +50,7 @@ test_that("resolve_bubbleplot_limits() pads xlim; leaves ylim default", {
   expect_null(lim$ylim)
   expect_null(lim$y_breaks)
 
-  lim2 <- interact:::resolve_bubbleplot_limits(
+  lim2 <- interactmeta:::resolve_bubbleplot_limits(
     ifrac_vals = c(0.3, 0.5),
     y_vals = c(-1, -0.5),
     xlim = NULL,
@@ -63,48 +63,48 @@ test_that("resolve_bubbleplot_limits() pads xlim; leaves ylim default", {
 })
 
 test_that("interactmeta_continuous_breaks() keeps ggplot2 default ticks", {
-  expect_s3_class(interact:::interactmeta_continuous_breaks(NULL), "waiver")
-  expect_equal(interact:::interactmeta_continuous_breaks(c(-1, 0)), c(-1, 0))
+  expect_s3_class(interactmeta:::interactmeta_continuous_breaks(NULL), "waiver")
+  expect_equal(interactmeta:::interactmeta_continuous_breaks(c(-1, 0)), c(-1, 0))
 })
 
 test_that("bubbleplot_ifrac_grid() follows observed IF, not always 0-1", {
-  g <- interact:::bubbleplot_ifrac_grid(c(0.3, 0.5), resolution = 11)
+  g <- interactmeta:::bubbleplot_ifrac_grid(c(0.3, 0.5), resolution = 11)
   expect_equal(length(g), 11L)
   expect_gt(min(g), 0.2)
   expect_lt(max(g), 0.6)
-  g0 <- interact:::bubbleplot_ifrac_grid(numeric(), resolution = 5)
+  g0 <- interactmeta:::bubbleplot_ifrac_grid(numeric(), resolution = 5)
   expect_equal(g0, seq(0, 1, length.out = 5))
 })
 
 test_that("bubbleplot_default_xlab() is the IF axis label", {
-  xlab <- interact:::bubbleplot_default_xlab("ifrac_Older")
+  xlab <- interactmeta:::bubbleplot_default_xlab("ifrac_Older")
   expect_equal(xlab, "Information fraction (IF) (%)")
 })
 
 test_that("default IF xlab does not leak plotmath tildes", {
-  xlab <- interact:::overall_ifrac_default_xlab(">=65")
+  xlab <- interactmeta:::overall_ifrac_default_xlab(">=65")
   expect_type(xlab, "character")
   expect_false(grepl("~", xlab, fixed = TRUE))
   expect_equal(xlab, "Information fraction (>=65) (%)")
   expect_equal(
-    interact:::bubbleplot_default_xlab("ifrac_>=65"),
+    interactmeta:::bubbleplot_default_xlab("ifrac_>=65"),
     "Information fraction (IF) (%)"
   )
 })
 
 test_that("interactmeta_as_ggplot_label() drops tildes when parse fails", {
-  lab <- interact:::interactmeta_as_ggplot_label("Information~fraction~(>=65)")
+  lab <- interactmeta:::interactmeta_as_ggplot_label("Information~fraction~(>=65)")
   expect_type(lab, "character")
   expect_false(grepl("~", lab, fixed = TRUE))
   expect_equal(lab, "Information fraction (>=65)")
-  parsed <- interact:::interactmeta_as_ggplot_label("Information~fraction")
+  parsed <- interactmeta:::interactmeta_as_ggplot_label("Information~fraction")
   expect_true(inherits(parsed, "expression") || is.language(parsed))
 })
 
 test_that("bubbleplot_ce_estimates() is safe for empty conditional-effects data", {
-  expect_equal(interact:::bubbleplot_ce_estimates(data.frame()), numeric())
+  expect_equal(interactmeta:::bubbleplot_ce_estimates(data.frame()), numeric())
   expect_equal(
-    interact:::bubbleplot_ce_estimates(data.frame(yi = 1)),
+    interactmeta:::bubbleplot_ce_estimates(data.frame(yi = 1)),
     numeric()
   )
 })
@@ -115,7 +115,7 @@ test_that("resolve_bubbleplot_level_keys() maps display labels to subgroup level
     display = factor(c("Ref", "Other", "Ref"), levels = c("Ref", "Other")),
     yi = c(0, 0, 0)
   )
-  keys <- interact:::resolve_bubbleplot_level_keys(
+  keys <- interactmeta:::resolve_bubbleplot_level_keys(
     raw_df = raw_df,
     display_levels = c("Ref", "Other"),
     subgroup_var = "level"
@@ -124,12 +124,12 @@ test_that("resolve_bubbleplot_level_keys() maps display labels to subgroup level
 })
 
 test_that("resolve_ifrac_plot_style() uses red / blue for subgroups", {
-  sg <- interact:::subgroup_colour_map(
+  sg <- interactmeta:::subgroup_colour_map(
     c("Younger", "Older"),
     reference = "Younger",
-    palette = interact:::interactmeta_palette_name()
+    palette = interactmeta:::interactmeta_palette_name()
   )
-  style <- interact:::resolve_ifrac_plot_style(
+  style <- interactmeta:::resolve_ifrac_plot_style(
     display_levels = c("Younger", "Older"),
     level_keys = c("Younger", "Older"),
     reference = "Younger",
@@ -144,11 +144,11 @@ test_that("resolve_ifrac_plot_style() uses red / blue for subgroups", {
   expect_equal(style$fill_colors[["Older"]], sg$fill[2])
   expect_false(identical(style$colors[["Younger"]], style$colors[["Older"]]))
   expect_equal(
-    interact:::interactmeta_normalize_hex(style$colors[["Younger"]]),
+    interactmeta:::interactmeta_normalize_hex(style$colors[["Younger"]]),
     "#E41A1C"
   )
   expect_equal(
-    interact:::interactmeta_normalize_hex(style$colors[["Older"]]),
+    interactmeta:::interactmeta_normalize_hex(style$colors[["Older"]]),
     "#377EB8"
   )
   expect_equal(style$legend_title, "Subgroup")
@@ -156,9 +156,9 @@ test_that("resolve_ifrac_plot_style() uses red / blue for subgroups", {
 
 test_that("subgroup_palette_colours() skips near-white Greys", {
   skip_if_not_installed("paletteer")
-  cols <- interact:::subgroup_palette_colours("RColorBrewer::Greys", 2L)
+  cols <- interactmeta:::subgroup_palette_colours("RColorBrewer::Greys", 2L)
   expect_length(cols, 2L)
-  lum <- function(x) mean(grDevices::col2rgb(interact:::interactmeta_normalize_hex(x)))
+  lum <- function(x) mean(grDevices::col2rgb(interactmeta:::interactmeta_normalize_hex(x)))
   expect_lt(lum(cols[[1]]), 200)
   expect_lt(lum(cols[[2]]), 200)
 })
@@ -170,7 +170,7 @@ test_that("trial_yi_segments() builds two-point trial lines", {
     yi = c(0.1, -0.2, 0.05, -0.1),
     display = rep(c("x", "y"), 2)
   )
-  seg <- interact:::trial_yi_segments(raw, study_var = "study", ifrac_var = "ifrac")
+  seg <- interactmeta:::trial_yi_segments(raw, study_var = "study", ifrac_var = "ifrac")
   expect_equal(nrow(seg), 2L)
   expect_equal(seg$yi_1, c(0.1, 0.05))
 })

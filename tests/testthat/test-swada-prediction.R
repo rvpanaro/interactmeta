@@ -5,7 +5,7 @@ test_that("SWADA interaction prediction uses common-weight WLS + tau", {
   sw <- swada(respire_age, reference = "<65", method = "REML")
   ad <- ad(respire_age, reference = "<65", method = "REML")
 
-  pr_sw <- interact:::interactmeta_swada_prediction(sw, target = "interaction", prob = 0.95)
+  pr_sw <- interactmeta:::interactmeta_swada_prediction(sw, target = "interaction", prob = 0.95)
 
   int_rma <- ad$fits$interaction
   pr_metafor <- suppressWarnings(predict(int_rma, level = 95))

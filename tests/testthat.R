@@ -7,6 +7,6 @@
 # * https://testthat.r-lib.org/articles/special-files.html
 
 library(testthat)
-library(interact)
+library(interactmeta)
 
-test_check("interact")
+test_check("interactmeta")

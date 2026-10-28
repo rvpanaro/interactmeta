@@ -70,7 +70,7 @@ test_that("heterogeneity() extracts trial SD parameters", {
 
 test_that("interaction heterogeneity footnote omits the contrast label", {
   expect_equal(
-    interact:::comparison_heterogeneity_interaction_label("ifrac2_Older", "Younger"),
+    interactmeta:::comparison_heterogeneity_interaction_label("ifrac2_Older", "Younger"),
     paste0("Interaction heterogeneity (", "\u03c4", "_", "\u03b3", ")")
   )
 })
@@ -78,7 +78,7 @@ test_that("interaction heterogeneity footnote omits the contrast label", {
 test_that("heterogeneity_bayesmeta_tau_prep includes prior density when requested", {
   skip_if_not_installed("bayesmeta")
   fit <- fixture_cam_tiny_fit()
-  d <- interact:::heterogeneity_bayesmeta_tau_prep(
+  d <- interactmeta:::heterogeneity_bayesmeta_tau_prep(
     fit$bayesmeta$overall,
     prior = TRUE
   )
@@ -139,8 +139,8 @@ test_that("plot_heterogeneity() builds a side-by-side ggplot", {
 
   fit <- fixture_cam_tiny_fit()
   het_fit <- heterogeneity(fit)
-  pieces <- interact:::plot_heterogeneity_pieces(het_fit, which = "both")
-  prior_df <- interact:::plot_heterogeneity_prior_df(
+  pieces <- interactmeta:::plot_heterogeneity_pieces(het_fit, which = "both")
+  prior_df <- interactmeta:::plot_heterogeneity_prior_df(
     pieces = pieces,
     fit = fit,
     prior = TRUE,
@@ -173,8 +173,8 @@ test_that("plot_heterogeneity() uses one bar per discrete tau node", {
     summary = data.frame()
   )
   class(het) <- c("interactmeta_heterogeneity", "list")
-  expect_true(interact:::plot_heterogeneity_is_discrete(het$support$value))
-  bars <- interact:::plot_heterogeneity_hist(
+  expect_true(interactmeta:::plot_heterogeneity_is_discrete(het$support$value))
+  bars <- interactmeta:::plot_heterogeneity_hist(
     het$support$value,
     weight = het$support$.weight,
     bins = 40L
@@ -214,15 +214,15 @@ test_that("plot(het) uses bayesmeta tau plots on the default engine", {
   het <- heterogeneity(fit)
   expect_false(is.null(attr(het, "interactmeta")))
   expect_equal(
-    names(interact:::heterogeneity_native_tau_objects(het)),
+    names(interactmeta:::heterogeneity_native_tau_objects(het)),
     c("tau", "tau_gamma")
   )
   expect_equal(
-    as.character(interact:::heterogeneity_tau_xlab("tau")),
+    as.character(interactmeta:::heterogeneity_tau_xlab("tau")),
     as.character(expression("heterogeneity " * tau))
   )
   expect_equal(
-    as.character(interact:::heterogeneity_tau_xlab("tau_gamma")),
+    as.character(interactmeta:::heterogeneity_tau_xlab("tau_gamma")),
     as.character(expression("heterogeneity " * tau[gamma]))
   )
   grDevices::pdf(NULL)
@@ -232,11 +232,11 @@ test_that("plot(het) uses bayesmeta tau plots on the default engine", {
   expect_silent(plot_heterogeneity(het, which = "combined"))
   expect_silent(plot_heterogeneity(het))
   expect_identical(plot_heterogeneity(het, which = "overall"), het)
-  objs <- interact:::heterogeneity_native_tau_objects(het)
-  d_ov <- interact:::heterogeneity_bayesmeta_tau_prep(objs$tau)
-  d_int <- interact:::heterogeneity_bayesmeta_tau_prep(objs$tau_gamma)
+  objs <- interactmeta:::heterogeneity_native_tau_objects(het)
+  d_ov <- interactmeta:::heterogeneity_bayesmeta_tau_prep(objs$tau)
+  d_int <- interactmeta:::heterogeneity_bayesmeta_tau_prep(objs$tau_gamma)
   expect_equal(
-    interact:::heterogeneity_plot_bayesmeta_ylim(list(d_ov, d_int)),
+    interactmeta:::heterogeneity_plot_bayesmeta_ylim(list(d_ov, d_int)),
     c(0, max(d_ov$maxdens, d_int$maxdens))
   )
 })
@@ -277,7 +277,7 @@ test_that("cutoff shading follows ell(tau) >= cutoff", {
   tau <- c(0, 0.2, 0.5, 0.8, 1)
   ll <- c(-10, -2, 0, -2, -10)
   y_cut <- -3
-  polys <- interact:::heterogeneity_metafor_cutoff_polygons(tau, ll, y_cut)
+  polys <- interactmeta:::heterogeneity_metafor_cutoff_polygons(tau, ll, y_cut)
   expect_length(polys, 1L)
   expect_true(all(polys[[1L]]$y >= y_cut - 1e-8))
   expect_true(min(polys[[1L]]$x) <= 0.2 + 1e-6)
@@ -295,14 +295,14 @@ test_that("plot_heterogeneity() profiles tau on metafor CAMS", {
   )
   het <- heterogeneity(fit)
   expect_equal(
-    names(interact:::heterogeneity_native_rma_objects(het)),
+    names(interactmeta:::heterogeneity_native_rma_objects(het)),
     c("tau", "tau_gamma")
   )
-  d_ov <- interact:::heterogeneity_metafor_tau_prep(
+  d_ov <- interactmeta:::heterogeneity_metafor_tau_prep(
     fit$metafor$overall,
     steps = 8L
   )
-  d_int <- interact:::heterogeneity_metafor_tau_prep(
+  d_int <- interactmeta:::heterogeneity_metafor_tau_prep(
     fit$metafor$interaction,
     steps = 8L
   )
@@ -322,10 +322,10 @@ test_that("plot_heterogeneity() profiles tau on metafor CAMS", {
     d_ov$maxll - 0.5 * stats::qchisq(0.95, df = 1L),
     tolerance = 1e-8
   )
-  ylim <- interact:::heterogeneity_plot_metafor_ylim(list(d_ov, d_int))
+  ylim <- interactmeta:::heterogeneity_plot_metafor_ylim(list(d_ov, d_int))
   expect_equal(ylim[[1L]], min(d_ov$ylim[[1L]], d_int$ylim[[1L]]))
   expect_equal(ylim[[2L]], max(d_ov$ylim[[2L]], d_int$ylim[[2L]]))
-  xlim <- interact:::heterogeneity_plot_metafor_xlim(list(d_ov, d_int))
+  xlim <- interactmeta:::heterogeneity_plot_metafor_xlim(list(d_ov, d_int))
   expect_equal(xlim[[1L]], 0)
   expect_equal(xlim[[2L]], max(d_ov$xlim[[2L]], d_int$xlim[[2L]]))
   grDevices::pdf(NULL)

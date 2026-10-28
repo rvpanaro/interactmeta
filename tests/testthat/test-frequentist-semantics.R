@@ -109,7 +109,7 @@ test_that("frequentist IF uses fitted tau / tau_gamma", {
   expect_length(as.numeric(oi), 1L)
   expect_equal(
     as.numeric(oi),
-    interact:::overall_ifrac_compute(
+    interactmeta:::overall_ifrac_compute(
       data = d,
       trial_var = st$trial_var,
       subgroup_var = st$subgroup_var,
@@ -124,7 +124,7 @@ test_that("frequentist IF uses fitted tau / tau_gamma", {
   expect_length(as.numeric(oi_g), 1L)
   expect_equal(
     as.numeric(oi_g),
-    interact:::interaction_ifrac_compute(
+    interactmeta:::interaction_ifrac_compute(
       data = d,
       trial_var = st$trial_var,
       subgroup_var = st$subgroup_var,

@@ -69,7 +69,7 @@ interactmeta_paletteer_d <- function(palette, n) {
   interactmeta_normalize_hex(paletteer::paletteer_d(pal, n = n))
 }
 
-#' Colour palette for interact figures
+#' Colour palette for interactmeta figures
 #'
 #' Named colours for figures. The default discrete scale (`"okabeito"`) uses
 #' **red** for the reference subgroup and **blue** for the non-reference, then
@@ -269,7 +269,7 @@ subgroup_shrinkage_colour_map <- function(labels, reference = NULL, palette = NU
 subgroupmeta_palette <- interactmeta_palette
 
 # ---- interactmeta_theme.R ----
-#' Default base font size for interact ggplot figures
+#' Default base font size for interactmeta ggplot figures
 #'
 #' @param override User-supplied `base_size`; when non-`NULL`, returned as-is.
 #' @param default Fallback when `override` is `NULL` and no option is set.
@@ -279,7 +279,7 @@ subgroupmeta_palette <- interactmeta_palette
 #' default with `options(interactmeta.base_size = 11)`.
 #'
 #' Forest plots use a separate default from `interactmeta_forest_base_size()`;
-#' see the *Plot typography* section in [interact-package].
+#' see the *Plot typography* section in [interactmeta-package].
 #' @noRd
 interactmeta_base_size <- function(override = NULL, default = 11L) {
   if (!is.null(override)) {
@@ -288,7 +288,7 @@ interactmeta_base_size <- function(override = NULL, default = 11L) {
   getOption("interactmeta.base_size", default)
 }
 
-#' Default sans-serif family for interact ggplot figures
+#' Default sans-serif family for interactmeta ggplot figures
 #' @noRd
 interactmeta_base_family <- function(override = NULL) {
   if (!is.null(override) && nzchar(as.character(override)[[1L]])) {
@@ -331,7 +331,7 @@ interactmeta_effects_legend_point_size <- function(base_size = interactmeta_base
   base_size * (3.5 / 12)
 }
 
-#' Shared visual constants for interact figures
+#' Shared visual constants for interactmeta figures
 #'
 #' Subgroup identity (reference / non-reference) stays in
 #' [interactmeta_palette()] / [subgroup_colour_map()]. Everything else —
@@ -418,7 +418,7 @@ interactmeta_approach_colours <- function(palette = NULL, approaches = NULL) {
   out
 }
 
-#' Report / dashboard theme for interact ggplot figures
+#' Report / dashboard theme for interactmeta ggplot figures
 #'
 #' Consistent sans-serif typography, muted greys, light horizontal gridlines
 #' only, and a right-hand legend with comfortable padding. Use this (or

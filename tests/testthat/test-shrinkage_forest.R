@@ -229,7 +229,7 @@ test_that("forest shrinkage greys equal canonical accessor posterior QI", {
     dat, reference = "Younger",
     ))
   sg <- shrinkage(fit, type = "modifiers", summary = TRUE, exponentiate = FALSE)
-  panels <- interact:::comparison_forest_build_fit_panels(
+  panels <- interactmeta:::comparison_forest_build_fit_panels(
     fit,
     prob = 0.95,
     contrast_sep = "-",
@@ -382,7 +382,7 @@ test_that("forest does not use pooled/prediction as study shrinkage", {
   fit <- suppressWarnings(cams(
     dat, reference = "Younger",
     ))
-  panels <- interact:::comparison_forest_build_fit_panels(
+  panels <- interactmeta:::comparison_forest_build_fit_panels(
     fit,
     prob = 0.95,
     contrast_sep = "-",

@@ -57,19 +57,19 @@ test_that("DA interaction forest Prediction uses DA not AD RE-MA", {
   pred_ad <- ra_ad$yi[ra_ad$row_kind == "prediction"]
   expect_length(pred_da, 1L)
   expect_length(pred_ad, 1L)
-  pr_ref <- interact:::construction_forest_rma_marginal(
+  pr_ref <- interactmeta:::construction_forest_rma_marginal(
     da_fit$fits$reference,
     0.95,
     "Prediction"
   )
-  pr_non <- interact:::construction_forest_rma_marginal(
+  pr_non <- interactmeta:::construction_forest_rma_marginal(
     da_fit$fits$nonref,
     0.95,
     "Prediction"
   )
   expect_equal(pred_da[[1L]], pr_non$estimate - pr_ref$estimate, tolerance = 1e-10)
-  int_rma <- interact:::construction_forest_interaction_rma(da_fit)
-  pr_ad <- interact:::construction_forest_rma_marginal(int_rma, 0.95, "Prediction")
+  int_rma <- interactmeta:::construction_forest_interaction_rma(da_fit)
+  pr_ad <- interactmeta:::construction_forest_rma_marginal(int_rma, 0.95, "Prediction")
   expect_equal(pred_ad[[1L]], pr_ad$estimate, tolerance = 1e-10)
 })
 

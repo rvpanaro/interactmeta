@@ -1,6 +1,6 @@
-# interact (development)
+# interactmeta (development)
 
-## interact 0.1.0
+## interactmeta 0.1.0
 
 ### New features
 

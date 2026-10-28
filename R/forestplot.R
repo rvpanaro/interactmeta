@@ -9,7 +9,7 @@
 #'
 #' For non-[interactmeta] input (e.g. [metafor::escalc]), arguments are forwarded
 #' to [forestplot::forestplot()], which dispatches to
-#' [bayesmeta::forestplot.escalc] when **bayesmeta** is loaded (interact loads it
+#' [bayesmeta::forestplot.escalc] when **bayesmeta** is loaded (interactmeta loads it
 #' on attach).
 #'
 #' By default (`type = "modifiers"`) the plot shows **modifier-level** panels

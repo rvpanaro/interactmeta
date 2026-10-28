@@ -9,19 +9,19 @@ test_that("interactmeta_reference is the single source of truth on fits and data
     ifrac2_Older = c(-0.8, 0.2),
     stringsAsFactors = FALSE
   )
-  expect_equal(interact:::interactmeta_reference(dat), "Younger")
-  expect_equal(interact:::interactmeta_nonref(dat), "Older")
+  expect_equal(interactmeta:::interactmeta_reference(dat), "Younger")
+  expect_equal(interactmeta:::interactmeta_nonref(dat), "Older")
   expect_error(
-    interact:::interactmeta_reference(dat, reference = "Older"),
+    interactmeta:::interactmeta_reference(dat, reference = "Older"),
     "does not match the stored reference"
   )
 
   # Mismatched cams(reference=) vs existing design must error
   expect_error(
-    interact:::prepare_ifrac_input(dat, reference = "Older"),
+    interactmeta:::prepare_ifrac_input(dat, reference = "Older"),
     "does not match the stored reference"
   )
-  out <- interact:::prepare_ifrac_input(dat, reference = "Younger")
+  out <- interactmeta:::prepare_ifrac_input(dat, reference = "Younger")
   expect_equal(unique(as.character(out$reference)), "Younger")
 })
 
@@ -37,7 +37,7 @@ test_that("ifrac_<reference> design columns are rejected", {
     stringsAsFactors = FALSE
   )
   expect_error(
-    interact:::prepare_ifrac_input(dat, reference = "Younger"),
+    interactmeta:::prepare_ifrac_input(dat, reference = "Younger"),
     "name the reference subgroup"
   )
 })
@@ -50,11 +50,11 @@ test_that("resolve_forest_reference does not invent a reference", {
     vi = c(0.01, 0.02)
   )
   expect_error(
-    interact:::resolve_forest_reference(sg, sg),
+    interactmeta:::resolve_forest_reference(sg, sg),
     "Cannot resolve forest reference"
   )
   sg$reference <- "Younger"
-  expect_equal(interact:::resolve_forest_reference(sg, sg), "Younger")
+  expect_equal(interactmeta:::resolve_forest_reference(sg, sg), "Younger")
 })
 
 test_that("fitted object stores and reuses the given reference", {
@@ -70,9 +70,9 @@ test_that("fitted object stores and reuses the given reference", {
   fit <- suppressWarnings(cams(
     dat,
         reference = "Younger"))
-  expect_equal(interact:::interactmeta_reference(fit), "Younger")
+  expect_equal(interactmeta:::interactmeta_reference(fit), "Younger")
   expect_equal(attr(fit, "interactmeta")$reference, "Younger")
-  expect_equal(interact:::interactmeta_nonref(fit), "Older")
+  expect_equal(interactmeta:::interactmeta_nonref(fit), "Older")
 
   cmp <- shrinkage_components(fit)
   expect_equal(cmp$reference, "Younger")
@@ -80,7 +80,7 @@ test_that("fitted object stores and reuses the given reference", {
   # π is IF of Older (= nonref), reference weight is 1-π
   expect_equal(unname(cmp$pi[["A"]]), 0.5, tolerance = 1e-10)
 
-  panels <- interact:::comparison_forest_build_fit_panels(
+  panels <- interactmeta:::comparison_forest_build_fit_panels(
     fit,
     prob = 0.95,
     contrast_sep = "-",

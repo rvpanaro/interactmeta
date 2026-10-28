@@ -47,7 +47,7 @@ test_that("add_ifrac2_design() is added only for CAMS fitting", {
     reference = "g1"
   )
   res <- add_ifrac_design(dat)
-  fit_dat <- interact:::add_ifrac2_design(res)
+  fit_dat <- interactmeta:::add_ifrac2_design(res)
   expect_true("ifrac2_g2" %in% names(fit_dat))
   expect_equal(
     fit_dat$ifrac2_g2,

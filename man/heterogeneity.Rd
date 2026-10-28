@@ -43,7 +43,7 @@ on each orthogonal \code{rma} block).
 }
 \examples{
 \dontrun{
-library(interact)
+library(interactmeta)
 fit <- cams(es, reference = "Lower")
 heterogeneity(fit)
 heterogeneity(fit, component = "intercept")

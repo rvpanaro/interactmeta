@@ -80,7 +80,7 @@ test_that("overall shrinkage is one draw vector per trial (like interaction)", {
 
   # Legacy helper: mix at a fixed omega still works
   omega <- rep(0.35, n_draw)
-  got <- interact:::comparison_overall_shrinkage_draws(
+  got <- interactmeta:::comparison_overall_shrinkage_draws(
     sg_draws = sg$support,
     omega = omega,
     reference = "Younger",

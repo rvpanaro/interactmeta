@@ -21,16 +21,16 @@ test_that("forestplot() fit path supports favours and grouping", {
     sort(unique(fp$specs$row_labels$heading)),
     c("All", "Older", "Younger")
   )
-  expect_false(any(interact:::forestplot_heading_is_interaction(
+  expect_false(any(interactmeta:::forestplot_heading_is_interaction(
     fp$specs$row_labels$heading
   )))
-  expect_true(any(interact:::forestplot_heading_is_combined(
+  expect_true(any(interactmeta:::forestplot_heading_is_combined(
     fp$specs$row_labels$heading
   )))
   expect_true(any(attr(fp, "panels")[[1]]$row_kind == "combined", na.rm = TRUE))
 
   fp_no_comb <- forestplot(fit, include_combined = FALSE)
-  expect_false(any(interact:::forestplot_heading_is_combined(
+  expect_false(any(interactmeta:::forestplot_heading_is_combined(
     fp_no_comb$specs$row_labels$heading
   )))
 
@@ -48,7 +48,7 @@ test_that("forestplot() fit path supports favours and grouping", {
   expect_true("A" %in% unique(fp_tr$specs$row_labels$heading))
   # Subgroup pooled + prediction use parenthetical labels; alone Younger/Older
   # headers are omitted for those summary-only blocks.
-  lay_tr <- interact:::forestplot_metafor_subgroup_layout(
+  lay_tr <- interactmeta:::forestplot_metafor_subgroup_layout(
     fp_tr$specs$panels[[1]],
     fp_tr$specs$row_labels,
     heterogeneity = fp_tr$specs$annotations$heterogeneity,
@@ -63,7 +63,7 @@ test_that("forestplot() fit path supports favours and grouping", {
 
   # Overall sits on the next row after the last study in that subgroup block
   fp_sg <- forestplot(fit, include_shrinkage = FALSE)
-  lay_sg <- interact:::forestplot_metafor_subgroup_layout(
+  lay_sg <- interactmeta:::forestplot_metafor_subgroup_layout(
     fp_sg$specs$panels[[1]],
     fp_sg$specs$row_labels,
     heterogeneity = fp_sg$specs$annotations$heterogeneity,
@@ -91,7 +91,7 @@ test_that("forestplot() fit path supports favours and grouping", {
     c("Control", "   Experimental")
   )
   # Favours are drawn under the axis (xlab), not reserved as in-plot rows.
-  lay_fav <- interact:::forestplot_metafor_subgroup_layout(
+  lay_fav <- interactmeta:::forestplot_metafor_subgroup_layout(
     fp_fav$specs$panels[[1]],
     fp_fav$specs$row_labels,
     heterogeneity = fp_fav$specs$annotations$heterogeneity,
@@ -114,9 +114,9 @@ test_that("forestplot() fit path supports favours and grouping", {
 test_that("forest.interactmeta is registered on metafor::forest and forwards ...", {
   slow()
   skip_if_not_installed("bayesmeta"); skip_if_not_installed("forestplot")
-  expect_true(exists("forest.interactmeta", envir = asNamespace("interact"), inherits = FALSE))
-  expect_true(is.function(interact::forest.interactmeta))
-  body_chr <- paste(deparse(body(interact::forest.interactmeta)), collapse = " ")
+  expect_true(exists("forest.interactmeta", envir = asNamespace("interactmeta"), inherits = FALSE))
+  expect_true(is.function(interactmeta::forest.interactmeta))
+  body_chr <- paste(deparse(body(interactmeta::forest.interactmeta)), collapse = " ")
   expect_match(body_chr, "forestplot")
 
   # Dispatch via metafor's generic once the method is registered
@@ -125,11 +125,11 @@ test_that("forest.interactmeta is registered on metafor::forest and forwards ...
     error = function(e) NULL
   )
   if (!is.null(meth)) {
-    expect_identical(body(meth), body(interact::forest.interactmeta))
+    expect_identical(body(meth), body(interactmeta::forest.interactmeta))
   }
 
   # Presentation args in ... still land in forest_args (merge path)
-  out <- interact:::forestplot_merge_metafor_args(
+  out <- interactmeta:::forestplot_merge_metafor_args(
     list(x = 1, rows = 1, efac = 0, cex = 0.8),
     list(shade = TRUE, efac = 1, textpos = c(-2, 2), rows = 99L),
     which = "forest"
@@ -143,7 +143,7 @@ test_that("forest.interactmeta is registered on metafor::forest and forwards ...
 test_that("forestplot_merge_metafor_args() keeps reserved layout args", {
   slow()
   base <- list(x = 1:2, rows = 3:4, cex = 0.75, efac = 0)
-  out <- interact:::forestplot_merge_metafor_args(
+  out <- interactmeta:::forestplot_merge_metafor_args(
     base,
     list(cex = 1, shade = TRUE, rows = 99L, x = 0),
     which = "forest"
@@ -153,7 +153,7 @@ test_that("forestplot_merge_metafor_args() keeps reserved layout args", {
   expect_identical(out$cex, 1)
   expect_true(isTRUE(out$shade))
 
-  poly <- interact:::forestplot_merge_metafor_args(
+  poly <- interactmeta:::forestplot_merge_metafor_args(
     list(x = 0.1, row = 2, mlab = "Overall", col = "black"),
     list(mlab = "nope", col = "red", atransf = exp),
     which = "addpoly"
@@ -180,7 +180,7 @@ test_that("shrinkage rows omit study name in metafor layout slabs", {
     label = c("Trial A", "Trial A", "Trial B", "Trial B"),
     stringsAsFactors = FALSE
   )
-  layout <- interact:::forestplot_metafor_subgroup_layout(panel, row_labels)
+  layout <- interactmeta:::forestplot_metafor_subgroup_layout(panel, row_labels)
   expect_equal(
     layout$study$slab,
     c("Trial A", " ", "Trial B", " ")
@@ -214,12 +214,12 @@ test_that("summary-only layout parks placeholder off diamond rows", {
     colour_label = c(rep(NA_character_, 6), "Overall", "Prediction"),
     stringsAsFactors = FALSE
   )
-  lay <- interact:::forestplot_metafor_subgroup_layout(panel, row_labels)
+  lay <- interactmeta:::forestplot_metafor_subgroup_layout(panel, row_labels)
   poly_rows <- vapply(lay$polys, `[[`, numeric(1), "row")
   expect_true(isTRUE(lay$study$placeholder))
   expect_false(lay$study$rows %in% poly_rows)
   expect_equal(
-    sum(lay$headers$label == interact:::forestplot_combined_block_label()),
+    sum(lay$headers$label == interactmeta:::forestplot_combined_block_label()),
     1L
   )
 })
@@ -227,11 +227,11 @@ test_that("summary-only layout parks placeholder off diamond rows", {
 test_that("forestplot_metafor_textpos() nudges left and right columns", {
   slow()
   xlim <- c(-5, 5)
-  expect_equal(interact:::forestplot_metafor_textpos(xlim, right_shift = 0), xlim)
-  nudged <- interact:::forestplot_metafor_textpos(xlim, right_shift = 0.12)
+  expect_equal(interactmeta:::forestplot_metafor_textpos(xlim, right_shift = 0), xlim)
+  nudged <- interactmeta:::forestplot_metafor_textpos(xlim, right_shift = 0.12)
   expect_equal(nudged[[1L]], xlim[[1L]])
   expect_lt(nudged[[2L]], xlim[[2L]])
-  both <- interact:::forestplot_metafor_textpos(
+  both <- interactmeta:::forestplot_metafor_textpos(
     xlim,
     right_shift = 0.12,
     left_shift = 0.05
@@ -243,14 +243,14 @@ test_that("forestplot_metafor_textpos() nudges left and right columns", {
 test_that("forestplot_metafor_plot_xlim pads for Effect text", {
   slow()
   alim <- c(-1, 1)
-  full <- interact:::forestplot_metafor_plot_xlim(
+  full <- interactmeta:::forestplot_metafor_plot_xlim(
     alim,
     has_ilab = FALSE,
     annotate = TRUE
   )
   expect_lt(full[[1L]], alim[[1L]])
   expect_gt(full[[2L]], alim[[2L]])
-  tp <- interact:::forestplot_metafor_textpos(full, right_shift = 0.06)
+  tp <- interactmeta:::forestplot_metafor_textpos(full, right_shift = 0.06)
   expect_lt(tp[[2L]], full[[2L]])
   expect_gt(tp[[2L]], alim[[2L]])
 })
@@ -264,16 +264,16 @@ test_that("forestplot left columns follow IF / N when present", {
     stringsAsFactors = FALSE
   )
   expect_equal(
-    interact:::forestplot_col_left_names(with_cols),
+    interactmeta:::forestplot_col_left_names(with_cols),
     c("ifrac", "trial_size")
   )
   expect_equal(
-    interact:::forestplot_col_left_headings(with_cols),
+    interactmeta:::forestplot_col_left_headings(with_cols),
     c("IF", "N")
   )
   cleared <- with_cols[, setdiff(names(with_cols), c("ifrac", "trial_size")), , drop = FALSE]
-  expect_null(interact:::forestplot_col_left_names(cleared))
-  expect_equal(interact:::forestplot_col_left_headings(cleared), character())
+  expect_null(interactmeta:::forestplot_col_left_names(cleared))
+  expect_equal(interactmeta:::forestplot_col_left_headings(cleared), character())
 })
 
 test_that("forestplot omits N unless n_var is set", {
@@ -284,13 +284,13 @@ test_that("forestplot omits N unless n_var is set", {
     n = c(40, 60),
     stringsAsFactors = FALSE
   )
-  expect_null(interact:::forestplot_n_values(dat))
-  expect_null(interact:::forestplot_n_values(dat, n_var = FALSE))
-  expect_equal(interact:::forestplot_n_values(dat, n_var = "n"), c(40, 60))
+  expect_null(interactmeta:::forestplot_n_values(dat))
+  expect_null(interactmeta:::forestplot_n_values(dat, n_var = FALSE))
+  expect_equal(interactmeta:::forestplot_n_values(dat, n_var = "n"), c(40, 60))
   panel <- data.frame(yi = c(0.1, 0.2))
-  omitted <- interact:::forestplot_attach_trial_size(panel, dat)
+  omitted <- interactmeta:::forestplot_attach_trial_size(panel, dat)
   expect_false("trial_size" %in% names(omitted))
-  shown <- interact:::forestplot_attach_trial_size(panel, dat, n_var = "n")
+  shown <- interactmeta:::forestplot_attach_trial_size(panel, dat, n_var = "n")
   expect_equal(shown$trial_size, c("100", ""))
 })
 
@@ -310,10 +310,10 @@ test_that("estimates_only omits IF and N columns", {
     forestplot(fit, exponentiate = TRUE, estimates_only = TRUE)
   )
   expect_equal(
-    interact:::forestplot_col_left_names(fp_full$specs$panels[[1L]]),
+    interactmeta:::forestplot_col_left_names(fp_full$specs$panels[[1L]]),
     "ifrac"
   )
-  expect_null(interact:::forestplot_col_left_names(fp_est$specs$panels[[1L]]))
+  expect_null(interactmeta:::forestplot_col_left_names(fp_est$specs$panels[[1L]]))
   expect_false("ifrac" %in% names(fp_est$specs$panels[[1L]]))
   expect_false("trial_size" %in% names(fp_est$specs$panels[[1L]]))
   expect_true(all(fp_est$specs$panels[[1L]]$row_kind != "study", na.rm = TRUE))
@@ -366,7 +366,7 @@ test_that("forestplot chrome stays stable across type", {
   )
   base_sizes <- vapply(fps, function(fp) as.numeric(attr(fp, "base_size")), numeric(1))
   expect_true(length(unique(base_sizes)) == 1L)
-  expect_equal(base_sizes[[1L]], as.numeric(interact:::interactmeta_forest_base_size()))
+  expect_equal(base_sizes[[1L]], as.numeric(interactmeta:::interactmeta_forest_base_size()))
 
   favours <- lapply(fps, function(fp) fp$specs$favours)
   expect_equal(favours[[1L]], c("Control", "   Experimental"))
@@ -386,11 +386,11 @@ test_that("forestplot chrome stays stable across type", {
 test_that("forestplot_panel_xlab() defaults by role", {
   slow()
   expect_equal(
-    interact:::forestplot_panel_xlab("subgroups", exponentiate = FALSE),
+    interactmeta:::forestplot_panel_xlab("subgroups", exponentiate = FALSE),
     "Effect (log scale)"
   )
   expect_equal(
-    interact:::forestplot_panel_xlab("interaction", exponentiate = TRUE),
+    interactmeta:::forestplot_panel_xlab("interaction", exponentiate = TRUE),
     "Interaction"
   )
 })
@@ -409,7 +409,7 @@ test_that("forest footnotes convert Greek to plotmath", {
     ),
     sep = " \u00b7 "
   )
-  expr <- interact:::forestplot_footnote_as_plotmath(line)
+  expr <- interactmeta:::forestplot_footnote_as_plotmath(line)
   d <- paste(deparse(expr), collapse = "")
   expect_true(is.language(expr))
   expect_match(d, "pi", fixed = TRUE)
@@ -455,14 +455,14 @@ test_that("forestplot_ensure_nonsummary_row keeps a spacer for v-lines", {
   slow()
   all_sum <- c(TRUE, TRUE, TRUE)
   mean_v <- c(NA_real_, NA_real_, 0.2)
-  out <- interact:::forestplot_ensure_nonsummary_row(all_sum, mean_v)
+  out <- interactmeta:::forestplot_ensure_nonsummary_row(all_sum, mean_v)
   expect_equal(out, c(TRUE, FALSE, TRUE))
   already <- c(TRUE, FALSE, TRUE)
   expect_equal(
-    interact:::forestplot_ensure_nonsummary_row(already, mean_v),
+    interactmeta:::forestplot_ensure_nonsummary_row(already, mean_v),
     already
   )
-  header_only <- interact:::forestplot_ensure_nonsummary_row(
+  header_only <- interactmeta:::forestplot_ensure_nonsummary_row(
     TRUE, NA_real_
   )
   expect_equal(header_only, FALSE)
@@ -483,7 +483,7 @@ test_that("forestplot_bayesmeta_blocks() pairs study and shrinkage rows", {
     label = c("S1", "", "S2", "", "mean", "prediction"),
     stringsAsFactors = FALSE
   )
-  blocks <- interact:::forestplot_bayesmeta_blocks(panel, labs)
+  blocks <- interactmeta:::forestplot_bayesmeta_blocks(panel, labs)
   expect_length(blocks, 1L)
   expect_equal(nrow(blocks[[1]]$studies), 2L)
   expect_equal(blocks[[1]]$studies$label, c("S1", "S2"))
@@ -491,7 +491,7 @@ test_that("forestplot_bayesmeta_blocks() pairs study and shrinkage rows", {
   expect_true(!is.null(blocks[[1]]$pooled))
   expect_true(!is.null(blocks[[1]]$prediction))
   expect_length(blocks[[1]]$summaries, 2L)
-  expect_true(interact:::forestplot_bayesmeta_block_is_simple(blocks[[1]]))
+  expect_true(interactmeta:::forestplot_bayesmeta_block_is_simple(blocks[[1]]))
 })
 
 test_that("Combined block keeps both Overall and Prediction summaries", {
@@ -510,7 +510,7 @@ test_that("Combined block keeps both Overall and Prediction summaries", {
     label = c("Overall", "Prediction"),
     stringsAsFactors = FALSE
   )
-  blocks <- interact:::forestplot_bayesmeta_blocks(panel, labs)
+  blocks <- interactmeta:::forestplot_bayesmeta_blocks(panel, labs)
   expect_length(blocks, 1L)
   expect_equal(blocks[[1]]$heading, "All")
   expect_length(blocks[[1]]$summaries, 2L)
@@ -554,7 +554,7 @@ test_that("Combined block keeps both Overall and Prediction summaries", {
     ),
     group = "subgroup"
   )
-  args <- interact:::forestplot_bayesmeta_forestplot_args(blocks, specs)
+  args <- interactmeta:::forestplot_bayesmeta_forestplot_args(blocks, specs)
   # No large title; Effect is a column header.
   expect_null(args$title)
   expect_true("Effect (95% interval)" %in% args$labeltext[1, ])
@@ -563,7 +563,7 @@ test_that("Combined block keeps both Overall and Prediction summaries", {
   expect_true("Overall" %in% args$labeltext[, 1])
   expect_true("Prediction" %in% args$labeltext[, 1])
 
-  feet <- interact:::forestplot_bayesmeta_footnote_lines(specs)
+  feet <- interactmeta:::forestplot_bayesmeta_footnote_lines(specs)
   expect_length(feet, 1L)
   expect_false(grepl("Information fraction (\u03c0)", feet[[1L]], fixed = TRUE))
   expect_match(feet[[1L]], "Heterogeneity", fixed = TRUE)
@@ -586,7 +586,7 @@ test_that("forestplot_bayesmeta_build_fp does not add a graph-column separator",
     label = c("A", "Overall"),
     stringsAsFactors = FALSE
   )
-  blocks <- interact:::forestplot_bayesmeta_blocks(panel, labs)
+  blocks <- interactmeta:::forestplot_bayesmeta_blocks(panel, labs)
   specs <- list(
     panels = list(panel),
     row_labels = labs,
@@ -608,10 +608,10 @@ test_that("forestplot_bayesmeta_build_fp does not add a graph-column separator",
     annotations = list(),
     group = "subgroup"
   )
-  args <- interact:::forestplot_bayesmeta_forestplot_args(blocks, specs)
+  args <- interactmeta:::forestplot_bayesmeta_forestplot_args(blocks, specs)
   expect_true(is.na(args$zero))
   expect_true(is.finite(args$graph.pos))
-  fp <- interact:::forestplot_bayesmeta_build_fp(args)
+  fp <- interactmeta:::forestplot_bayesmeta_build_fp(args)
   extra <- fp$lines$vertical
   v_name <- paste0("v_", args$graph.pos)
   if (is.list(extra)) {
@@ -636,8 +636,8 @@ test_that("interaction and overall share forestplot::forestplot aesthetics", {
     label = c("A", "B", "Overall", "Prediction"),
     stringsAsFactors = FALSE
   )
-  blocks_int <- interact:::forestplot_bayesmeta_blocks(panel_int, labs_int)
-  expect_true(interact:::forestplot_bayesmeta_block_is_simple(blocks_int[[1]]))
+  blocks_int <- interactmeta:::forestplot_bayesmeta_blocks(panel_int, labs_int)
+  expect_true(interactmeta:::forestplot_bayesmeta_block_is_simple(blocks_int[[1]]))
 
   panel_ov <- data.frame(
     yi = c(0.54, 0.50),
@@ -652,8 +652,8 @@ test_that("interaction and overall share forestplot::forestplot aesthetics", {
     label = c("Overall", "Prediction"),
     stringsAsFactors = FALSE
   )
-  blocks_ov <- interact:::forestplot_bayesmeta_blocks(panel_ov, labs_ov)
-  expect_false(interact:::forestplot_bayesmeta_block_is_simple(blocks_ov[[1]]))
+  blocks_ov <- interactmeta:::forestplot_bayesmeta_blocks(panel_ov, labs_ov)
+  expect_false(interactmeta:::forestplot_bayesmeta_block_is_simple(blocks_ov[[1]]))
 
   specs <- list(
     panels = list(panel_int),
@@ -676,15 +676,15 @@ test_that("interaction and overall share forestplot::forestplot aesthetics", {
     annotations = list(),
     group = "subgroup"
   )
-  args_int <- interact:::forestplot_bayesmeta_forestplot_args(blocks_int, specs)
-  args_ov <- interact:::forestplot_bayesmeta_forestplot_args(
+  args_int <- interactmeta:::forestplot_bayesmeta_forestplot_args(blocks_int, specs)
+  args_ov <- interactmeta:::forestplot_bayesmeta_forestplot_args(
     blocks_ov,
     modifyList(specs, list(panels = list(panel_ov), row_labels = labs_ov))
   )
   # Same chrome: Effect column header, no large title; summary colours are
   # baked into fn.ci_sum (col$summary is only a fallback).
   expect_equal(args_int$col$summary, args_ov$col$summary)
-  expect_equal(args_int$col$summary, interact:::forestplot_overall_summary_colour())
+  expect_equal(args_int$col$summary, interactmeta:::forestplot_overall_summary_colour())
   expect_null(args_int$title)
   expect_null(args_ov$title)
   expect_true("Effect (95% interval)" %in% args_int$labeltext[1, ])
@@ -721,8 +721,8 @@ test_that("exponentiated forestplot args drop non-positive CIs and set clip", {
     label = c("A", "B"),
     stringsAsFactors = FALSE
   )
-  blocks <- interact:::forestplot_bayesmeta_blocks(panel, labs)
-  lim <- interact:::resolve_forestplot_limits(list(panel), exponentiate = TRUE)
+  blocks <- interactmeta:::forestplot_bayesmeta_blocks(panel, labs)
+  lim <- interactmeta:::resolve_forestplot_limits(list(panel), exponentiate = TRUE)
   specs <- list(
     panels = list(panel),
     row_labels = labs,
@@ -744,7 +744,7 @@ test_that("exponentiated forestplot args drop non-positive CIs and set clip", {
     annotations = list(),
     group = "subgroup"
   )
-  args <- interact:::forestplot_bayesmeta_forestplot_args(blocks, specs)
+  args <- interactmeta:::forestplot_bayesmeta_forestplot_args(blocks, specs)
   expect_true(isTRUE(args$xlog))
   expect_true(all(args$clip > 0))
   est <- as.numeric(args$lower)
@@ -752,7 +752,7 @@ test_that("exponentiated forestplot args drop non-positive CIs and set clip", {
 
   grDevices::pdf(NULL)
   on.exit(grDevices::dev.off(), add = TRUE)
-  fp <- interact:::forestplot_bayesmeta_build_fp(args)
+  fp <- interactmeta:::forestplot_bayesmeta_build_fp(args)
   expect_error(print(fp, new_page = FALSE), NA)
 })
 
@@ -764,7 +764,7 @@ test_that("supplied xlim is passed as forestplot clip", {
     row_kind = "combined", stringsAsFactors = FALSE
   )
   labs <- data.frame(heading = "All", label = "Overall", stringsAsFactors = FALSE)
-  blocks <- interact:::forestplot_bayesmeta_blocks(panel, labs)
+  blocks <- interactmeta:::forestplot_bayesmeta_blocks(panel, labs)
   specs <- list(
     panels = list(panel),
     row_labels = labs,
@@ -786,7 +786,7 @@ test_that("supplied xlim is passed as forestplot clip", {
     annotations = list(),
     group = "subgroup"
   )
-  args <- interact:::forestplot_bayesmeta_forestplot_args(blocks, specs)
+  args <- interactmeta:::forestplot_bayesmeta_forestplot_args(blocks, specs)
   expect_equal(args$clip, c(-1, 1))
   expect_equal(args$xticks, c(-1, 0, 1))
 })
@@ -811,7 +811,7 @@ test_that("group=trial labels Overall/Prediction with subgroup", {
     label = c("Younger", "Older", "Overall", "Prediction", "Overall", "Prediction"),
     stringsAsFactors = FALSE
   )
-  blocks <- interact:::forestplot_bayesmeta_blocks(panel, labs)
+  blocks <- interactmeta:::forestplot_bayesmeta_blocks(panel, labs)
   specs <- list(
     panels = list(panel),
     row_labels = labs,
@@ -833,7 +833,7 @@ test_that("group=trial labels Overall/Prediction with subgroup", {
     annotations = list(),
     group = "trial"
   )
-  args_tr <- interact:::forestplot_bayesmeta_forestplot_args(blocks, specs)
+  args_tr <- interactmeta:::forestplot_bayesmeta_forestplot_args(blocks, specs)
   expect_true("Overall (Younger)" %in% args_tr$labeltext[, 1])
   expect_true("Prediction (Younger)" %in% args_tr$labeltext[, 1])
   expect_true("Overall (Older)" %in% args_tr$labeltext[, 1])
@@ -846,7 +846,7 @@ test_that("group=trial labels Overall/Prediction with subgroup", {
   expect_equal(sum(args_tr$labeltext[, 1] == "Older"), 1L)
 
   specs$group <- "subgroup"
-  args_sg <- interact:::forestplot_bayesmeta_forestplot_args(blocks, specs)
+  args_sg <- interactmeta:::forestplot_bayesmeta_forestplot_args(blocks, specs)
   # Summary-only subgroup blocks also use Overall (Younger) and drop the alone
   # heading; study-backed blocks keep a plain heading.
   expect_true("A" %in% args_sg$labeltext[, 1])
@@ -855,27 +855,27 @@ test_that("group=trial labels Overall/Prediction with subgroup", {
   expect_equal(sum(args_sg$labeltext[, 1] == "Younger"), 1L)
 
   expect_equal(
-    interact:::forestplot_summary_group_label("Overall", "Younger", TRUE),
+    interactmeta:::forestplot_summary_group_label("Overall", "Younger", TRUE),
     "Overall (Younger)"
   )
   expect_equal(
-    interact:::forestplot_summary_group_label("Overall", "All", TRUE, TRUE),
+    interactmeta:::forestplot_summary_group_label("Overall", "All", TRUE, TRUE),
     "Overall (All)"
   )
   expect_equal(
-    interact:::forestplot_summary_group_label("Prediction", "All", TRUE, TRUE),
+    interactmeta:::forestplot_summary_group_label("Prediction", "All", TRUE, TRUE),
     "Prediction (All)"
   )
   expect_equal(
-    interact:::forestplot_summary_group_label("Overall", "All", TRUE, FALSE),
+    interactmeta:::forestplot_summary_group_label("Overall", "All", TRUE, FALSE),
     "Overall"
   )
   expect_equal(
-    interact:::forestplot_trial_group_summary_label("Overall", "Younger", "trial"),
+    interactmeta:::forestplot_trial_group_summary_label("Overall", "Younger", "trial"),
     "Overall (Younger)"
   )
   expect_equal(
-    interact:::forestplot_trial_group_summary_label("Overall", "Younger", "subgroup"),
+    interactmeta:::forestplot_trial_group_summary_label("Overall", "Younger", "subgroup"),
     "Overall"
   )
 })
@@ -917,7 +917,7 @@ test_that("Combined block keeps heading and plain Overall / Prediction labels", 
     annotations = list(),
     group = "subgroup"
   )
-  args <- interact:::forestplot_bayesmeta_forestplot_args(blocks, specs)
+  args <- interactmeta:::forestplot_bayesmeta_forestplot_args(blocks, specs)
   labs <- args$labeltext[, 1]
   expect_true("All" %in% labs)
   expect_true("Overall" %in% labs)
@@ -945,8 +945,8 @@ test_that("spacer rows use finite zero boxsize", {
     label = c("A", "A", "Overall", "A", "A", "Overall"),
     stringsAsFactors = FALSE
   )
-  args <- interact:::forestplot_bayesmeta_forestplot_args(
-    interact:::forestplot_bayesmeta_blocks(panel, labs),
+  args <- interactmeta:::forestplot_bayesmeta_forestplot_args(
+    interactmeta:::forestplot_bayesmeta_blocks(panel, labs),
     list(
       panels = list(panel),
       row_labels = labs,
@@ -997,7 +997,7 @@ test_that("bayesmeta favours use fp_set_favors under the forest", {
     label = c("Overall", "Prediction"),
     stringsAsFactors = FALSE
   )
-  blocks <- interact:::forestplot_bayesmeta_blocks(panel, labs)
+  blocks <- interactmeta:::forestplot_bayesmeta_blocks(panel, labs)
   specs <- list(
     panels = list(panel),
     row_labels = labs,
@@ -1022,17 +1022,17 @@ test_that("bayesmeta favours use fp_set_favors under the forest", {
     annotations = list(),
     group = "subgroup"
   )
-  args <- interact:::forestplot_bayesmeta_forestplot_args(blocks, specs)
+  args <- interactmeta:::forestplot_bayesmeta_forestplot_args(blocks, specs)
   # xlab is the axis title only — favours are not space-padded into it.
   expect_equal(args$xlab, "Effect")
   expect_false(grepl("Older", args$xlab, fixed = TRUE))
   expect_false(isTRUE(args$new_page))
 
   before <- grDevices::dev.cur()
-  fp <- interact:::forestplot_bayesmeta_build_fp(args)
+  fp <- interactmeta:::forestplot_bayesmeta_build_fp(args)
   # Building must not leave a new visible device open.
   expect_equal(grDevices::dev.cur(), before)
-  fp <- interact:::forestplot_bayesmeta_apply_favours(fp, specs$favours)
+  fp <- interactmeta:::forestplot_bayesmeta_apply_favours(fp, specs$favours)
   expect_true(is.list(fp$graph_favors))
   expect_equal(
     fp$graph_favors$low,
@@ -1062,7 +1062,7 @@ test_that("group=subgroup inserts a blank row between subgroup blocks", {
     label = c("A", "Overall", "A", "Overall"),
     stringsAsFactors = FALSE
   )
-  blocks <- interact:::forestplot_bayesmeta_blocks(panel, labs)
+  blocks <- interactmeta:::forestplot_bayesmeta_blocks(panel, labs)
   specs <- list(
     panels = list(panel),
     row_labels = labs,
@@ -1084,7 +1084,7 @@ test_that("group=subgroup inserts a blank row between subgroup blocks", {
     annotations = list(),
     group = "subgroup"
   )
-  args_sg <- interact:::forestplot_bayesmeta_forestplot_args(blocks, specs)
+  args_sg <- interactmeta:::forestplot_bayesmeta_forestplot_args(blocks, specs)
   # Header + spacer + Younger hdr/study/pooled + between-spacer +
   # Older hdr/study/pooled
   expect_equal(nrow(args_sg$labeltext), 9L)
@@ -1101,7 +1101,7 @@ test_that("group=subgroup inserts a blank row between subgroup blocks", {
   expect_true(all(is.na(args_sg$mean[yng_pool + 1L])))
 
   specs$group <- "trial"
-  args_tr <- interact:::forestplot_bayesmeta_forestplot_args(blocks, specs)
+  args_tr <- interactmeta:::forestplot_bayesmeta_forestplot_args(blocks, specs)
   # Trial nesting with study rows: keep subgroup headers; summaries get
   # Overall (Younger). Blank under column header; no between-subgroup spacers.
   expect_equal(nrow(args_tr$labeltext), 8L)
@@ -1125,8 +1125,8 @@ test_that("group=subgroup inserts a blank row between subgroup blocks", {
     label = c("Overall", "Prediction", "Overall", "Prediction"),
     stringsAsFactors = FALSE
   )
-  args_ro <- interact:::forestplot_bayesmeta_forestplot_args(
-    interact:::forestplot_bayesmeta_blocks(panel_ro, labs_ro),
+  args_ro <- interactmeta:::forestplot_bayesmeta_forestplot_args(
+    interactmeta:::forestplot_bayesmeta_blocks(panel_ro, labs_ro),
     modifyList(specs, list(group = "subgroup"))
   )
   expect_false("Younger" %in% args_ro$labeltext[, 1])
@@ -1154,8 +1154,8 @@ test_that("group=subgroup inserts a blank row between subgroup blocks", {
     label = c("A", "Overall", "Prediction"),
     stringsAsFactors = FALSE
   )
-  args_int <- interact:::forestplot_bayesmeta_forestplot_args(
-    interact:::forestplot_bayesmeta_blocks(panel_int, labs_int),
+  args_int <- interactmeta:::forestplot_bayesmeta_forestplot_args(
+    interactmeta:::forestplot_bayesmeta_blocks(panel_int, labs_int),
     specs
   )
   expect_equal(args_int$labeltext[2L, 1], "")
@@ -1180,8 +1180,8 @@ test_that("group=subgroup inserts a blank row between subgroup blocks", {
     label = c("A", "Overall"),
     stringsAsFactors = FALSE
   )
-  args_ov <- interact:::forestplot_bayesmeta_forestplot_args(
-    interact:::forestplot_bayesmeta_blocks(panel_ov, labs_ov),
+  args_ov <- interactmeta:::forestplot_bayesmeta_forestplot_args(
+    interactmeta:::forestplot_bayesmeta_blocks(panel_ov, labs_ov),
     specs
   )
   ov_hdr <- which(args_ov$labeltext[, 1] == "All")
@@ -1202,8 +1202,8 @@ test_that("group=subgroup inserts a blank row between subgroup blocks", {
     label = c("A", "Overall", "A", "Overall", "Overall", "Overall"),
     stringsAsFactors = FALSE
   )
-  args_all <- interact:::forestplot_bayesmeta_forestplot_args(
-    interact:::forestplot_bayesmeta_blocks(panel_all, labs_all),
+  args_all <- interactmeta:::forestplot_bayesmeta_forestplot_args(
+    interactmeta:::forestplot_bayesmeta_blocks(panel_all, labs_all),
     modifyList(specs, list(group = "subgroup"))
   )
   for (hdr in c("Interaction", "All")) {
@@ -1211,10 +1211,10 @@ test_that("group=subgroup inserts a blank row between subgroup blocks", {
     expect_equal(args_all$labeltext[ix - 1L, 1], "")
   }
 
-  lay_sg <- interact:::forestplot_metafor_subgroup_layout(
+  lay_sg <- interactmeta:::forestplot_metafor_subgroup_layout(
     panel, labs, group = "subgroup"
   )
-  lay_tr <- interact:::forestplot_metafor_subgroup_layout(
+  lay_tr <- interactmeta:::forestplot_metafor_subgroup_layout(
     panel, labs, group = "trial"
   )
   expect_gt(lay_sg$ylim_hi - lay_sg$ylim_lo, lay_tr$ylim_hi - lay_tr$ylim_lo)
@@ -1262,10 +1262,10 @@ test_that("print_with_footnotes clears the device when footnotes are absent", {
   # Annotated draw, then no-footnote draw: each must call draw once (and the
   # second must start with grid.newpage so it does not ghost the first).
   n_draw <- 0L
-  interact:::forestplot_bayesmeta_print_with_footnotes(fp, c("Combined IF: 0.4"))
+  interactmeta:::forestplot_bayesmeta_print_with_footnotes(fp, c("Combined IF: 0.4"))
   expect_equal(n_draw, 1L)
 
   n_draw <- 0L
-  interact:::forestplot_bayesmeta_print_with_footnotes(fp, character())
+  interactmeta:::forestplot_bayesmeta_print_with_footnotes(fp, character())
   expect_equal(n_draw, 1L)
 })

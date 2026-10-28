@@ -82,7 +82,7 @@ mark unreported subgroups; **`ifrac()`** completes the table for CAMS
 section).
 
 ```{r data, warning=FALSE, message=FALSE}
-library(interact)
+library(interactmeta)
 library(dplyr)
 
 steroids_obs <- steroids |> filter(n > 0)

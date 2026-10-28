@@ -30,7 +30,7 @@ test_that("ifrac() preserves patient counts in column n", {
   expect_true("n" %in% names(res))
   define <- res[res$study == "DEFINE" & as.character(res$level) == "Lower", , drop = FALSE]
   expect_equal(define$n[[1L]], 336)
-  lookup <- interact:::forestplot_trial_n_lookup(res, n_var = "n", contrast_sep = "-")
+  lookup <- interactmeta:::forestplot_trial_n_lookup(res, n_var = "n", contrast_sep = "-")
   expect_equal(lookup[["DEFINE"]], 336 + 73)
 })
 

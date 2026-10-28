@@ -13,9 +13,9 @@ predict_cam_example_fit <- function() {
 }
 
 cams_if_draw_effects <- function(fit, pi) {
-  post <- interact:::comparison_support_df(fit)
-  design <- interact:::comparison_marginal_design(fit)
-  sg <- interact:::comparison_subgroup_coef_terms(fit, design)
+  post <- interactmeta:::comparison_support_df(fit)
+  design <- interactmeta:::comparison_marginal_design(fit)
+  sg <- interactmeta:::comparison_subgroup_coef_terms(fit, design)
   ref <- design$reference
   nonref <- setdiff(design$subgroup_levels, ref)[[1L]]
   beta_col <- grep("^b_ifrac", names(post), value = TRUE)
@@ -23,13 +23,13 @@ cams_if_draw_effects <- function(fit, pi) {
   gamma_col <- grep("^b_subgroup", names(post), value = TRUE)
   list(
     post = post,
-    M = interact:::comparison_marginal_overall_effect_draws(
+    M = interactmeta:::comparison_marginal_overall_effect_draws(
       post, pi, design, fit, "Overall"
     ),
-    mu_A = interact:::comparison_marginal_fe_draws(
+    mu_A = interactmeta:::comparison_marginal_fe_draws(
       post, pi, design, sg[[ref]]
     ),
-    mu_B = interact:::comparison_marginal_fe_draws(
+    mu_B = interactmeta:::comparison_marginal_fe_draws(
       post, pi, design, sg[[nonref]]
     ),
     alpha = post$b_Intercept,
@@ -52,16 +52,16 @@ test_that("predict_cams_by_if() uses central mixture intervals by default", {
 
   d <- cams_if_draw_effects(fit, pi_star)
   w <- d$post$.weight
-  sd_M <- interact:::interactmeta_lincomb_cond_sd(d$post, 1, pi_star, 0)
-  sd_A <- interact:::interactmeta_lincomb_cond_sd(d$post, 1, pi_star, -pi_star)
-  sd_B <- interact:::interactmeta_lincomb_cond_sd(d$post, 1, pi_star, 1 - pi_star)
-  qi_M <- interact:::interactmeta_mixture_moments(
+  sd_M <- interactmeta:::interactmeta_lincomb_cond_sd(d$post, 1, pi_star, 0)
+  sd_A <- interactmeta:::interactmeta_lincomb_cond_sd(d$post, 1, pi_star, -pi_star)
+  sd_B <- interactmeta:::interactmeta_lincomb_cond_sd(d$post, 1, pi_star, 1 - pi_star)
+  qi_M <- interactmeta:::interactmeta_mixture_moments(
     mean = d$M, weight = w, cond_sd = sd_M, prob = 0.95
   )
-  qi_A <- interact:::interactmeta_mixture_moments(
+  qi_A <- interactmeta:::interactmeta_mixture_moments(
     mean = d$mu_A, weight = w, cond_sd = sd_A, prob = 0.95
   )
-  qi_B <- interact:::interactmeta_mixture_moments(
+  qi_B <- interactmeta:::interactmeta_mixture_moments(
     mean = d$mu_B, weight = w, cond_sd = sd_B, prob = 0.95
   )
   dA <- pred[pred == "Younger", ]
@@ -112,7 +112,7 @@ test_that("bayesmeta pointwise IF intervals are mixture quantiles of the draws",
   pi <- 0.35
   d <- cams_if_draw_effects(fit, pi)
   post <- d$post
-  expect_true(interact:::interactmeta_has_cond_moments(post))
+  expect_true(interactmeta:::interactmeta_has_cond_moments(post))
   expect_true(all(c(
     ".cond_var_alpha",
     ".cond_var_theta",
@@ -123,9 +123,9 @@ test_that("bayesmeta pointwise IF intervals are mixture quantiles of the draws",
     abs(post$.cond_cov_alpha_theta) > 0 | post$.cond_sd_gamma > 0))
 
   w <- post$.weight
-  sd_M <- interact:::interactmeta_lincomb_cond_sd(post, 1, pi, 0)
-  sd_A <- interact:::interactmeta_lincomb_cond_sd(post, 1, pi, -pi)
-  sd_B <- interact:::interactmeta_lincomb_cond_sd(post, 1, pi, 1 - pi)
+  sd_M <- interactmeta:::interactmeta_lincomb_cond_sd(post, 1, pi, 0)
+  sd_A <- interactmeta:::interactmeta_lincomb_cond_sd(post, 1, pi, -pi)
+  sd_B <- interactmeta:::interactmeta_lincomb_cond_sd(post, 1, pi, 1 - pi)
   sd_M_formula <- sqrt(pmax(
     post$.cond_var_alpha + (pi^2) * post$.cond_var_theta +
       2 * pi * post$.cond_cov_alpha_theta,
@@ -145,15 +145,15 @@ test_that("bayesmeta pointwise IF intervals are mixture quantiles of the draws",
 
   post_no_cov <- post
   post_no_cov$.cond_cov_alpha_theta <- 0
-  sd_M_no_cov <- interact:::interactmeta_lincomb_cond_sd(post_no_cov, 1, pi, 0)
+  sd_M_no_cov <- interactmeta:::interactmeta_lincomb_cond_sd(post_no_cov, 1, pi, 0)
   if (any(abs(post$.cond_cov_alpha_theta) > 1e-10)) {
     expect_gt(max(abs(sd_M^2 - sd_M_no_cov^2)), 1e-10)
   }
 
-  qi_mix <- interact:::comparison_draw_moments(
+  qi_mix <- interactmeta:::comparison_draw_moments(
     d$M, prob = 0.95, weight = w, cond_sd = sd_M
   )
-  qi_means <- interact:::interactmeta_mixture_moments(
+  qi_means <- interactmeta:::interactmeta_mixture_moments(
     mean = d$M, weight = w, cond_sd = rep(0, length(d$M)), prob = 0.95
   )
   # Conditional variance still separates the mixture from a quantile of means.
@@ -167,13 +167,13 @@ test_that("bayesmeta pointwise IF intervals are mixture quantiles of the draws",
   expect_equal(row_A$overall_estimate, qi_mix$estimate, tolerance = 1e-8)
   expect_equal(row_A$overall_lower, qi_mix$lci, tolerance = 1e-8)
   expect_equal(row_A$overall_upper, qi_mix$uci, tolerance = 1e-8)
-  qi_A <- interact:::comparison_draw_moments(
+  qi_A <- interactmeta:::comparison_draw_moments(
     d$mu_A, prob = 0.95, weight = w, cond_sd = sd_A
   )
   expect_equal(row_A$lower, qi_A$lci, tolerance = 1e-8)
   expect_equal(row_A$upper, qi_A$uci, tolerance = 1e-8)
   expect_true(is.list(
-    interact:::interactmeta_bayesmeta_population_location(
+    interactmeta:::interactmeta_bayesmeta_population_location(
       fit, pi = pi, gamma_scale = -pi, predictive = FALSE, prob = 0.95
     )
   ))
@@ -195,8 +195,8 @@ test_that("predict_cams_by_if(interval.type = central) uses equal-tail mixture r
 
   d <- cams_if_draw_effects(fit, pi_star)
   w <- d$post$.weight
-  sd_A <- interact:::interactmeta_lincomb_cond_sd(d$post, 1, pi_star, -pi_star)
-  qi_A <- interact:::interactmeta_mixture_moments(
+  sd_A <- interactmeta:::interactmeta_lincomb_cond_sd(d$post, 1, pi_star, -pi_star)
+  qi_A <- interactmeta:::interactmeta_mixture_moments(
     mean = d$mu_A,
     weight = w,
     cond_sd = sd_A,
@@ -264,9 +264,9 @@ test_that("plot_contribution() uses the IF grid and study-level points", {
   ))
   expect_true(length(point_layer) >= 1L)
   xs <- unique(built$data[[point_layer[[1L]]]]$x)
-  raw <- interact:::resolve_bubbleplot_raw(
+  raw <- interactmeta:::resolve_bubbleplot_raw(
     fit,
-    interact:::resolve_bubbleplot_settings(fit)
+    interactmeta:::resolve_bubbleplot_settings(fit)
   )
   if_frac_pct <- 100 * sort(unique(raw$ifrac_Older))
   expect_equal(sort(xs), if_frac_pct, tolerance = 1e-6)

@@ -194,7 +194,7 @@
 #'
 #' @examples
 #' \dontrun{
-#' library(interact)
+#' library(interactmeta)
 #'
 #' es <- escalc(measure = "IRR", yi = edss$yi, vi = edss$vi, data = edss)
 #' fit <- cams(es, reference = "Lower", method = "Bayesian")

@@ -4,7 +4,7 @@ test_that("bayesmeta native combined and interactions match DIRECT grid", {
 
   fit <- fixture_age_cam_fit()
 
-  ns <- asNamespace("interact")
+  ns <- asNamespace("interactmeta")
   unlock <- function(name) {
     if (bindingIsLocked(name, ns)) {
       unlockBinding(name, ns)

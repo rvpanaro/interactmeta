@@ -1,7 +1,7 @@
 test_that("cams() precomputes reporting parameters and effect cache", {
   fit <- fixture_age_cam_fit()
 
-  expect_true(interact:::interactmeta_reporting_is_ready(fit))
+  expect_true(interactmeta:::interactmeta_reporting_is_ready(fit))
 
   sg1 <- modifiers(fit, type = "Overall")
   sg2 <- modifiers(fit, type = "Overall")

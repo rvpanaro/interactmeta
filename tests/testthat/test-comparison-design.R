@@ -6,7 +6,7 @@ test_that("prepare_ifrac_input() runs ifrac on escalc-like input", {
     vi = c(0.01, 0.02)
   )
   class(es) <- c("escalc", "data.frame")
-  out <- interact:::prepare_ifrac_input(
+  out <- interactmeta:::prepare_ifrac_input(
     es,
     reference = "Younger",
     trial = "trial",
@@ -30,7 +30,7 @@ test_that("prepare_ifrac_input() passes through ifrac output", {
     ifrac_Older = 0.5,
     ifrac2_Older = 0.5
   )
-  out <- interact:::prepare_ifrac_input(
+  out <- interactmeta:::prepare_ifrac_input(
     dat,
     reference = "Younger",
     trial = "trial",
@@ -53,7 +53,7 @@ test_that("resolve_comparison_design() builds formula for age-like ifrac output"
     ifrac_Older = 0.3,
     ifrac2_Older = c(-0.3, 0.7)
   )
-  d <- interact:::resolve_comparison_design(dat, reference = "Younger", trial_var = "study", subgroup_var = "level")
+  d <- interactmeta:::resolve_comparison_design(dat, reference = "Younger", trial_var = "study", subgroup_var = "level")
   expect_equal(d$ifrac_var, "ifrac_Older")
   expect_equal(d$ifrac2_var, "ifrac2_Older")
   expect_equal(d$effects, "ifrac_Older:level")
@@ -80,18 +80,18 @@ test_that("interactmeta_settings() reads comparison attribute", {
     subgroup_var = "level",
     effects = "ifrac_Older:subgroup"
   )
-  st <- interact:::interactmeta_settings(fit)
+  st <- interactmeta:::interactmeta_settings(fit)
   expect_equal(st$ifrac_var, "ifrac_Older")
   expect_equal(st$effects, "ifrac_Older:subgroup")
 })
 
 test_that("comparison_model_formula() uses uncorrelated trial REs", {
-  uncorr <- interact:::comparison_model_formula(1L)
+  uncorr <- interactmeta:::comparison_model_formula(1L)
   expect_match(uncorr, "\\(1 \\+ ifrac2_1 \\|\\| study\\)")
 })
 
 test_that("default_comparison_prior() uses trial and ifrac2 coefficient names", {
-  p <- interact:::default_comparison_prior("ifrac2_Older", group = "trial")
+  p <- interactmeta:::default_comparison_prior("ifrac2_Older", group = "trial")
   expect_equal(p$coef, c("Intercept", "ifrac2_Older"))
   expect_equal(p$group, c("trial", "trial"))
 })

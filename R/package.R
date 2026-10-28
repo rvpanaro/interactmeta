@@ -1,7 +1,7 @@
-# ---- interactmeta-package.R ----
+# ---- package documentation ----
 #' Meta-analysis of treatment effect modification from modifier-level aggregate data
 #'
-#' **interact** implements **contribution-adjusted meta-analysis
+#' **interactmeta** implements **contribution-adjusted meta-analysis
 #' (CAMS)** for treatment effect modification from
 #' modifier-level aggregate data (Panaro, Röver & Friede 2025). Each trial
 #' contributes two modifier-level estimates; CAMS derives an information fraction
@@ -121,11 +121,11 @@
 #' @seealso [cams()], [ifrac()], [interactions()], [modifiers()],
 #'   [combined()], [tidy()], [sensitivity()], [compare()], [predict_cams_by_if()],
 #'   [da()], [ad()],
-#'   [swada()], `vignette("cams", package = "interact")`,
-#'   `vignette("export-and-qc", package = "interact")`,
-#'   `vignette("worked-examples", package = "interact")`
+#'   [swada()], `vignette("cams", package = "interactmeta")`,
+#'   `vignette("export-and-qc", package = "interactmeta")`,
+#'   `vignette("worked-examples", package = "interactmeta")`
 #'
-#' @aliases interact interact-package interactmeta
+#' @aliases interactmeta-package interactmeta
 "_PACKAGE"
 
 # ---- reexports.R ----
@@ -160,7 +160,7 @@ utils::globalVariables(c(".data", ".prec"))
 .onLoad <- function(libname, pkgname) {
   # bayesmeta registers S3 methods forestplot.escalc / forestplot.bayesmeta /
   # forestplot.bmr when its namespace is loaded. Keep them available for the
-  # session once interact is loaded (Imports already ensures the package is
+  # session once interactmeta is loaded (Imports already ensures the package is
   # installed).
   loadNamespace("bayesmeta")
   loadNamespace("forestplot")

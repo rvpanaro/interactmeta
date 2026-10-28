@@ -84,8 +84,8 @@ test_that("frequentist parameter summary uses metafor model-results layout", {
 
   es <- metafor::escalc(measure = "IRR", yi = age$yi, vi = age$vi, data = age)
   fit <- cams(es, reference = "Younger", method = "REML")
-  params <- interact:::interactmeta_metafor_parameters_df(fit)
-  mat <- interact:::interactmeta_metafor_param_summary(fit)
+  params <- interactmeta:::interactmeta_metafor_parameters_df(fit)
+  mat <- interactmeta:::interactmeta_metafor_param_summary(fit)
 
   expect_true(all(c("model", "term", "estimate", "se", "zval", "pval", "ci.lb", "ci.ub") %in%
     names(params)))
@@ -111,7 +111,7 @@ test_that("frequentist parameter summary uses metafor model-results layout", {
     as.numeric(cs_int["intrcpt", "estimate"]),
     tolerance = 1e-10
   )
-  lin <- interact:::interactmeta_metafor_lincomb(fit, c(0, 1), -1)
+  lin <- interactmeta:::interactmeta_metafor_lincomb(fit, c(0, 1), -1)
   expect_equal(
     mat["estimate", "Ecological_Older"],
     lin$estimate,
@@ -165,7 +165,7 @@ test_that("print header omits quadrature metadata", {
     n_support = 384L
   )
   out <- paste(
-    utils::capture.output(interact:::comparison_fit_print_header(meta)),
+    utils::capture.output(interactmeta:::comparison_fit_print_header(meta)),
     collapse = "\n"
   )
   expect_match(out, "method: Bayesian", fixed = TRUE)
@@ -176,7 +176,7 @@ test_that("print header omits quadrature metadata", {
 test_that("comparison_median_qi helpers summarize intervals", {
   set.seed(1)
   x <- rnorm(2000)
-  qi <- interact:::comparison_median_qi_vec(x, prob = 0.9)
+  qi <- interactmeta:::comparison_median_qi_vec(x, prob = 0.9)
   expect_equal(qi$estimate, stats::median(x), tolerance = 1e-10)
   expect_true(qi$lci < qi$estimate && qi$uci > qi$estimate)
   expect_equal(qi$prob, 0.9)
@@ -186,7 +186,7 @@ test_that("comparison_median_qi helpers summarize intervals", {
     effect = c(rnorm(500, 0), rnorm(500, 1)),
     stringsAsFactors = FALSE
   )
-  summ <- interact:::comparison_median_qi_grouped(d, "effect", "g", prob = 0.95)
+  summ <- interactmeta:::comparison_median_qi_grouped(d, "effect", "g", prob = 0.95)
   expect_equal(nrow(summ), 2L)
   expect_true(all(c("estimate", "mean", "sd", "lci", "uci", "prob") %in% names(summ)))
   expect_true(summ$estimate[summ$g == "b"] > summ$estimate[summ$g == "a"])

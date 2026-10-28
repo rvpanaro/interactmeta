@@ -79,12 +79,12 @@ test_that("plot() contribution type returns ggplot", {
 test_that("attach_observed_effect_interval() exponentiates after the log Wald interval", {
   d <- data.frame(yi = c(-0.5, 0.2), vi = c(0.04, 0.01))
   z <- stats::qnorm(0.975)
-  log_int <- interact:::attach_observed_effect_interval(d, prob = 0.95, exponentiate = FALSE)
+  log_int <- interactmeta:::attach_observed_effect_interval(d, prob = 0.95, exponentiate = FALSE)
   expect_equal(log_int$yi, d$yi)
   expect_equal(log_int$yi_lci, d$yi - z * sqrt(d$vi))
   expect_equal(log_int$yi_uci, d$yi + z * sqrt(d$vi))
 
-  ratio <- interact:::attach_observed_effect_interval(d, prob = 0.95, exponentiate = TRUE)
+  ratio <- interactmeta:::attach_observed_effect_interval(d, prob = 0.95, exponentiate = TRUE)
   expect_equal(ratio$yi, exp(d$yi))
   expect_equal(ratio$yi_lci, exp(d$yi - z * sqrt(d$vi)))
   expect_equal(ratio$yi_uci, exp(d$yi + z * sqrt(d$vi)))

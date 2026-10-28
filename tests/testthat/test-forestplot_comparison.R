@@ -59,7 +59,7 @@ test_that("marginal rows keep subgroup grouping labels for the forest renderer",
   fit <- suppressWarnings(cams(
     dat,
         reference = "Younger"))
-  built <- interact:::comparison_forest_build_fit_panels(
+  built <- interactmeta:::comparison_forest_build_fit_panels(
     fit,
     prob = 0.95,
     contrast_sep = "-",
@@ -118,8 +118,8 @@ test_that("CAMS forest shrinkage fill is consistent within every trial after ren
   shr_ix <- which(ra$row_kind == "shrinkage" & !is.na(ra$shape))
   expect_true(length(shr_ix) >= 6L)
   expect_false(any(ra$fill[shr_ix] %in% c("white", NA_character_)))
-  expect_true(all(ra$fill[shr_ix] == interact:::comparison_forest_shrinkage_colour()))
-  expect_true(all(ra$colour[shr_ix] == interact:::comparison_forest_shrinkage_colour()))
+  expect_true(all(ra$fill[shr_ix] == interactmeta:::comparison_forest_shrinkage_colour()))
+  expect_true(all(ra$colour[shr_ix] == interactmeta:::comparison_forest_shrinkage_colour()))
 })
 
 test_that("forest markers are black with gray45 shrinkage", {
@@ -153,20 +153,20 @@ test_that("forest markers are black with gray45 shrinkage", {
   expect_true(length(pred_ix) >= 2L)
   rl <- fp$specs$row_labels
   expect_true(all(
-    ra$fill[overall_ix] == interact:::forestplot_summary_diamond_colours(
+    ra$fill[overall_ix] == interactmeta:::forestplot_summary_diamond_colours(
       rl$heading[overall_ix],
       reference = "Younger"
     )
   ))
   expect_true(all(
-    ra$fill[pred_ix] == interact:::forestplot_summary_diamond_colours(
+    ra$fill[pred_ix] == interactmeta:::forestplot_summary_diamond_colours(
       rl$heading[pred_ix],
       reference = "Younger"
     )
   ))
-  expect_true(all(ra$fill[study_ix] %in% c(interact:::comparison_forest_marker_colour(), "black", "#000000")))
+  expect_true(all(ra$fill[study_ix] %in% c(interactmeta:::comparison_forest_marker_colour(), "black", "#000000")))
   expect_true(length(shr_ix) >= 1L)
-  expect_true(all(ra$fill[shr_ix] == interact:::comparison_forest_shrinkage_colour()))
+  expect_true(all(ra$fill[shr_ix] == interactmeta:::comparison_forest_shrinkage_colour()))
 
   fp_int <- forestplot(fit, type = "interaction", include_shrinkage = TRUE)
   ra_int <- attr(fp_int, "panels")[[1]]
@@ -176,7 +176,7 @@ test_that("forest markers are black with gray45 shrinkage", {
       rl_int$heading == "Interaction"
   )
   expect_true(length(int_ix) >= 2L)
-  expect_true(all(ra_int$fill[int_ix] == interact:::forestplot_interaction_summary_colour()))
+  expect_true(all(ra_int$fill[int_ix] == interactmeta:::forestplot_interaction_summary_colour()))
 })
 
 test_that("include_shrinkage with group=subgroup uses alphabetical trial pairs", {
@@ -313,11 +313,11 @@ test_that("forestplot(fit) passes weight with shrinkage and exponentiate", {
 
 test_that("forestplot IF annotation prefix follows weight", {
   expect_equal(
-    interact:::forestplot_ifrac_annotation_prefix("overall"),
+    interactmeta:::forestplot_ifrac_annotation_prefix("overall"),
     "Information fraction (\u03c0)"
   )
   expect_equal(
-    interact:::forestplot_ifrac_annotation_prefix("interaction"),
+    interactmeta:::forestplot_ifrac_annotation_prefix("interaction"),
     "Information fraction (\u03c0)"
   )
 })
@@ -395,7 +395,7 @@ test_that("all forestplot shrinkage rows match shrinkage() from the fit", {
   int_me <- shrinkage(fit, type = "interaction", summary = TRUE)$summary
   ov_me <- shrinkage(fit, type = "combined", summary = TRUE)$summary
 
-  shr <- interact:::comparison_forest_shrinkage_data(
+  shr <- interactmeta:::comparison_forest_shrinkage_data(
     fit,
     prob = 0.95,
     max_support = NULL,
@@ -422,7 +422,7 @@ test_that("all forestplot shrinkage rows match shrinkage() from the fit", {
     ra$row_kind == "shrinkage" &
       !is.na(ra$shape) &
       is.finite(ra$yi) &
-      !interact:::forestplot_heading_is_combined(rl$heading)
+      !interactmeta:::forestplot_heading_is_combined(rl$heading)
   )
   expect_equal(length(ix_sg), 4L)
   for (i in ix_sg) {
@@ -467,7 +467,7 @@ test_that("all forestplot shrinkage rows match shrinkage() from the fit", {
     ra_tr$row_kind == "shrinkage" &
       !is.na(ra_tr$shape) &
       is.finite(ra_tr$yi) &
-      !interact:::forestplot_heading_is_combined(rl_tr$heading)
+      !interactmeta:::forestplot_heading_is_combined(rl_tr$heading)
   )
   expect_equal(length(ix_tr), 4L)
   for (i in ix_tr) {

@@ -29,7 +29,7 @@ knitr::opts_chunk$set(
 ```
 
 This vignette shows how to **export structured results** from
-**`interact`** for quality control, reporting, or downstream tables.
+**`interactmeta`** for quality control, reporting, or downstream tables.
 The idea matches **“calculate once, use many times”**: fit the model,
 then take all display numbers from **`tidy()`** (and comparison helpers),
 not from re-typing forest-plot labels.
@@ -44,7 +44,7 @@ We use the **`steroids`** IV/NIV example (same data path as
 here; sensitivity analyses add **DA**, **AD**, and **SWADA**.
 
 ```{r setup, cache = TRUE}
-library(interact)
+library(interactmeta)
 library(dplyr)
 
 steroids_obs <- steroids |> filter(n > 0)
@@ -98,7 +98,7 @@ trails:
 
 ```{r metadata}
 meta <- tibble::tibble(
-  package = "interact",
+  package = "interactmeta",
   method = "CAMS",
   inference = "REML",
   reference = "NIV",
@@ -162,7 +162,7 @@ stopifnot(
 
 ## Handoff to layout tools
 
-**`interact`** does not render regulatory TLGs. After **`tidy()`**, use
+**`interactmeta`** does not render regulatory TLGs. After **`tidy()`**, use
 your table package of choice (**`gt`**, **`gtsummary`**, **`flextable`**, …)
 on the tibble. Keep **computation** (this export) separate from
 **layout**, in line with CDISC **Analysis Results Data** thinking: structured

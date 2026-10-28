@@ -52,7 +52,7 @@ fixture_cam_tiny_fit <- function(method = "Bayesian",
       fixture_cam_tiny()
     }
   }
-  if (interact:::interactmeta_cams_method_is_bayesian(method) ||
+  if (interactmeta:::interactmeta_cams_method_is_bayesian(method) ||
       identical(method, "bayes")) {
     testthat::skip_if_not_installed("bayesmeta")
   } else {

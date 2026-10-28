@@ -3,7 +3,7 @@
 \name{interactmeta_theme_report}
 \alias{interactmeta_theme_report}
 \alias{subgroupmeta_theme_report}
-\title{Report / dashboard theme for interact ggplot figures}
+\title{Report / dashboard theme for interactmeta ggplot figures}
 \usage{
 interactmeta_theme_report(
   base_size = interactmeta_base_size(default = 11L),

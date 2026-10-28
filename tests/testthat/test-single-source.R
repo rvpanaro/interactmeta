@@ -79,7 +79,7 @@ test_that("EDSS end-to-end: bayesmeta quantities share origin and IF", {
   expect_true(is.finite(pooled$lci[[1L]]))
   expect_true(pooled$uci[[1L]] > pooled$lci[[1L]])
 
-  lat <- interact:::interactmeta_posterior_1d_summary(fit$latent$gamma)
+  lat <- interactmeta:::interactmeta_posterior_1d_summary(fit$latent$gamma)
   expect_equal(pooled$estimate[[1L]], lat$median, tolerance = 0.05)
   expect_equal(pooled$sd[[1L]], lat$sd, tolerance = 0.08)
 
