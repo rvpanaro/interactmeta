@@ -3,7 +3,7 @@
 
 # interactmeta
 
-<img src="man/figures/logo.png" align="right" width="139" alt="interactmeta logo" />
+<img class="pkgdown-hide" src="man/figures/logo.png" align="right" width="139" alt="interactmeta logo" />
 
 <!-- badges: start -->
 
