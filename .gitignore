@@ -1,4 +1,9 @@
 .Rproj.user
+.cursor/
+.cursorrules
+AGENTS.md
+*.jsonl
+.venv_pdf/
 .Rhistory
 .RData
 .httr-oauth
@@ -20,5 +25,6 @@ figure/
 coverage/
 tests/testthat/.timing-baseline.csv
 .review_extract/
+.reviewer_pdf_text/
 /Rplots.pdf
 *.tar.gz

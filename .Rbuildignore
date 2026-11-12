@@ -7,6 +7,7 @@
 ^vignettes/further\.html$
 ^vignettes/single-subgroup-trials\.html$
 ^\.Rproj\.user$
+^\.venv_pdf$
 ^LICENSE\.md$
 ^README\.Rmd$
 ^data-raw$
@@ -16,3 +17,4 @@
 ^vignettes/.*_files
 ^doc$
 ^Meta$
+^tools$
