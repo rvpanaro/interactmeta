@@ -27,6 +27,13 @@ knitr::opts_chunk$set(
   out.width = "100%",
   cache.extra = packageVersion("interactmeta")
 )
+
+# Set fig.width / fig.height on the *next* chunk from [forestplot_height()].
+.vig_forest_chunk <- function(fp, width = 7) {
+  d <- forestplot_height(fp, width = width)
+  knitr::opts_chunk$set(fig.width = d$width, fig.height = d$height)
+  invisible(fp)
+}
 ```
 
 This vignette follows the software-paper illustrations [@panaro2025cams]:
@@ -48,6 +55,10 @@ library(interactmeta)
 age[age$study == "ADVANCE", c("study", "subgroup", "yi", "vi")]
 ```
 
+`age` uses `study` and `subgroup` for trial and level names. In [cams()] and
+[ifrac()] you can remap columns with `trial` / `subgroup` or pass a single
+`modifier` column instead of `subgroup`.
+
 With reference Younger, `ifrac()` adds `IF_Older` $=\pi_j$ on each row
 [@panaro2025cams].
 
@@ -57,6 +68,11 @@ des_age <- ifrac(age, reference = "Younger")
 des_age[des_age$study == "ADVANCE",
         c("study", "level", "yi", "vi", "IF_Older")]
 ```
+
+`contrast = NULL` keeps subgroup rows only (wide `IF_*` columns).
+`include_interaction = TRUE` appends within-trial contrast rows; `contrast =
+c("Older", "Younger")` targets one contrast. [`?ifrac`] documents `big_var`,
+`contrast_sep`, and `include_combined`.
 
 For ADVANCE, `IF_Older` is approximately $0.268$. The Bayesian CAMS fit below
 uses half-normal priors on $\tau$ and $\tau_\gamma$ as in the paper
@@ -74,28 +90,53 @@ fit_age <- cams(
 print(fit_age)
 ```
 
+Without custom priors, Bayesian [cams()] uses improper uniform $\tau$ priors
+(matching **bayesmeta** defaults). Set `method = "REML"` or `"ML"` for a
+**metafor** fit, or `fixed.prior` for normal priors on block
+means. `precompute = TRUE` warms caches eagerly; `lazy_latent =
+TRUE` (default) defers latent convolves until [summary()], [tidy()], or plotting.
+Pass `fit_args = list(n_support = …)` to control quadrature resolution.
+
 ```{r age-contribution, fig.width = 8, fig.height = 4.5, cache = TRUE}
 plot(fit_age, type = "contribution", exponentiate = TRUE)
 ```
 
 The horizontal axis is the IF assigned to Older patients (precision-based, not
-enrolment share). Pooled modifier and combined estimates use the
-interaction-weighted reporting fraction by default (`ifrac(fit_age)`).
+enrolment share). The same [plot()] method offers `type = "heterogeneity"` ($\tau$
+components) and `type = "forest"` (modifier panels). Use `exponentiate = TRUE` on
+log-scale outcomes (IRR / OR); `at` or `ifrac` on the plot match [modifiers()]
+and [combined()].
 
-```{r age-forest, fig.width = 7, fig.height = 5, cache = TRUE}
-forestplot(fit_age, type = "modifiers", exponentiate = TRUE)
-forestplot(fit_age, type = "interaction", exponentiate = TRUE)
+```{r age-forest-mod-prep, include = FALSE, cache = TRUE}
+.vig_fp_age_mod <- forestplot(fit_age, type = "modifiers", exponentiate = TRUE)
+.vig_forest_chunk(.vig_fp_age_mod, width = 7)
 ```
 
-Grey diamonds on the modifier forest are trial-level CAMS shrinkage at each
-$\pi_j$ (`shrinkage(fit_age, type = "modifiers")`).
+```{r age-forest-mod, echo = FALSE, cache = FALSE}
+.vig_fp_age_mod
+```
 
-| Quantity | Function | Uses reporting IF? |
-|-------------------|-------------------|----------------------------------|
-| Interaction $\gamma$ | `interactions()` | No |
-| Modifier effects | `modifiers()` | Yes |
-| Combined effect | `combined()` | Yes |
-| Trial $\pi_j$ | `ifrac()` (in design) | Design |
+```{r age-forest-int-prep, include = FALSE, cache = TRUE}
+.vig_fp_age_int <- forestplot(fit_age, type = "interaction", exponentiate = TRUE)
+.vig_forest_chunk(.vig_fp_age_int, width = 7)
+```
+
+```{r age-forest-int, echo = FALSE, cache = FALSE}
+.vig_fp_age_int
+```
+
+The modifier forest defaults to `type = "modifiers"` (reference and
+non-reference panels, optional **Combined** via `include_combined`). The
+interaction forest uses `type = "interaction"`. Toggle layers with
+`include_shrinkage`, `include_overall`, and `include_prediction`; pass
+`include_shrinkage = FALSE` to drop grey CAMS shrinkage rows. Set `n_var = "n"`
+for a patient-count column, `group = "trial"` to nest by study, or `favours =
+FALSE` to omit directional labels. Pooled summary diamonds follow `ifrac =
+"interaction"` by default; see the steroids section for `ifrac = "overall"`.
+
+Grey diamonds on the modifier forest are trial-level CAMS shrinkage at each
+$\pi_j$ ([shrinkage()] with `type = "modifiers"` or `"interaction"`; same labels
+as [forestplot()]).
 
 ## REACT corticosteroids (`steroids`)
 
@@ -116,6 +157,12 @@ steroids_es <- escalc(
 des <- ifrac(steroids_es, reference = "Non-IMV")
 ```
 
+Any [`metafor::escalc`] layout works if `yi` and `vi` are on the long table.
+`ifrac()` accepts [`escalc`] output or a data frame; override `trial` /
+`modifier` when column names differ from `study` / `level`. The design step is
+the same as for `age`: choose `reference`, then optional `contrast` and
+`include_interaction` before [cams()].
+
 For IMV-only trials, `ifrac()` adds a high-variance placeholder (`big_var`,
 default $10^4$ on the log scale). For RECOVERY, the reported IMV row is retained
 and Non-IMV is filled with `yi = 0`, `vi = 10000`.
@@ -123,6 +170,10 @@ and Non-IMV is filled with `yi = 0`, `vi = 10000`.
 ```{r recovery-placeholder}
 des[des$study == "RECOVERY", c("study", "level", "yi", "vi")]
 ```
+
+Tune `big_var` when single-arm imputations are too influential or too diffuse.
+[cams()] also accepts `contrast_sep` and `big_var` so the fit stage matches the
+design object.
 
 CAMS separates within-trial interactions $g_j$ and combined coordinates $m_j$
 [@panaro2025cams]. Heterogeneity $\tau$ and $\tau_\gamma$ are separate blocks;
@@ -132,9 +183,17 @@ see [`vignette("heterogeneity-after-cams")`](heterogeneity-after-cams.html).
 fit_reml <- cams(des, reference = "Non-IMV", method = "REML")
 ```
 
+This line uses frequentist REML; `method = "ML"` is also supported. The default
+`method = "Bayesian"` path matches the `age` section ([cams()] picks **bayesmeta**
+or **metafor** from `method`).
+
 ```{r summary}
 print(fit_reml)
 ```
+
+[summary()] and [print()] honour `digits` and `prob`. [summary()] can
+`exponentiate = TRUE` for ratio-scale reporting. For one long export table,
+[tidy()] collects interaction, modifier, combined, and heterogeneity rows.
 
 At the default interaction-weighted reporting IF:
 
@@ -154,18 +213,36 @@ combined(fit_reml, type = "Overall", exponentiate = TRUE)
 ifrac(fit_reml, ifrac = "interaction")
 ```
 
+[interactions()] is free of the reporting IF; [modifiers()] and [combined()]
+pool at `ifrac = "interaction"` (default) or `ifrac = "overall"`. Instead of
+pooling, pass an explicit combined IF with `at = …`. Request `type =
+c("Overall", "Prediction")` for new-trial prediction intervals. Change `prob` for
+other coverage levels; set `shrinkage = TRUE` to return trial-level CAMS
+shrinkage tables from the same calls.
+
 REML estimates of $\tau$ and $\tau_\gamma$ can be zero on this example, so
 prediction intervals may coincide with pooled confidence intervals; that does
 not establish absence of heterogeneity in general.
 
-```{r forest, fig.width = 7, fig.height = 5}
-forestplot(
+```{r forest-prep, include = FALSE, cache = TRUE}
+.vig_fp_steroids <- forestplot(
   fit_reml,
   type = "modifiers",
   exponentiate = TRUE,
   favours = c("Lower mortality", "Higher mortality")
 )
+.vig_forest_chunk(.vig_fp_steroids, width = 7)
 ```
+
+```{r forest, echo = FALSE, cache = FALSE}
+.vig_fp_steroids
+```
+
+`favours` sets left/right benefit labels under the axis; with `favours = NULL`,
+defaults follow `outcome = "unfavorable"` or `"favorable"`. Frequentist forests
+omit shrinkage rows unless you refit with a Bayesian `method`. Pre-build with
+[forestplot()] and size the device with [forestplot_height()] before saving or
+knitting figures.
 
 Trial-level $\pi_j$ and the pooled interaction are unchanged when the reporting
 IF changes. Evaluating modifiers and forests at the overall-effect-weighted
@@ -177,15 +254,25 @@ modifiers(fit_reml, ifrac = "overall", exponentiate = TRUE, type = "Overall")
 combined(fit_reml, ifrac = "overall", exponentiate = TRUE, type = "Overall")
 ```
 
-```{r forest-overall, fig.width = 7, fig.height = 5}
-forestplot(
+```{r forest-overall-prep, include = FALSE, cache = TRUE}
+.vig_fp_steroids_overall <- forestplot(
   fit_reml,
   type = "modifiers",
   ifrac = "overall",
   exponentiate = TRUE,
   favours = c("Lower mortality", "Higher mortality")
 )
+.vig_forest_chunk(.vig_fp_steroids_overall, width = 7)
 ```
+
+```{r forest-overall, echo = FALSE, cache = FALSE}
+.vig_fp_steroids_overall
+```
+
+Here [forestplot()] passes `ifrac = "overall"` so pooled **Overall** /
+**Prediction** diamonds and x-axis annotations use overall-effect weights, while
+observed study rows stay at each trial’s $\pi_j$. The same `ifrac` switch applies
+in [modifiers()], [combined()], and [plot()].
 
 ## Next steps
 
