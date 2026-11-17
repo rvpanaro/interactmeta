@@ -113,7 +113,7 @@ weight in AD, SWADA, and CAMS interaction pooling (see
 
 Contribution curves and grey shrinkage forests require a CAMS fit ([`?cams`]).
 
-```{r contribution, fig.height = 5, cache = TRUE}
+```{r contribution, fig.height = 4.25, cache = TRUE}
 plot(sens$fits$cams, type = "contribution", ylim = c(0, 4), exponentiate = TRUE)
 ```
 

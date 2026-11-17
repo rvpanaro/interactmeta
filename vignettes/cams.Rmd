@@ -21,7 +21,7 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
   fig.width = 8,
-  fig.height = 4,
+  fig.height = 3.5,
   fig.align = "center",
   fig.retina = 2,
   out.width = "100%",
@@ -29,9 +29,13 @@ knitr::opts_chunk$set(
 )
 
 # Set fig.width / fig.height on the *next* chunk from `forestplot_height()`.
-.vig_forest_chunk <- function(fp, width = 7) {
+# `height_scale` shrinks vignette forest devices only (~12.5% by default).
+.vig_forest_chunk <- function(fp, width = 7, height_scale = 0.875) {
   d <- forestplot_height(fp, width = width)
-  knitr::opts_chunk$set(fig.width = d$width, fig.height = d$height)
+  knitr::opts_chunk$set(
+    fig.width = d$width,
+    fig.height = d$height * height_scale
+  )
   invisible(fp)
 }
 ```
@@ -97,7 +101,7 @@ means. `precompute = TRUE` warms caches eagerly; `lazy_latent =
 TRUE` (default) defers latent convolves until `summary()`, `tidy()`, or plotting.
 Pass `fit_args = list(n_support = …)` to control quadrature resolution.
 
-```{r age-contribution, fig.width = 8, fig.height = 4.5, cache = TRUE}
+```{r age-contribution, fig.width = 8, fig.height = 4, cache = TRUE}
 plot(fit_age, type = "contribution", exponentiate = TRUE)
 ```
 
