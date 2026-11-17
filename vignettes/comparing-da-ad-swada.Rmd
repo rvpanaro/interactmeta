@@ -56,6 +56,11 @@ steroids_es <- escalc(
 des <- ifrac(steroids_es, reference = "Non-IMV")
 ```
 
+The design object matches [`vignette("cams")`](cams.html): same `reference`,
+`big_var` placeholders, and optional `contrast` / `include_interaction` via
+[`?ifrac`]. Remap trial or modifier columns with `trial`, `subgroup`, or
+`modifier` when names differ from `study` / `level`.
+
 ```{r fit-sensitivity, cache = TRUE}
 sens <- interactmeta::sensitivity(
   des,
@@ -63,6 +68,12 @@ sens <- interactmeta::sensitivity(
   method = "REML"
 )
 ```
+
+[`?sensitivity`] fits DA, AD, SWADA, and CAMS on one table by default. Trim
+with `constructions = c("da", "ad")`, remap columns via `trial` / `subgroup`,
+or pass an existing [`interactmeta`] from [cams()] instead of a data frame.
+Arguments in `...` (for example `method`, `tau.prior`, `silent`) are forwarded
+to each construction fitter.
 
 ## Interaction $\gamma$
 
@@ -78,11 +89,21 @@ interactmeta::compare(
 )
 ```
 
+[compare()] on a sensitivity object accepts `estimand = "modifiers"` or
+`"combined"` as well as `"interaction"`. Use `type = "Prediction"` for
+prediction rows where supported, `exponentiate = TRUE` on log-scale outcomes,
+and see [`?compare`] for interval formatting. Passing multiple fits directly
+(without `sensitivity()`) still works for pairwise CAMS comparisons.
+
 ## Study weights (SWADA principle)
 
 ```{r weights}
 interactmeta::compare_weights(sens$fits$da, sens$fits$ad, sens$fits$swada)
 ```
+
+The table has class `interactmeta_compare_weights` and a [plot()] method
+(`xlim` rescales the weight axis). For CAMS trial-level information fractions
+on the same studies, use [compare_ifrac()] instead of [compare_weights()].
 
 IV-only trials can dominate DA weights for the IMV series while carrying little
 weight in AD, SWADA, and CAMS interaction pooling (see
@@ -95,6 +116,11 @@ Contribution curves and grey shrinkage forests require a CAMS fit (`?cams`).
 ```{r contribution, fig.height = 5, cache = TRUE}
 plot(sens$fits$cams, type = "contribution", ylim = c(0, 4), exponentiate = TRUE)
 ```
+
+Beyond `ylim`, the contribution view accepts `exponentiate`, `at` / `ifrac`
+(reporting fraction), and ggplot styling via [`?plot.interactmeta`]. Forest and
+heterogeneity views use the same [plot()] method with other `type` values (see
+[`vignette("cams")`](cams.html)).
 
 ## Complete-table illustration (`respire_age`)
 
@@ -118,6 +144,11 @@ interactmeta::compare(
   type = "Overall"
 )
 ```
+
+`respire_age` uses `study` and `subgroup` rather than `level`; [sensitivity()]
+remaps via `subgroup = "subgroup"`. The explicit `constructions` vector is
+optional when you want all four fits; priors and `method` in `...` behave as in
+the `steroids` run above.
 
 Continue from [`vignette("cams")`](cams.html) on your own data or browse
 [`vignette("worked-examples")`](worked-examples.html).
