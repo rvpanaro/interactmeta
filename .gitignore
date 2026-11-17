@@ -23,8 +23,11 @@ figure/
 /doc/
 /Meta/
 coverage/
-tests/testthat/.timing-baseline.csv
 .review_extract/
 .reviewer_pdf_text/
 /Rplots.pdf
 *.tar.gz
+.Rcheck/
+..Rcheck/
+interactmeta.Rcheck/
+*Rcheck/

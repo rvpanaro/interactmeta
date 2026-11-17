@@ -1,37 +1,56 @@
-# interactmeta test tiers
+# interactmeta tests
 
 ## Fast (default)
 
-Used by `R CMD check`, PR CI, and local dev:
+Used by `R CMD check`, PR CI, and local dev.
 
-```bash
-Rscript -e 'testthat::test_dir("tests/testthat")'
+**RStudio / Console:**
+
+```r
+devtools::test()
 ```
 
-Slow plot and full forestplot integration tests are **skipped** unless you opt in.
+Or:
+
+```r
+pkgload::load_all()
+testthat::test_dir("tests/testthat")
+```
+
+Helpers in `helper-fixtures.R` call `pkgload::load_all()` when the package is not attached.
+
+```bash
+Rscript -e 'pkgload::load_all(); testthat::test_dir("tests/testthat")'
+```
+
+## Suite layout
+
+| File | Coverage |
+|------|----------|
+| `test-battery-cams.R` | `cams()` backends, removed args, lazy precompute |
+| `test-battery-ifrac.R` | Design tables and `ifrac()` on data / fits |
+| `test-battery-effects.R` | `modifiers`, `interactions`, `combined`, `heterogeneity`, `shrinkage` |
+| `test-battery-constructions.R` | `da`, `ad`, `swada`, `conventional` (REML) |
+| `test-battery-reporting.R` | `print`, `summary`, `tidy` |
+| `test-battery-compare.R` | `compare`, `compare_weights`, capability matrix |
+| `test-battery-data.R` | Datasets and `log_hr_from_ci` / `hr_ci_from_log` |
+| `test-battery-graphics.R` | `forestplot`, `plot`, palette (`slow()` for one render test) |
 
 ## Slow tier
 
-Set `INTERACT_SLOW_TESTS=true` for end-to-end forestplot PDF/render coverage:
+One graphics test is skipped unless you opt in to full forestplot render coverage:
 
 ```bash
-INTERACT_SLOW_TESTS=true Rscript -e 'testthat::test_dir("tests/testthat")'
+INTERACT_SLOW_TESTS=true Rscript -e 'pkgload::load_all(); testthat::test_dir("tests/testthat")'
 ```
-
-Files that call `slow()` at the top of a test include:
-
-- [`test-forestplot-integration.R`](test-forestplot-integration.R)
-- [`test-forestplot_comparison.R`](test-forestplot_comparison.R) (render paths)
-- [`test-shrinkage_forest.R`](test-shrinkage_forest.R)
 
 ## Fixtures
 
-Shared data and cached fits live in [`helper-fixtures.R`](helper-fixtures.R).
+Shared data and cached fits: `helper-fixtures.R`.
 
-## Coverage and timing
+## Coverage
 
 ```bash
-Rscript scripts/test-timing.R
 INTERACT_SLOW_TESTS=true Rscript scripts/coverage.R
 ```
 

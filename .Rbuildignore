@@ -10,7 +10,6 @@
 ^\.venv_pdf$
 ^LICENSE\.md$
 ^README\.Rmd$
-^data-raw$
 ^_pkgdown\\.yml$
 ^docs$
 ^vignettes/.*_cache
