@@ -21,6 +21,7 @@ tests/testthat/Rplots*.pdf
 README.html
 figure/
 /doc/
+/tools/
 /Meta/
 coverage/
 tests/testthat/.timing-baseline.csv
