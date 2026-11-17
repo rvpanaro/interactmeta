@@ -8,15 +8,15 @@ articles:
 - title: After CAMS
   desc: Inspect a CAMS fit on the steroids example (after vignette("cams")).
   contents:
-  - heterogeneity-after-cams
-  - trial-specific-effects-and-shrinkage
+  - "heterogeneity-after-cams"
+  - "trial-specific-effects-and-shrinkage"
   - traceplots
-  - single-subgroup-trials
-  - comparing-da-ad-swada
+  - "single-subgroup-trials"
+  - "comparing-da-ad-swada"
 - title: Example datasets
   desc: steroids, age, edss, il6, and RESPIRE example tables.
   contents:
-  - worked-examples
+  - "worked-examples"
 
 redirects:
 - [articles/introduction-to-interact.html, articles/cams.html]
@@ -52,12 +52,13 @@ reference:
   - heterogeneity
   - shrinkage
   - forestplot
-  - plot_contribution
+  - plot.interactmeta
 
 - title: Alternative analyses
   desc: >
     Separate constructions, plus the Bayesian wrapper.
   contents:
+  - cam_prior
   - da
   - ad
   - swada
@@ -68,11 +69,7 @@ reference:
   - sensitivity
   - compare
   - compare_forestplots
-  - compare_interactions
-  - compare_modifiers
-  - compare_combined
   - compare_heterogeneity
-  - compare_ifrac
   - compare_weights
 
 - title: Diagnostics and inspection
@@ -87,7 +84,6 @@ reference:
 - title: Additional plots
   contents:
   - plot_modifiers
-  - plot_heterogeneity
   - forestplot_height
   - forestplot_default_width_height_ratio
 

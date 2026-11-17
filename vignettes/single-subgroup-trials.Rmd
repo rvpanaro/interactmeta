@@ -1,0 +1,240 @@
+---
+title: "Single-subgroup trials"
+bibliography: references.bib
+link-citations: true
+output:
+  rmarkdown::html_vignette:
+    css:
+      - !expr system.file("rmarkdown/templates/html_vignette/resources/vignette.css", package = "rmarkdown")
+      - vignette.css
+vignette: >
+  %\VignetteIndexEntry{Single-subgroup trials}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+editor_options:
+  markdown:
+    wrap: 72
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 8,
+  fig.height = 4,
+  fig.align = "center",
+  fig.retina = 2,
+  out.width = "100%"
+)
+```
+
+## Aim and data
+
+Some meta-analyses include trials that report only **one** subgroup
+(for example invasive ventilation only, with no non-invasive row). This
+vignette asks how **contribution-adjusted meta-analysis (CAMS)** and
+the older **DA / AD / SWADA** constructions behave on such a **mixed**
+table: trials with two subgroups alongside trials with one.
+
+We use two package examples for contrast:
+
+- **`respire_age`** (RESPIRE ciprofloxacin DPI trials): both age strata
+  (**`<65`**, **`>=65`**) in every study— a **complete** table (see
+  **`vignette("comparing-da-ad-swada")`**).
+- **`steroids`**: WHO REACT corticosteroids in COVID-19 (mortality ORs
+  by ventilation support). Seven trials; **IV** (invasive) and **NIV**
+  (non-invasive) rows when both exist. **CoDEX**, **DEXA-COVID 19**, and
+  **RECOVERY** contribute **IV only** (no within-trial IV–NIV pair).
+
+IV-only trials can inform an **IV** treatment effect. They do not
+contain a within-trial IV-versus-NIV contrast, so they cannot identify
+the interaction \(g_j=y_{\mathrm{IV},j}-y_{\mathrm{NIV},j}\) from that
+trial alone.
+
+Below we fit **DA**, **AD**, **SWADA**, and **frequentist CAMS**
+(`method = "REML"`) on **`steroids`**. Those first three are
+**different constructions**, not alternative CAMS models
+(`vignette("comparing-da-ad-swada")`). The CAMS map is
+`vignette("cams")`.
+
+```{r load}
+library(interactmeta)
+library(metafor)
+```
+
+**`library(metafor)`** is for **`escalc()`** on the 2×2 mortality counts
+( **`interactmeta`** also exports **`escalc()`** after **`library(interactmeta)`** ).
+
+```{r steroids-pattern}
+st <- steroids[steroids$n > 0, ]
+table(st$study, st$subgroup)
+```
+
+## Single-subgroup trials in CAMS (not “missing data”)
+
+CAMS is defined on **paired** subgroup rows per trial (rotation into
+\(m_j\) and \(g_j\)). A trial that reports **only IV** is a **single-subgroup
+data constellation**, not “missing information” in the survey sense: there
+was never an NIV estimate to omit.
+
+**Model limit.** If the unreported subgroup had infinite sampling variance
+(precision zero), its precision share would be zero and \(\pi_j\) would
+be 1; the interaction contrast \(g_j\) would carry no within-trial
+information from that study. That is the conceptual limit CAMS targets.
+
+**Implementation.** To keep a rectangular long table for **`ifrac()`** /
+**`cams()`**, **`ifrac()`** completes the absent cell with a **placeholder**
+(`yi = 0`, `vi = big_var`, default **`big_var = 100^2`** on **`cams()`**).
+That is a **numerical device** so the design matrix and **`metafor`**
+fitters can run; it is **not** a Bayesian “continuity correction” and
+not a claim that NIV was observed with log OR zero. With large
+**`big_var`**, \(\pi_j\approx 1\), \(\mathrm{Var}(g_j)\) is huge, and
+the trial is **essentially silent** in the interaction fit while still
+contributing to the overall \(m_j\) meta-regression—matching the limit
+above. You can change **`big_var`** via **`cams(..., big_var = ...)`**;
+see **`?ifrac`**.
+
+**DA / AD / SWADA** require two cells on every trial for a like-for-like
+table here, so **`ifrac()`** completes the design once; all four fits use
+the same completed **`des`**. Mortality odds ratios come from **`escalc()`**
+on the event counts.
+
+```{r steroids-fit, cache = TRUE}
+steroids_es <- escalc(
+  measure = "OR",
+  ai = treat.events,
+  bi = treat.total - treat.events,
+  ci = cont.events,
+  di = cont.total - cont.events,
+  data = st
+)
+des <- ifrac(steroids_es, reference = "Non-IMV")
+fit_da_st <- da(des, reference = "Non-IMV")
+fit_ad_st <- ad(des, reference = "Non-IMV")
+fit_sw_st <- swada(des, reference = "Non-IMV")
+fit_cams_st <- cams(des, reference = "Non-IMV", method = "REML")
+```
+
+```{r steroids-des-print}
+head(des)
+```
+
+## Where the interaction comes from
+
+The interaction is identified by the complete trials. Under default
+interaction random-effects (RE) weights, AD, SWADA, and CAMS
+\(\gamma\) agree. DA does not: it still uses the IV-only trials in the
+IV series.
+
+```{r steroids-int}
+compare(
+  fit_da_st,
+  fit_ad_st,
+  fit_sw_st,
+  fit_cams_st,
+  exponentiate = TRUE
+)
+```
+
+```{r steroids-weights}
+compare_weights(fit_da_st, fit_ad_st, fit_sw_st)
+```
+
+RECOVERY and CoDEX take a large share of the DA **IV** weights and
+essentially none of the AD/SWADA weights. That is the SWADA principle
+on a mixed table: shared interaction weights silence trials that do
+not identify \(g_j\).
+
+## The two pooled information fractions
+
+Trial \(\pi_j\) is design and does not change. What can change is the
+reporting mix \(\omega=\sum_j\pi_j w_j/\sum_j w_j\).
+
+The package default `ifrac = "interaction"` is the interaction
+information fraction. The weights are the interaction-block
+inverse-variance weights
+
+$$
+w_j=\frac{1}{\tau_\gamma^2+\mathrm{Var}(g_j)},
+\qquad
+\mathrm{Var}(g_j)=\sigma_{Aj}^2+\sigma_{Bj}^2.
+$$
+
+`ifrac = "overall"` is the overall information fraction (IF)
+[@panaro2025cams, eq. 3.16]. The weights are the
+overall-block inverse-variance weights
+
+$$
+w_j=\frac{1}{\tau^2+v_j},
+\qquad
+v_j=\mathrm{Var}(m_j)=(1-\pi_j)^2\sigma_{Aj}^2+\pi_j^2\sigma_{Bj}^2.
+$$
+
+```{r steroids-ifrac-overall}
+ifrac(fit_cams_st, ifrac = "overall")
+```
+
+```{r steroids-ifrac-interaction}
+ifrac(fit_cams_st, ifrac = "interaction")
+```
+
+The two \(\omega\) differ because the IV-only trials dominate one
+weighting and are silent in the other. They sit at \(\pi_j\approx 1\)
+with \(\mathrm{Var}(m_j)\approx\sigma_{\mathrm{IV},j}^2\), so RECOVERY
+in particular pulls overall \(\omega\) toward 1. The same trials have
+very large \(\mathrm{Var}(g_j)\) from the placeholder cell, so
+interaction \(\omega\) is a reweighting of the **complete** trials only.
+
+Switching `ifrac` does not change a trial's \(\pi_j\) and does not
+refit \(\gamma\). It changes which trials dominate the reporting mix
+used by `modifiers()`, `combined()`, and `forestplot()`.
+
+```{r steroids-forest-overall, fig.width = 12, fig.height = 6}
+forestplot(
+  fit_cams_st,
+  exponentiate = TRUE,
+  ifrac = "overall"
+)
+```
+
+Overall and Prediction at the overall mix.
+
+```{r steroids-forest-interaction, fig.width = 12, fig.height = 6}
+forestplot(
+  fit_cams_st,
+  exponentiate = TRUE,
+  ifrac = "interaction"
+)
+```
+
+Overall and Prediction at the interaction mix.
+
+```{r steroids-sg-overall}
+modifiers(fit_cams_st, exponentiate = TRUE, ifrac = "overall")
+```
+
+```{r steroids-sg-interaction}
+modifiers(fit_cams_st, exponentiate = TRUE, ifrac = "interaction")
+```
+
+If \(\omega\) is meant to represent the trials that identify the
+treatment-by-subgroup interaction, `ifrac = "interaction"` matches
+that block. At that mix the CAMS subgroup odds ratios sit next to
+SWADA. DA's IV odds ratio does not: that series is still using the
+IV-only trials. The `il6` table is the same incomplete-table pattern
+on concomitant corticosteroids.
+
+## Summary
+
+Single-subgroup trials are a **design pattern**, not missing cells in
+the imputation sense. They can inform a subgroup-specific treatment
+effect without informing the within-trial interaction. AD, SWADA, and
+CAMS base \(\gamma\) on trials that identify \(g_j\); DA can still use
+single-subgroup trials in a subgroup-specific series.
+
+In CAMS, `ifrac = "overall"` versus `ifrac = "interaction"` changes
+the pooled information fraction \(\omega\) used for
+contribution-dependent summaries. It does not change the fitted
+interaction. On a mixed table the two mixes differ because
+single-subgroup trials can dominate \(\mathrm{Var}(m_j)\) weights and
+are silent in \(\mathrm{Var}(g_j)\) weights.

@@ -1,0 +1,72 @@
+---
+title: "Heterogeneity after CAMS"
+bibliography: references.bib
+link-citations: true
+output:
+  rmarkdown::html_vignette:
+    css:
+      - !expr system.file("rmarkdown/templates/html_vignette/resources/vignette.css", package = "rmarkdown")
+      - vignette.css
+vignette: >
+  %\VignetteIndexEntry{Heterogeneity after CAMS}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options:
+  markdown:
+    wrap: 72
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 8,
+  fig.height = 4,
+  fig.align = "center",
+  fig.retina = 2,
+  out.width = "100%",
+  cache.extra = packageVersion("interactmeta")
+)
+```
+
+This article follows [`vignette("cams")`](cams.html) on the `steroids`
+example. CAMS treats **combined-effect** heterogeneity ($\tau$) and
+**interaction** heterogeneity ($\tau_\gamma$) as separate blocks. Use
+`heterogeneity()` for tabular summaries and `plot(fit, type = "heterogeneity")`
+for marginal and profile views.
+
+```{r setup, cache = TRUE}
+library(interactmeta)
+library(metafor)
+
+steroids_es <- escalc(
+  measure = "OR",
+  ai = treat.events, bi = treat.total - treat.events,
+  ci = cont.events, di = cont.total - cont.events,
+  data = steroids
+)
+des <- ifrac(steroids_es, reference = "Non-IMV")
+fit <- cams(des, reference = "Non-IMV", method = "REML")
+```
+
+## Summaries
+
+`heterogeneity()` returns one row per random-effects scale (combined and
+interaction). The printed `summary()` also surfaces these quantities.
+
+```{r het-table}
+heterogeneity(fit)
+summary(fit)$heterogeneity$summary
+```
+
+## Plots
+
+The heterogeneity panel shows posterior or REML marginals for $\tau$ and
+$\tau_\gamma$, depending on the engine.
+
+```{r het-plot, fig.width = 7, fig.height = 4}
+plot(fit, type = "heterogeneity")
+```
+
+On frequentist fits, profile-style slices follow **metafor** conventions
+(`?plot_heterogeneity`).
