@@ -1,18 +1,17 @@
-/* Vignette prose on pkgdown article pages (Bootstrap 5 template). */
+/* pkgdown article pages — readable product-style docs. */
 
 body.template-article main p,
 body.template-article main li,
 body.template-article main dd,
 body.template-article main blockquote,
-body.template-article main .author,
-body.template-article main .abstract p,
 body.template-article #refs p,
 body.template-article .footnotes li {
-  text-align: justify;
-  text-justify: inter-word;
-  hyphens: auto;
-  -webkit-hyphens: auto;
-  hyphenate-limit-chars: 6 3 3;
+  text-align: left;
+  hyphens: manual;
+}
+
+body.template-article .page-header small.dont-index {
+  display: none;
 }
 
 body.template-article main h1,
@@ -31,6 +30,54 @@ body.template-article main table caption,
 body.template-article main .figure,
 body.template-article main figcaption {
   text-align: left;
+}
+
+body.template-article main h2 {
+  margin-top: 2.25rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+body.template-article main table {
+  width: 100%;
+  margin: 1.25rem 0 1.5rem;
+  font-size: 0.92rem;
+  border-collapse: collapse;
+}
+
+body.template-article main table thead th {
+  border-bottom: 2px solid var(--bs-border-color, #adb5bd);
+  font-weight: 600;
+}
+
+body.template-article main table th,
+body.template-article main table td {
+  padding: 0.5rem 0.65rem;
+  vertical-align: top;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+body.template-article main table.table-striped > tbody > tr:nth-of-type(odd) > * {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+body.template-article main table caption {
+  caption-side: top;
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: 0.9rem;
+  padding-bottom: 0.35rem;
+}
+
+body.template-article main blockquote {
+  margin: 1.25rem 0;
+  padding: 0.85rem 1rem;
+  border-left: 4px solid var(--bs-primary, #0d6efd);
+  background-color: var(--bs-light, #f8f9fa);
+  border-radius: 0 4px 4px 0;
+}
+
+body.template-article main blockquote p:last-child {
+  margin-bottom: 0;
 }
 
 body.template-article main .figure img {

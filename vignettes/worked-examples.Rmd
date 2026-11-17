@@ -20,91 +20,101 @@ editor_options:
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 ```
 
-interactmeta ships the example tables below as package data. Each section
-summarizes setting, subgroups, and the effect scale, and shows a few rows.
-Object names match `data()`. The software-paper walk-through is
-[`vignette("cams")`](cams.html) (`age`, then `steroids`); construction
-comparisons are [`vignette("comparing-da-ad-swada")`](comparing-da-ad-swada.html).
+interactmeta ships the tables below as package data (`data()`). Use this page as
+a catalog; object documentation is on the [Reference](../reference/index.html)
+index under **Data**.
 
-## COVID-19 Corticosteroids: `steroids` and IL-6 antagonists: `il6`
+- **Software walk-through:** [Getting started with CAMS](cams.html) (`age`,
+  then `steroids`).
+- **Construction comparison:** [DA, AD, and SWADA vs CAMS](comparing-da-ad-swada.html).
 
-World Health Organization (WHO) Rapid Evidence Appraisal for COVID-19 Therapies
-(REACT) prospective meta-analysis of systemic corticosteroids in critically ill
-patients with COVID-19 [@stern2020react]. Ventilation modifiers are IMV
-(invasive mechanical ventilation) and Non-IMV. Some trials report only one
-subgroup (`n = 0` means no patients in the other stratum).
-[`vignette("cams")`](cams.html) and
-[`vignette("comparing-da-ad-swada")`](comparing-da-ad-swada.html) use this table
-as in [@panaro2025cams; @panaro2026subgroup].
+## At a glance
 
-```{r steroids}
+| Dataset | Setting | Subgroups | Effect on `yi` | Used in |
+|---------|---------|-----------|----------------|---------|
+| [`steroids`](../reference/steroids.html) | COVID-19 corticosteroids | IMV, Non-IMV | Log OR from counts | [cams](cams.html), [comparing](comparing-da-ad-swada.html) |
+| [`il6`](../reference/il6.html) | IL-6 antagonists, COVID-19 | Steroids yes / no | Log OR from counts | [cams](cams.html) |
+| [`age`](../reference/age.html) | MS immunotherapies | Younger, Older | Log IRR | [cams](cams.html) |
+| [`edss`](../reference/edss.html) | Same MS review | Lower / Higher EDSS | Log IRR | --- |
+| [`respire_age`](../reference/respire_age.html) | RESPIRE bronchiectasis | `<65`, `>=65` | Log HR | [comparing](comparing-da-ad-swada.html) |
+| [`respire_sex`](../reference/respire_sex.html) | Same RESPIRE trials | Female, Male | Log HR | --- |
+
+> **Incomplete subgroups.** Some COVID tables list only one stratum per trial
+> (`n = 0` means no patients in the other subgroup, not “zero events”). Drop
+> empty rows before `escalc()`; `ifrac()` can append a high-variance placeholder
+> for mixed tables (`?ifrac`, [cams](cams.html)).
+
+## `steroids`
+
+WHO REACT prospective meta-analysis of systemic corticosteroids in critically
+ill COVID-19 patients [@stern2020react]. Ventilation modifiers: IMV and Non-IMV.
+
+```{r steroids, echo = c(1, 2)}
 data(steroids, package = "interactmeta")
-head(steroids)
+knitr::kable(
+  head(steroids, 6),
+  caption = "First six rows of `steroids`."
+)
 ```
+
+## `il6`
 
 Hospitalised COVID-19 mortality by concomitant corticosteroids (yes / no)
-[@stern2021il6]. As for `steroids` above, some trials contribute only one
-subgroup (`n = 0` means no patients in the other stratum, not zero events). Drop
-those empty rows before `escalc()`; `ifrac()` can append a large-variance
-placeholder so CAMS can fit a mixed table (`?ifrac`; see
-[`vignette("cams")`](cams.html)).
+[@stern2021il6].
 
-```{r il6}
+```{r il6, echo = c(1, 2)}
 data(il6, package = "interactmeta")
-head(il6)
+knitr::kable(head(il6, 6), caption = "First six rows of `il6`.")
 ```
 
-## Multiple sclerosis: `age` and `edss`
+## `age`
 
-From a systematic review of relapsing–remitting MS immunotherapies [@heesen2024]
-(primary example in [`vignette("cams")`](cams.html) and [@panaro2025cams]),
-several trials report treatment effects in Younger and Older patient strata; the
-endpoint is relapse rate (incidence rate ratio on the `yi` scale). Numeric age
-cut-offs from the review are not stored in the object. Published log rate ratios
-are already in `yi` with $\sigma^2$ in `vi`. CONFIRM arms are split as
-`CONFIRM-B` and `CONFIRM-C`.
+Systematic review of relapsing–remitting MS immunotherapies [@heesen2024]
+(primary example in [cams](cams.html) and [@panaro2025cams]). Relapse rate on
+the log incidence-rate ratio scale; published values are in `yi` with
+$\sigma^2$ in `vi`. CONFIRM arms appear as `CONFIRM-B` and `CONFIRM-C`. Age
+cut-offs per trial are not stored in the object.
 
-```{r age}
+```{r age, echo = c(1, 2)}
 data(age, package = "interactmeta")
-head(age)
+knitr::kable(head(age, 6), caption = "First six rows of `age`.")
 ```
 
-Same review and endpoint as `age`, with Lower vs Higher EDSS disability strata
-instead of age. The EDSS threshold for each trial is in the primary publication,
-not in this table.
+## `edss`
 
-```{r edss}
+Same review and endpoint as `age`, with Lower vs Higher EDSS strata. Thresholds
+are in the primary publications, not in this table.
+
+```{r edss, echo = c(1, 2)}
 data(edss, package = "interactmeta")
-head(edss)
+knitr::kable(head(edss, 6), caption = "First six rows of `edss`.")
 ```
 
-## RESPIRE: `respire_age` and `respire_sex`
+## `respire_age`
 
-RESPIRE 1 and 2 (bronchiectasis; time to exacerbation). `respire_age` uses `<65`
-vs `>=65`; `respire_sex` uses Female vs Male. Both tables are complete (every
-trial has two rows). Log HRs and $\sigma^2$ (`vi`) are precomputed from
-published intervals (respect each trial's `ci_level` when converting from tables).
-`respire_age` is a complete-table contrast in [@panaro2026subgroup]; see
-[`vignette("comparing-da-ad-swada")`](comparing-da-ad-swada.html) (secondary
-illustration).
+RESPIRE 1 and 2: time to exacerbation in bronchiectasis [@desoyza2018respire1].
+Age strata `<65` vs `>=65`; complete two-row-per-trial layout. Log HRs and
+$\sigma^2$ (`vi`) are precomputed from published intervals (respect each
+trial's `ci_level`). Complete-table illustration in
+[@panaro2026subgroup] and [comparing-da-ad-swada](comparing-da-ad-swada.html).
 
-```{r respire_age}
+```{r respire_age, echo = c(1, 2)}
 data(respire_age, package = "interactmeta")
-head(respire_age)
+knitr::kable(head(respire_age, 6), caption = "First six rows of `respire_age`.")
 ```
 
-```{r respire_sex}
+## `respire_sex`
+
+Same trials with Female vs Male strata [@aksamit2018respire2].
+
+```{r respire_sex, echo = c(1, 2)}
 data(respire_sex, package = "interactmeta")
-head(respire_sex)
+knitr::kable(head(respire_sex, 6), caption = "First six rows of `respire_sex`.")
 ```
 
-## Overview
+## Next steps
 
-| Dataset | Setting | Subgroups | Effect on `yi` scale | Reference |
-|----|----|----|----|----|
-| `steroids` | Systemic corticosteroids, COVID-19 mortality | IMV, Non-IMV | Log odds ratio from counts | @stern2020react |
-| `age` | MS immunotherapies; relapse | Younger, Older | Log incidence-rate ratio | @heesen2024 |
-| `edss` | Same review; relapse | Lower, Higher EDSS | Log incidence-rate ratio | @heesen2024 |
-| `il6` | IL-6 antagonists, COVID-19 mortality | Corticosteroids yes / no | Log odds ratio from counts | @stern2021il6 |
-| `respire_age` | RESPIRE bronchiectasis; time to exacerbation | `<65`, `>=65` | Log hazard ratio | @desoyza2018respire1 |
-| `respire_sex` | Same trials | Female, Male | Log hazard ratio | @aksamit2018respire2 |
+1. [Getting started with CAMS](cams.html) — fit and report on `age` and `steroids`.
+2. [Heterogeneity after CAMS](heterogeneity-after-cams.html) — $\tau$ summaries and traceplots.
+3. [DA, AD, and SWADA vs CAMS](comparing-da-ad-swada.html) — constructions on `respire_age`.
+4. [Reference: Data](../reference/index.html) — full object documentation.
