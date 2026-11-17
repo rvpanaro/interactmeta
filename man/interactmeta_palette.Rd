@@ -30,3 +30,4 @@ in \code{"package::palette"} form is also accepted.
 \examples{
 interactmeta_palette()
 }
+\keyword{internal}

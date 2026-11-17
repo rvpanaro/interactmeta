@@ -270,7 +270,7 @@ subgroup_shrinkage_colour_map <- function(labels, reference = NULL, palette = NU
 }
 
 #' @rdname interactmeta_palette
-#' @export
+#' @keywords internal
 subgroupmeta_palette <- interactmeta_palette
 
 # ---- interactmeta_theme.R ----
@@ -583,7 +583,7 @@ interactmeta_theme_report <- function(base_size = interactmeta_base_size(default
 }
 
 #' @rdname interactmeta_theme_report
-#' @export
+#' @keywords internal
 subgroupmeta_theme_report <- interactmeta_theme_report
 
 #' Theme for conditional-effects / bubble plots

@@ -34,14 +34,17 @@
 
 ## Breaking changes
 
+- **`subgroupmeta_palette()`** and **`subgroupmeta_theme_report()`** are no longer
+  exported; use [interactmeta_palette()] and [interactmeta_theme_report()].
 - **`traceplot(fit, type = "modifier")`** removed (use `type = "interaction"` or
   `"combined"`).
 - **Unexported:** `plot_contribution()`, `plot_heterogeneity()` — use
   **`plot(fit)`** or **`plot(fit, type = "heterogeneity")`**.
 - **Unexported:** `compare_interactions()`, `compare_modifiers()`,
-  `compare_combined()`, `compare_ifrac()`, `compare_weights()` — use
-  **`compare(sensitivity(...), estimand = ...)`** or **`compare(fit1, fit2, ...)`**
-  for two CAMS approaches.
+  `compare_combined()`, and `compare_ifrac()` — use **`compare(sensitivity(...),
+  estimand = ...)`** or **`compare(fit1, fit2, ...)`** for two CAMS approaches.
+  **`compare_weights()`** and **`compare_heterogeneity()`** remain exported for
+  SWADA-weight and τ side-by-side tables.
 - Marginal extractors **`modifiers()`**, **`interactions()`**, **`combined()`**
   inherit **`prob`**, **`ifrac`**, **`contrast_sep`**, and **`exponentiate`**
   from **`fit$reporting`** when those arguments are omitted (`NULL`).

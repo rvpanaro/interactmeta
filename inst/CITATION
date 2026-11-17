@@ -1,0 +1,24 @@
+bibentry(
+  bibtype = "Article",
+  author = c(
+    person(given = c("Renato", "Valladares"), family = "Panaro", comment = c(ORCID = "0000-0002-1903-2091")),
+    person(given = "Christian", family = "Röver", comment = c(ORCID = "0000-0002-6911-698X")),
+    person(given = "Tim", family = "Friede")
+  ),
+  title = "Contribution-adjusted meta-analysis for treatment effect modification",
+  journal = "arXiv",
+  year = 2025,
+  volume = "arXiv",
+  number = "2512.18785",
+  doi = "10.48550/arXiv.2512.18785",
+  url = "https://arxiv.org/abs/2512.18785",
+  note = "R package interactmeta",
+  package = "interactmeta",
+  header = "To cite interactmeta for the CAMS methodology, use:",
+  textVersion = paste(
+    "Panaro RV, Röver C, Friede T (2025).",
+    "Contribution-adjusted meta-analysis for treatment effect modification.",
+    "arXiv:2512.18785.",
+    "doi:10.48550/arXiv.2512.18785."
+  )
+)

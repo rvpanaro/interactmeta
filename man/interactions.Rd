@@ -21,7 +21,7 @@ interactions(
 \arguments{
 \item{fit}{A \code{\link{interactmeta}} from \code{\link[=cams]{cams()}}.}
 
-\item{at, ifrac, prob, max_support, summary, contrast_sep, exponentiate, shrinkage, }{contribution As in \code{\link[=modifiers]{modifiers()}}. \code{at} / \code{ifrac} are unused for the pooled
+\item{at, ifrac, prob, max_support, summary, contrast_sep, exponentiate, shrinkage}{As in \code{\link[=modifiers]{modifiers()}}. \code{at} / \code{ifrac} are unused for the pooled
 interaction \eqn{\gamma}; they are retained for API compatibility and are
 used when \code{shrinkage = TRUE}.}
 
@@ -30,6 +30,8 @@ For CAMS, \code{"Overall"} is the fixed interaction \eqn{\gamma}; \code{"Predict
 adds new-trial random effects. For \code{\link[=swada]{swada()}}, \code{"Prediction"} is the
 SWADA predictive interval (common study weights on \eqn{g_j} plus
 interaction \eqn{\hat\tau_g^2}); DA / AD accept \code{"Overall"} only.}
+
+\item{contribution}{Deprecated; use \code{at} (as in \code{\link[=modifiers]{modifiers()}}).}
 }
 \value{
 A \code{interactmeta_interaction_effects} object analogous to \code{\link[=modifiers]{modifiers()}},

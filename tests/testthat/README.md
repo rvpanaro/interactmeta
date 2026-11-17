@@ -34,11 +34,12 @@ Rscript -e 'pkgload::load_all(); testthat::test_dir("tests/testthat")'
 | `test-battery-reporting.R` | `print`, `summary`, `tidy` |
 | `test-battery-compare.R` | `compare`, `compare_weights`, `sensitivity()`, capability matrix |
 | `test-battery-data.R` | Datasets and `log_hr_from_ci` / `hr_ci_from_log` |
-| `test-battery-graphics.R` | `forestplot`, `forestplot_draw`, `traceplot`, `compare_forestplots`, plots (`slow()` tier) |
+| `test-battery-graphics.R` | Fast `forestplot` / contribution plot checks; one slow shrinkage consistency test |
+| `test-coverage-sweep.R` | Slow integration smokes for covr (marginals, draws, compare, misc) |
 
 ## Slow tier
 
-Several graphics / integration tests are skipped unless you opt in (`slow()` helper):
+Coverage integration tests and some graphics checks are skipped unless you opt in (`slow()` helper):
 
 ```bash
 INTERACT_SLOW_TESTS=true Rscript -e 'pkgload::load_all(); testthat::test_dir("tests/testthat")'

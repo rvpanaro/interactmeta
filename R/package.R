@@ -152,7 +152,7 @@
 NULL
 
 # ---- zzz.R ----
-#' @importFrom stats setNames
+#' @importFrom stats setNames coef predict
 #' @importFrom paletteer paletteer_d
 #' @importFrom scales alpha
 NULL

@@ -17,3 +17,9 @@
 ^doc$
 ^Meta$
 ^tools$
+^cran-comments\.md$
+^scripts$
+^\.github$
+^\.review_extract$
+^\.reviewer_pdf_text$
+^tests/testthat/\.timing-baseline\.csv$

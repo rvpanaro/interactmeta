@@ -1425,10 +1425,11 @@ comparison_effects_summary <- function(draws, group_cols, prob = 0.95,
 #' does not mask `stats::interaction()`.
 #'
 #' @param fit A [`interactmeta`] from [cams()].
-#' @param at,ifrac,prob,max_support,summary,contrast_sep,exponentiate,shrinkage,
-#'   contribution As in [modifiers()]. `at` / `ifrac` are unused for the pooled
+#' @param at,ifrac,prob,max_support,summary,contrast_sep,exponentiate,shrinkage
+#'   As in [modifiers()]. `at` / `ifrac` are unused for the pooled
 #'   interaction \eqn{\gamma}; they are retained for API compatibility and are
 #'   used when `shrinkage = TRUE`.
+#' @param contribution Deprecated; use `at` (as in [modifiers()]).
 #' @param type One or both of `"Overall"` and `"Prediction"` when `shrinkage = FALSE`.
 #'   For CAMS, `"Overall"` is the fixed interaction \eqn{\gamma}; `"Prediction"`
 #'   adds new-trial random effects. For [swada()], `"Prediction"` is the

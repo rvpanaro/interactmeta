@@ -32,9 +32,12 @@ cov <- covr::package_coverage(
 pct <- covr::percent_coverage(cov)
 message(sprintf("Line coverage: %.1f%%", pct))
 
-by_file <- covr::coverage_by_file(cov)
-by_file <- by_file[order(by_file$coverage), , drop = FALSE]
-print(by_file, row.names = FALSE)
+by_file <- as.data.frame(cov)
+if ("filename" %in% names(by_file)) {
+  by_file <- by_file[order(by_file$value), , drop = FALSE]
+  names(by_file)[names(by_file) == "value"] <- "coverage"
+  print(by_file[, c("filename", "coverage"), drop = FALSE], row.names = FALSE)
+}
 
 out_dir <- file.path(pkg_root, "coverage")
 dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)

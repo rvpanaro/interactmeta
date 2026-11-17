@@ -48,3 +48,4 @@ ggplot(mtcars, aes(wt, mpg, colour = factor(cyl))) +
   interactmeta_theme_report()
 }
 }
+\keyword{internal}
