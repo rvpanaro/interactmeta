@@ -45,7 +45,7 @@ index under **Data**.
 > for mixed tables ([`?ifrac`], [cams](cams.html)).
 
 For count-based tables (`steroids`, `il6`), build `yi` and `vi` with
-[`metafor::escalc`] before `ifrac()`; hazard-ratio and IRR sets already store log
+`metafor::escalc` before `ifrac()`; hazard-ratio and IRR sets already store log
 effects in `yi` with variances in `vi`. Remap columns with `trial` /
 `subgroup` (or `modifier`) when names differ from `study` / `level` or from the
 `subgroup` column noted below. [`?ifrac`] covers `big_var`, `contrast`, and
@@ -64,7 +64,7 @@ knitr::kable(
 )
 ```
 
-After [`escalc`], use `ifrac(..., reference = "Non-IMV")` as in
+After `escalc`, use `ifrac(..., reference = "Non-IMV")` as in
 [`vignette("cams")`](cams.html).
 
 ## `il6`
@@ -77,7 +77,7 @@ data(il6, package = "interactmeta")
 knitr::kable(head(il6, 6), caption = "First six rows of `il6`.")
 ```
 
-Same two-row-per-trial layout as `steroids` (corticosteroid yes / no). [`escalc`]
+Same two-row-per-trial layout as `steroids` (corticosteroid yes / no). `escalc`
 with `measure = "OR"` then `ifrac()` with your chosen reference subgroup.
 
 ## `age`
