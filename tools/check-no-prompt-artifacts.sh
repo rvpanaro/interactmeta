@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Reject staged paths and content that look like LLM conversation exports or
+# Reject staged paths and content that look like agent conversation exports or
 # Cursor/agent prompt caches. Does not flag legitimate docs that mention AI.
 
 set -euo pipefail
@@ -27,7 +27,7 @@ while IFS= read -r p; do
 done <<< "$staged_paths"
 
 if [[ ${#path_hits[@]} -gt 0 ]]; then
-  echo "Pre-commit: refusing paths that look like LLM/agent history:"
+  echo "Pre-commit: refusing paths that look like agent conversation history:"
   printf '  %s\n' "${path_hits[@]}"
   echo "$MSG"
   exit 1
@@ -56,7 +56,7 @@ while IFS= read -r p; do
 done <<< "$staged_paths"
 
 if [[ ${#content_hits[@]} -gt 0 ]]; then
-  echo "Pre-commit: refusing staged files with LLM conversation metadata:"
+  echo "Pre-commit: refusing staged files with agent conversation metadata:"
   printf '  %s\n' "${content_hits[@]}"
   echo "$MSG"
   exit 1

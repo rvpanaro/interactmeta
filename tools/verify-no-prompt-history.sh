@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Scan all reachable commits for identifiable LLM prompt / chat metadata in text paths.
+# Scan all reachable commits for identifiable agent prompt / chat metadata in text paths.
 
 set -euo pipefail
 
