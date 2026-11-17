@@ -16,7 +16,7 @@ standardized_trial_effects(
   at = NULL,
   exponentiate = FALSE,
   component = NULL,
-  contribution
+  contribution = NULL
 )
 }
 \arguments{

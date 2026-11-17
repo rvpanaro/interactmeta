@@ -286,8 +286,9 @@ cam_prior_tau_density <- function(prior, tau) {
     return(out)
   }
   if (identical(bm, "sqrt")) {
-    check_bayesmeta()
-    return(as.numeric(bayesmeta::dprior(tau = tau, tau.prior = "sqrt")))
+    out <- tau^(-0.5)
+    out[!is.finite(tau) | tau < 0] <- 0
+    return(as.numeric(out))
   }
   stop("No density translation for prior family `", prior$family, "`.", call. = FALSE)
 }

@@ -1,4 +1,27 @@
 # ---- ifrac_design.R ----
+#' @keywords internal
+#' @noRd
+ifrac_design_col_pattern <- function() "^IF_"
+#' @keywords internal
+#' @noRd
+ifrac_design_col_prefix <- function() "IF_"
+#' @keywords internal
+#' @noRd
+ifrac_design_col_name <- function(subgroup) {
+  paste0(ifrac_design_col_prefix(), subgroup)
+}
+#' @keywords internal
+#' @noRd
+ifrac_design_col_strip <- function(col) {
+  sub(ifrac_design_col_pattern(), "", col)
+}
+#' @keywords internal
+#' @noRd
+ifrac_design_col_detect <- function(nm) {
+  cols <- grep(ifrac_design_col_pattern(), nm, value = TRUE)
+  cols[!grepl("^ifrac2_", cols)]
+}
+
 #' Add information-fraction design columns
 #'
 #' Builds trial-level information fractions for non-reference subgroups. For
@@ -22,20 +45,6 @@
 #'   with columns `precision` and `IF_*` for each non-reference subgroup.
 #'
 #' @keywords internal
-#' @export
-ifrac_design_col_pattern <- function() "^IF_"
-ifrac_design_col_prefix <- function() "IF_"
-ifrac_design_col_name <- function(subgroup) {
-  paste0(ifrac_design_col_prefix(), subgroup)
-}
-ifrac_design_col_strip <- function(col) {
-  sub(ifrac_design_col_pattern(), "", col)
-}
-ifrac_design_col_detect <- function(nm) {
-  cols <- grep(ifrac_design_col_pattern(), nm, value = TRUE)
-  cols[!grepl("^ifrac2_", cols)]
-}
-
 add_ifrac_design <- function(dat,
                              trial_col = NULL,
                              subgroup_col = NULL,

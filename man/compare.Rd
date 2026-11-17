@@ -30,8 +30,16 @@ passed via \code{...} (delegates to legacy compare helpers).}
 builder (\code{exponentiate}, \code{type}, …). For multiple fits, forwarded to the
 internal interaction compare builder.}
 
-\item{estimand}{Estimand to tabulate when \code{x} is an \code{interactmeta_sensitivity}
-object.}
+\item{y}{Optional second fit when comparing two CAMS fits via the
+\code{interactmeta} method.}
+
+\item{exponentiate}{If \code{TRUE}, tabulate ratio-scale effects where applicable.}
+
+\item{type}{Forestplot row grouping passed to the interaction compare builder
+(default \code{"Overall"}).}
+
+\item{estimand}{Ignored for \code{interactmeta} fits; used only for
+\code{interactmeta_sensitivity} objects.}
 }
 \description{
 Compare estimands across a sensitivity analysis or multiple fits

@@ -1835,6 +1835,14 @@ interactmeta_posterior_1d <- function(gm = NULL,
 #' mean and sd only.
 #' @noRd
 interactmeta_posterior_1d_summary <- function(x, prob = 0.95, interval.type = NULL) {
+  lazy_msg <- paste(
+    "Trial-level posterior is not materialized (`lazy_latent = TRUE` by default).",
+    "Re-fit with `lazy_latent = FALSE` or call",
+    "`interactmeta_ensure_bayesmeta_latent(fit, full_trials = TRUE)` first."
+  )
+  if (is.null(x)) {
+    stop(lazy_msg, call. = FALSE)
+  }
   interval.type <- interactmeta_match_interval_type(
     interval.type %||% x$interval.type
   )

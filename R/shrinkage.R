@@ -71,7 +71,7 @@ shrinkage <- function(fit,
                       at = NULL,
                       exponentiate = FALSE,
                       component = NULL,
-                      contribution) {
+                      contribution = NULL) {
   at <- interactmeta_resolve_marginal_at(at = at, contribution = contribution)
   check_comparison_fit(fit)
   if (!inherits(fit, "interactmeta")) {
@@ -119,7 +119,7 @@ shrinkage <- function(fit,
 #'   - `reference`, `nonref`, `trials`, `interaction_label`
 #' @keywords internal
 #' @export
-shrinkage_components <- function(fit, ..., at = NULL, contribution) {
+shrinkage_components <- function(fit, ..., at = NULL, contribution = NULL) {
   at <- interactmeta_resolve_marginal_at(at = at, contribution = contribution)
   if (is.list(fit) && !is.null(fit$components)) {
     return(fit$components)
@@ -173,7 +173,7 @@ standardized_trial_effects <- function(fit,
                                        at = NULL,
                                        exponentiate = FALSE,
                                        component = NULL,
-                                       contribution) {
+                                       contribution = NULL) {
   at <- interactmeta_resolve_marginal_at(at = at, contribution = contribution)
   check_comparison_fit(fit)
   if (!inherits(fit, "interactmeta")) {

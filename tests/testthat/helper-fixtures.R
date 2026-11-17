@@ -1,5 +1,19 @@
 # Shared test fixtures and tier helpers (sourced automatically by testthat).
 
+if (!"package:interactmeta" %in% search()) {
+  pkg_root <- normalizePath(
+    file.path(testthat::test_path(), "..", ".."),
+    winslash = "/",
+    mustWork = FALSE
+  )
+  if (file.exists(file.path(pkg_root, "DESCRIPTION")) &&
+      requireNamespace("pkgload", quietly = TRUE)) {
+    pkgload::load_all(pkg_root, quiet = TRUE)
+  } else {
+    library(interactmeta)
+  }
+}
+
 slow <- function() {
   if (!identical(Sys.getenv("INTERACT_SLOW_TESTS"), "true")) {
     testthat::skip("Set INTERACT_SLOW_TESTS=true for slow plot/integration tests")

@@ -1002,6 +1002,24 @@ comparison_trial_effect_blocks <- function(data,
                                      ifrac_var = NULL,
                                      min_vi = 1e-12) {
   dat <- as.data.frame(data)
+  if (!(trial_var %in% names(dat))) {
+    trial_var <- interactmeta_resolve_study_col(dat, fallback = trial_var)
+  }
+  if (!(subgroup_var %in% names(dat))) {
+    subgroup_var <- interactmeta_resolve_level_col(dat)
+  }
+  if (!(trial_var %in% names(dat))) {
+    stop(
+      "`trial_var` must name a study column in `data`.",
+      call. = FALSE
+    )
+  }
+  if (!(subgroup_var %in% names(dat))) {
+    stop(
+      "`subgroup_var` must name a modifier column in `data`.",
+      call. = FALSE
+    )
+  }
   dat[[trial_var]] <- as.character(dat[[trial_var]])
   dat[[subgroup_var]] <- as.character(dat[[subgroup_var]])
   ref <- as.character(reference)[[1L]]

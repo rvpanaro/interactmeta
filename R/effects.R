@@ -26,17 +26,15 @@ interactmeta_finalize_marginal_args <- function(fit,
   )
 }
 
-interactmeta_resolve_marginal_at <- function(at = NULL, contribution) {
-  if (!missing(contribution)) {
+interactmeta_resolve_marginal_at <- function(at = NULL, contribution = NULL) {
+  if (!is.null(contribution)) {
     if (!is.null(at)) {
       stop("Supply only one of `at` or `contribution`.", call. = FALSE)
     }
-    if (!is.null(contribution)) {
-      warning(
-        "`contribution` is deprecated; use `at` instead.",
-        call. = FALSE
-      )
-    }
+    warning(
+      "`contribution` is deprecated; use `at` instead.",
+      call. = FALSE
+    )
     return(contribution)
   }
   at
@@ -312,7 +310,7 @@ combined <- function(fit,
                      contrast_sep = NULL,
                      exponentiate = NULL,
                      shrinkage = FALSE,
-                     contribution) {
+                     contribution = NULL) {
   at <- interactmeta_resolve_marginal_at(at = at, contribution = contribution)
   marg <- interactmeta_finalize_marginal_args(
     fit,

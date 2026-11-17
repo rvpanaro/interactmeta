@@ -1019,6 +1019,10 @@ comparison_fit_param_summary_matrix <- function(x, prob = 0.95) {
     series$Intercept <- post[["b_Intercept"]]
   }
   ifrac_b <- grep("^b_ifrac_", names(post), value = TRUE)
+  if (!length(ifrac_b)) {
+    ifrac_b <- grep("^b_IF_", names(post), value = TRUE)
+    ifrac_b <- ifrac_b[!grepl("ifrac2", ifrac_b, ignore.case = TRUE)]
+  }
   sg_b <- grep("^b_subgroup", names(post), value = TRUE)
   if (length(ifrac_b) && length(sg_b)) {
     series$Beta_m <- post[[ifrac_b[[1L]]]] + post[[sg_b[[1L]]]]

@@ -31,7 +31,7 @@
 #' heterogeneity(fit, component = "intercept")
 #' }
 #'
-#' @seealso [ifrac()], [cams()], [plot_heterogeneity()], `vignette("heterogeneity-after-cams")`
+#' @seealso [ifrac()], [cams()], [plot.interactmeta()], `vignette("heterogeneity-after-cams")`
 #' @export
 heterogeneity <- function(fit,
                           component = c("all", "intercept", "slope"),
@@ -679,10 +679,11 @@ heterogeneity_bayesmeta_tau_prep <- function(x, prior = FALSE) {
   }
   pdens <- NULL
   if (isTRUE(prior)) {
-    prior_ok <- isTRUE(x$tau.prior.proper) || is.function(x$dprior)
+    prior_dens <- x[["dprior"]]
+    prior_ok <- isTRUE(x$tau.prior.proper) || is.function(prior_dens)
     if (isTRUE(prior_ok)) {
       pdens <- tryCatch(
-        as.numeric(x$dprior(tau = tau)),
+        as.numeric(prior_dens(tau = tau)),
         error = function(e) NULL
       )
       if (!is.null(pdens) && length(pdens) != length(tau)) {
@@ -1509,7 +1510,7 @@ plot_heterogeneity_prior_df <- function(pieces,
 
 #' @noRd
 plot_heterogeneity_pieces <- function(het, which = "both") {
-  draws <- het$support
+  draws <- het$support %||% het$draws
   if (is.null(draws) || !nrow(draws)) {
     stop("`het` has no posterior draws.", call. = FALSE)
   }

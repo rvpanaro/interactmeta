@@ -4,7 +4,7 @@
 \alias{shrinkage_components}
 \title{Audit components for CAMS shrinkage (observed, IF, m/g, subgroup draws)}
 \usage{
-shrinkage_components(fit, ..., at = NULL, contribution)
+shrinkage_components(fit, ..., at = NULL, contribution = NULL)
 }
 \arguments{
 \item{fit}{A \code{\link{interactmeta}}, or a shrinkage return value that already

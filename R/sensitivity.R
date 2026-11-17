@@ -113,6 +113,11 @@ sensitivity <- function(data_or_fit,
 #'
 #' @param x An `interactmeta_sensitivity` object, or two or more fitted objects
 #'   passed via `...` (delegates to legacy compare helpers).
+#' @param y Optional second fit when comparing two CAMS fits via the
+#'   `interactmeta` method.
+#' @param exponentiate If `TRUE`, tabulate ratio-scale effects where applicable.
+#' @param type Forestplot row grouping passed to the interaction compare builder
+#'   (default `"Overall"`).
 #' @param estimand `"interaction"`, `"modifiers"`, or `"combined"`.
 #' @param ... For `interactmeta_sensitivity`, passed to the underlying compare
 #'   builder (`exponentiate`, `type`, …). For multiple fits, forwarded to the
@@ -202,6 +207,8 @@ compare.interactmeta_sensitivity <- function(x,
 }
 
 #' @rdname compare
+#' @param estimand Ignored for `interactmeta` fits; used only for
+#'   `interactmeta_sensitivity` objects.
 #' @export
 compare.interactmeta <- function(x,
                                  y = NULL,
