@@ -201,3 +201,35 @@ expect_origin_engine <- function(obj, engine) {
   testthat::expect_false(is.null(org))
   testthat::expect_equal(org$fit_backend, engine)
 }
+
+#' Cached REML/ML CAMS on respire_age (frequentist coverage fixtures).
+fixture_reml_respire_cams <- function(method = c("REML", "ML")) {
+  method <- match.arg(method)
+  key <- paste0("respire_cams_", method)
+  if (exists(key, envir = .fixture_cache, inherits = FALSE)) {
+    return(get(key, envir = .fixture_cache))
+  }
+  testthat::skip_if_not_installed("metafor")
+  fit <- suppressWarnings(
+    cams(respire_age, reference = "<65", method = method, silent = 2)
+  )
+  assign(key, fit, envir = .fixture_cache)
+  fit
+}
+
+#' DA / AD / SWADA / CAMS on respire_age (single REML fit batch).
+fixture_respire_constructions <- function() {
+  key <- "respire_constructions_v1"
+  if (exists(key, envir = .fixture_cache, inherits = FALSE)) {
+    return(get(key, envir = .fixture_cache))
+  }
+  testthat::skip_if_not_installed("metafor")
+  batch <- list(
+    da = da(respire_age, reference = "<65", method = "REML"),
+    ad = ad(respire_age, reference = "<65", method = "REML"),
+    swada = swada(respire_age, reference = "<65", method = "REML"),
+    cams = fixture_reml_respire_cams("REML")
+  )
+  assign(key, batch, envir = .fixture_cache)
+  batch
+}

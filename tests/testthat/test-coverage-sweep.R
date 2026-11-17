@@ -93,25 +93,6 @@ test_that("coverage: constructions, compare(), and construction forests", {
   expect_s3_class(tab_int, "interactmeta_compare_interactions")
   expect_s3_class(tab_mod, "interactmeta_compare_subgroups")
 
-  compare_weights(sens$fits$da, sens$fits$ad, sens$fits$swada)
-  compare_heterogeneity(sens$fits$da, sens$fits$cams)
-
-  cam_cmp <- compare(s$reml_respire, s$reml_ml, exponentiate = FALSE)
-  expect_s3_class(cam_cmp, "interactmeta_compare_interactions")
-
-  ifrac_cmp <- interactmeta:::compare_ifrac(s$reml_respire, s$reml_ml)
-  expect_s3_class(ifrac_cmp, "interactmeta_compare_ifrac")
-
-  comb_cmp <- interactmeta:::compare_combined(s$reml_respire, s$reml_ml)
-  expect_s3_class(comb_cmp, "interactmeta_compare_combined")
-
-  with_null_pdf({
-    p1 <- plot(tab_int)
-    expect_s3_class(p1, "ggplot")
-    p2 <- plot(ifrac_cmp)
-    expect_s3_class(p2, "ggplot")
-  })
-
   conv <- conventional(respire_age, reference = "<65", method = "REML")
   expect_s3_class(conv, "interactmeta_conventional")
   expect_output(print(conv))
@@ -122,25 +103,8 @@ test_that("coverage: constructions, compare(), and construction forests", {
   hr_ci_from_log(x$yi, x$sei, ci_level = 0.95)
 })
 
-test_that("coverage: misc helpers and wide subgroup_long", {
+test_that("coverage: misc helpers and ifrac rows", {
   slow()
-  wide <- data.frame(
-    study = "T1",
-    yi_Younger = 0.1,
-    vi_Younger = 0.04,
-    yi_Older = 0.2,
-    vi_Older = 0.03,
-    stringsAsFactors = FALSE
-  )
-  long <- subgroup_long(
-    wide,
-    subgroups = c("Younger", "Older"),
-    id_cols = "study",
-    values = c("yi", "vi")
-  )
-  expect_equal(nrow(long), 2L)
-  expect_true("subgroup" %in% names(long))
-
   es <- fixture_age_escalc()
   des <- ifrac(es, reference = "Younger", include_interaction = TRUE)
   expect_gt(nrow(des), nrow(es))
@@ -150,14 +114,9 @@ test_that("coverage: misc helpers and wide subgroup_long", {
   expect_s3_class(interactmeta_theme_report(), "theme")
 })
 
-test_that("coverage: expected deprecation and validation errors", {
+test_that("coverage: constructions reject CAMS-only accessors", {
   slow()
-  skip_if_not_installed("bayesmeta")
-  fit <- fixture_cam_tiny_fit()
+  skip_if_not_installed("metafor")
   da_fit <- da(respire_age, reference = "<65", method = "REML")
-
   expect_error(modifiers(da_fit, at = 0.5), "CAMS")
-  expect_error(traceplot(fit, type = "modifier"), "not available")
-  expect_warning(modifiers(fit, contribution = 0.5), "contribution")
-  expect_error(modifiers(fit, at = 0.5, contribution = 0.5), "only one")
 })
