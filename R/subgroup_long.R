@@ -2,7 +2,7 @@
 #'
 #' Shipped **interactmeta** datasets are already long (one row per trial ×
 #' subgroup). If your source tables are wide (one row per trial, columns
-#' suffixed by subgroup such as `yi_Younger` or `n_IV`), use this helper before
+#' suffixed by subgroup such as `yi_Younger` or `n_IMV`), use this helper before
 #' [cams()] or [escalc()]. Metadata on wide tables (`subgroups`,
 #' `subgroup_id_cols`, `subgroup_value_cols`) drives the reshape; you can
 #' override those arguments when needed.

@@ -26,7 +26,7 @@ test_that("metafor print uses CI, not CrI or posterior median", {
   out <- paste(capture.output(print(fit)), collapse = "\n")
   expect_match(out, "REML model results", fixed = TRUE)
   expect_match(out, "Intercept", fixed = TRUE)
-  expect_match(out, "Ecological_Older", fixed = TRUE)
+  expect_match(out, "Delta_Older", fixed = TRUE)
   expect_match(out, "estimate", fixed = TRUE)
   expect_false(grepl("median", out, fixed = TRUE))
   expect_match(out, "confidence interval", ignore.case = TRUE)
@@ -148,7 +148,7 @@ test_that("ifrac(fit, ifrac='overall') matches original subgroup labels after re
   fit <- cams(toy, reference = "A", method = "REML", silent = 2)
   tau_m <- sqrt(max(as.numeric(fit$metafor$overall$tau2), 0))
   from_des <- as.numeric(ifrac(
-    des, tau = tau_m, reference = "A", ifrac_var = "ifrac_B", ifrac = "overall"
+    des, tau = tau_m, reference = "A", ifrac_var = "IF_B", ifrac = "overall"
   ))
   from_fit <- as.numeric(ifrac(fit, ifrac = "overall"))
   expect_equal(from_fit, from_des, tolerance = 1e-10)

@@ -97,7 +97,7 @@ when the estimates are a data frame the name of the subgroup column (default
 object, a row that already has the placeholder \code{yi = 0} and \code{vi = 8} keeps
 that estimate, and \code{vi} is replaced by \code{big_var}. Defaults to \code{100^2}.}
 
-\item{contrast}{Either \code{NULL} (subgroup rows only, wide \verb{ifrac_<subgroup>}
+\item{contrast}{Either \code{NULL} (subgroup rows only, wide \verb{IF_<subgroup>}
 columns), a character vector of length 2 giving the two subgroup labels to
 contrast within each trial (computed as \code{label1 - label2}, where \code{label2} is
 the reference), or \code{"all"} (default) to add each non-reference subgroup vs
@@ -124,18 +124,18 @@ If \code{TRUE}, append one precision-weighted combined row per trial with
 
 \item{include_interaction}{Logical. If \code{FALSE} (default), return subgroup rows
 only while still using \code{contrast} to define the reference-centered
-\verb{ifrac_*} design columns. If \code{TRUE} and \code{contrast} is not
+\verb{IF_*} design columns. If \code{TRUE} and \code{contrast} is not
 \code{NULL}, append interaction/contrast rows below subgroup rows.
 
-\strong{Pooling} ( \code{\link{interactmeta}}, or \code{\link[=ifrac]{ifrac()}} data with \verb{ifrac_*} columns):
+\strong{Pooling} ( \code{\link{interactmeta}}, or \code{\link[=ifrac]{ifrac()}} data with \verb{IF_*} columns):
 pass \code{ifrac} to pool trial-level fractions across studies.
 \deqn{\bar{\omega} = \sum_i \pi_i w_i / \sum_i w_i.}
 With \code{ifrac = "interaction"} (default),
 \eqn{w_i = 1/(\tau_\gamma^2 + \sigma_{Ai}^2 + \sigma_{Bi}^2)} using the
 interaction-block SD \eqn{\tau_\gamma}.
-With \code{ifrac = "overall"}, \eqn{w_i = 1/(\tau^2 + v_i)} using the
-overall-block intercept SD \eqn{\tau} and
-\eqn{v_i=\mathrm{Var}(m_i)=(1-\pi_i)^2\sigma_{Ai}^2+\pi_i^2\sigma_{Bi}^2}.
+With \code{ifrac = "overall"}, \eqn{w_j = 1/(\tau^2 + \sigma_j^2)} using the
+overall-block intercept SD \eqn{\tau} and combined sampling variance
+\eqn{\sigma_j^2=\mathrm{Var}(m_j)=(1-\pi_j)^2\sigma_{Aj}^2+\pi_j^2\sigma_{Bj}^2}.
 On Bayesian CAMS, \eqn{\tau} / \eqn{\tau_\gamma} are DIRECT posterior supports, so
 the pooled IF is a distribution. On frequentist CAMS (\code{engine = "metafor"}),
 pooling uses the fitted \eqn{\tau} or \eqn{\tau_\gamma}.
@@ -149,7 +149,7 @@ supplied as \code{x} or \code{yi}, \code{vi} must not be passed separately; \cod
 \item{ifrac}{For pooling only: \code{"interaction"} (default) or \code{"overall"}.}
 
 \item{fit, tau, tau_gamma, ifrac_var, summary, prob}{Pooling options when \code{x} is a
-\code{\link{interactmeta}} or design data with \verb{ifrac_*} columns (\code{fit} or \code{tau} /
+\code{\link{interactmeta}} or design data with \verb{IF_*} columns (\code{fit} or \code{tau} /
 \code{tau_gamma} required for data-only pooling).}
 }
 \value{
@@ -157,7 +157,7 @@ For the \strong{design} method, a tibble with one row per \code{trial}-by-\code{
 levels and contrast rows when requested), including \code{trial}, \code{subgroup}
 (a factor with the reference subgroup as the first level on subgroup rows),
 \code{yi}, \code{vi}, and information-fraction columns. Columns \code{yi}, \code{vi}, \code{precision}
-(when present), and all \verb{ifrac_<...>} columns are numeric.
+(when present), and all \verb{IF_<...>} columns are numeric.
 
 For \strong{pooling}, a \code{interactmeta_overall_ifrac} object (draws with metadata), or a
 summary data frame when \code{summary = TRUE}.
@@ -171,7 +171,7 @@ Each component precision is defined as \code{1 / vi}.
 
 By default (\code{contrast = "all"}), all non-reference-vs-reference contrasts are
 added per trial. Set \code{contrast = NULL} to return only subgroup rows with wide
-\verb{ifrac_<subgroup>} columns (one fraction per subgroup label).
+\verb{IF_<subgroup>} columns (one fraction per subgroup label).
 
 When \code{contrast} is provided, the information fraction for each comparison is
 computed as the non-reference subgroup precision divided by the total subgroup
@@ -185,7 +185,7 @@ appended with \code{subgroup = "Combined"} (contribution-weighted mean $m_j$ on 
 chosen scale). When \code{include_interaction = TRUE}, contrast rows are stacked
 below subgroup rows with \code{subgroup} labels like \code{"g2-g1"} (reference after
 \code{contrast_sep}), using \code{yi} and \code{vi} for the contrast estimate and variance.
-Wide columns \verb{ifrac_<non-reference>} are filled
+Wide columns \verb{IF_<non-reference>} are filled
 on every row (no \code{NA}), plus \code{precision}, and a \code{reference} column (last
 column). For each non-reference subgroup \code{k}, \code{ifrac_k} is the trial-level
 information fraction. On combined
@@ -203,7 +203,7 @@ subgroup <- c("g1", "g2", "g1", "g2")
 # Name `subgroup`: the fourth positional argument is `modifier`.
 ifrac(yi = yi, vi = vi, trial = trial, subgroup = subgroup)
 
-# Subgroup rows only, wide ifrac_<subgroup> for every label
+# Subgroup rows only, wide IF_<subgroup> for every label
 ifrac(yi = yi, vi = vi, trial = trial, subgroup = subgroup, contrast = NULL)
 
 # Single contrast (g1 - g2, reference g2)

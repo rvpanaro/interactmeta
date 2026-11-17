@@ -42,13 +42,13 @@ test_that("DA interaction forest Prediction uses DA not AD RE-MA", {
   skip_if_not_installed("metafor")
   dat <- data.frame(
     study = rep(c("A", "B"), each = 2),
-    subgroup = rep(c("NIV", "IV"), 2),
+    subgroup = rep(c("Non-IMV", "IMV"), 2),
     yi = c(0, 0.5, 0.1, 0.8),
     vi = rep(0.05, 4),
     stringsAsFactors = FALSE
   )
-  da_fit <- da(dat, reference = "NIV", trial = "study", subgroup = "subgroup", method = "REML")
-  ad_fit <- ad(dat, reference = "NIV", trial = "study", subgroup = "subgroup", method = "REML")
+  da_fit <- da(dat, reference = "Non-IMV", trial = "study", subgroup = "subgroup", method = "REML")
+  ad_fit <- ad(dat, reference = "Non-IMV", trial = "study", subgroup = "subgroup", method = "REML")
   fp_da <- forestplot(da_fit, type = "interaction", include_shrinkage = FALSE)
   fp_ad <- forestplot(ad_fit, include_shrinkage = FALSE)
   ra_da <- fp_da$specs$panels[[1L]]

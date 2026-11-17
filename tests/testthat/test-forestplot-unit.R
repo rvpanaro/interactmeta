@@ -38,7 +38,11 @@ test_that("forestplot() exposes CAMS formals for completion", {
   expect_true(isTRUE(eval(formals(forestplot)$include_shrinkage)))
   expect_equal(
     eval(formals(forestplot)$type),
-    c("modifiers", "interaction", "subgroups")
+    c("modifiers", "interaction")
+  )
+  expect_error(
+    interactmeta:::forestplot_parse_panel_type("subgroups"),
+    "`type = \"subgroups\"`"
   )
 })
 
@@ -65,13 +69,46 @@ test_that("resolve_forestplot_label_col() defaults and aliases", {
   expect_equal(interactmeta:::resolve_forestplot_subgroup_col("arm"), "arm")
 })
 
+test_that("forestplot_type_public() normalizes panel type", {
+  expect_equal(
+    interactmeta:::forestplot_type_public("modifiers"),
+    "modifiers"
+  )
+  expect_error(
+    interactmeta:::forestplot_type_public("subgroups"),
+    "`type = \"subgroups\"`"
+  )
+  expect_equal(
+    interactmeta:::forestplot_type_public("interaction"),
+    "interaction"
+  )
+  expect_true(interactmeta:::forestplot_type_is_modifier_panels("modifiers"))
+  expect_false(interactmeta:::forestplot_type_is_modifier_panels("interaction"))
+})
+
 test_that("resolve_forestplot_favours() defaults", {
   expect_equal(
     interactmeta:::resolve_forestplot_favours(NULL),
-    c("Control", "   Experimental")
+    c("Experimental", "   Control")
   )
   expect_equal(
     interactmeta:::resolve_forestplot_favours(NULL, type = "modifiers"),
+    c("Experimental", "   Control")
+  )
+  expect_equal(
+    interactmeta:::forestplot_modifier_favours(),
+    c("Experimental", "   Control")
+  )
+  expect_equal(
+    interactmeta:::forestplot_modifier_favours("favorable"),
+    c("Control", "   Experimental")
+  )
+  expect_equal(
+    interactmeta:::resolve_forestplot_favours(
+      NULL,
+      type = "modifiers",
+      outcome = "favorable"
+    ),
     c("Control", "   Experimental")
   )
   expect_null(interactmeta:::resolve_forestplot_favours(FALSE))
@@ -80,7 +117,7 @@ test_that("resolve_forestplot_favours() defaults", {
     c("A", "B")
   )
   expect_error(interactmeta:::resolve_forestplot_favours("only-one"))
-  # Interaction defaults name reference (left) and non-reference (right).
+  # Interaction defaults: non-reference (B) left, reference (A) right.
   expect_equal(
     interactmeta:::resolve_forestplot_favours(
       NULL,
@@ -88,11 +125,33 @@ test_that("resolve_forestplot_favours() defaults", {
       reference = "Younger",
       nonref_subgroup = "Older"
     ),
-    c("Younger", "   Older")
+    c("Older", "   Younger")
   )
   expect_equal(
     interactmeta:::forestplot_interaction_favours("Younger", "Older"),
+    c("Older", "Younger")
+  )
+  expect_equal(
+    interactmeta:::forestplot_interaction_favours(
+      "Younger",
+      "Older",
+      outcome = "favorable"
+    ),
     c("Younger", "Older")
+  )
+  expect_equal(
+    interactmeta:::resolve_forestplot_favours(
+      NULL,
+      type = "interaction",
+      reference = "Younger",
+      nonref_subgroup = "Older",
+      outcome = "favorable"
+    ),
+    c("Younger", "   Older")
+  )
+  expect_equal(
+    interactmeta:::resolve_forestplot_favours(c("Custom", "Labels")),
+    c("Custom", "Labels")
   )
   # Fall back to Control / Experimental if subgroup labels are missing.
   expect_equal(
@@ -102,7 +161,7 @@ test_that("resolve_forestplot_favours() defaults", {
       reference = "Younger",
       nonref_subgroup = ""
     ),
-    c("Control", "   Experimental")
+    c("Experimental", "   Control")
   )
 })
 
@@ -123,7 +182,7 @@ test_that("layout reserves Favours rows under Interaction and Combined predictio
   row_labels <- data.frame(
     heading = c(
       "Younger", "Older", "Younger", "Younger",
-      "Interaction", "Interaction", "All", "All"
+      "Interaction", "Interaction", "Combined", "Combined"
     ),
     label = c(
       "A", "B", "Overall", "Prediction",
@@ -142,7 +201,7 @@ test_that("layout reserves Favours rows under Interaction and Combined predictio
   poly_rows <- vapply(lay$polys, `[[`, numeric(1), "row")
   poly_labs <- vapply(lay$polys, `[[`, character(1), "mlab")
   int_pred <- poly_rows[poly_labs == "Prediction (Interaction)"]
-  ov_pred <- poly_rows[poly_labs == "All: Prediction"]
+  ov_pred <- poly_rows[poly_labs == "Combined: Prediction"]
   expect_equal(length(int_pred), 1L)
   expect_equal(length(ov_pred), 1L)
   # Favours sit just below the prediction diamond (after the 0.25 gap).
@@ -260,7 +319,7 @@ test_that("comparison_forest_apply_effect_styles() colours by heading", {
   rb$yi <- NA_real_
   rb$shape <- NA_integer_
   rl <- data.frame(
-    heading = c("Younger", "Older", "Interaction", "All"),
+    heading = c("Younger", "Older", "Interaction", "Combined"),
     label = c("Overall", "Overall", "Overall", "Overall")
   )
   out <- interactmeta:::comparison_forest_apply_effect_styles(
@@ -275,7 +334,7 @@ test_that("comparison_forest_apply_effect_styles() colours by heading", {
 
 test_that("forestplot_summary_diamond_colour() uses blue for all roles", {
   blue <- interactmeta:::forestplot_default_summary_colour()
-  expect_equal(interactmeta:::forestplot_summary_diamond_colour("All"), blue)
+  expect_equal(interactmeta:::forestplot_summary_diamond_colour("Combined"), blue)
   expect_equal(interactmeta:::forestplot_summary_diamond_colour("Interaction"), blue)
   expect_equal(
     interactmeta:::forestplot_summary_diamond_colour(
@@ -303,11 +362,11 @@ test_that("summary diamond colours match for subgroup and trial nesting keys", {
   ref <- "Younger"
   expect_equal(
     interactmeta:::forestplot_summary_diamond_colours(
-      c("Younger", "Older", "Interaction", "All"),
+      c("Younger", "Older", "Interaction", "Combined"),
       reference = ref
     ),
     interactmeta:::forestplot_summary_diamond_colours(
-      c("Younger", "Older", "Interaction", "All"),
+      c("Younger", "Older", "Interaction", "Combined"),
       reference = ref,
       subgroup_levels = c("A", "B", "Younger", "Older")
     )
@@ -338,9 +397,9 @@ test_that("forestplot_stack_panels() adds Combined summaries without trial rows"
   resultsB$yi[c(1L, 2L, 3L, 4L)] <- c(0.05, 0.06, NA, NA)
   resultsB$shape[c(3L, 4L)] <- NA_integer_
   row_labels <- data.frame(
-    heading = c("Younger", "Younger", "Older", "Older", "All", "All"),
+    heading = c("Younger", "Younger", "Older", "Older", "Combined", "Combined"),
     label = c("A", "A", "A", "A", "Overall", "Prediction"),
-    colour_label = c("Younger", "Younger", "Older", "Older", "All", "All"),
+    colour_label = c("Younger", "Younger", "Older", "Older", "Combined", "Combined"),
     stringsAsFactors = FALSE
   )
   stacked <- interactmeta:::forestplot_stack_panels(
@@ -380,8 +439,8 @@ test_that("forestplot_nonref_ifrac_display() uses the non-reference IF", {
     "Older"
   )
   expect_equal(
-    interactmeta:::forestplot_heading_with_nonref("All", "Older"),
-    "All (Older)"
+    interactmeta:::forestplot_heading_with_nonref("Combined", "Older"),
+    "Combined (Older)"
   )
   expect_equal(
     interactmeta:::forestplot_col_left_headings(
@@ -449,9 +508,9 @@ test_that("forestplot_stack_panels() Interaction and Combined keep IF and study 
   resultsB$yi <- c(0.05, NA, 0.08, 0.02, NA, NA)
   resultsB$shape <- c(15L, NA, 18L, 18L, NA, NA)
   row_labels <- data.frame(
-    heading = c("Younger", "Older", "Younger", "Younger", "All", "All"),
+    heading = c("Younger", "Older", "Younger", "Younger", "Combined", "Combined"),
     label = c("A", "A", "Overall", "Prediction", "Overall", "Prediction"),
-    colour_label = c("Younger", "Older", "Younger", "Younger", "All", "All"),
+    colour_label = c("Younger", "Older", "Younger", "Younger", "Combined", "Combined"),
     stringsAsFactors = FALSE
   )
   stacked <- interactmeta:::forestplot_stack_panels(
@@ -470,7 +529,7 @@ test_that("forestplot_stack_panels() Interaction and Combined keep IF and study 
   # IF is the non-reference percentage; group name is on the IF column header.
   expect_equal(unique(stacked$resultsA$ifrac[int]), "40.00%")
   expect_equal(unique(stacked$row_labels$heading[int]), "Interaction")
-  expect_equal(unique(stacked$row_labels$heading[comb]), "All")
+  expect_equal(unique(stacked$row_labels$heading[comb]), "Combined")
   expect_equal(
     interactmeta:::forestplot_resolve_nonref_subgroup(
       stacked$row_labels, stacked$resultsA, ref = "Younger"
@@ -486,7 +545,7 @@ test_that("forestplot_stack_panels() Interaction and Combined keep IF and study 
   )
   expect_equal(unique(stacked$resultsA$trial_size[int]), "200")
 
-  # Columns remain available for type = interaction / subgroups filters.
+  # Columns remain available for type = interaction / modifiers filters.
   nonref <- interactmeta:::forestplot_resolve_nonref_subgroup(
     stacked$row_labels, stacked$resultsA, ref = "Younger"
   )
@@ -609,7 +668,7 @@ test_that("forestplot_filter_type() keeps the requested block", {
     heading = c(
       "Younger", "Younger", "Younger",
       "Interaction", "Interaction",
-      "All", "All"
+      "Combined", "Combined"
     ),
     label = c(
       "A", "Overall", "Prediction",
@@ -624,7 +683,7 @@ test_that("forestplot_filter_type() keeps the requested block", {
   )
   expect_equal(
     sort(unique(sg$row_labels$heading)),
-    c("All", "Younger")
+    c("Combined", "Younger")
   )
   expect_equal(nrow(sg$resultsA), 5L)
   expect_true(all(c("Overall", "Prediction") %in%
@@ -639,6 +698,42 @@ test_that("forestplot_filter_type() keeps the requested block", {
   )
   expect_equal(unique(sg_no_comb$row_labels$heading), "Younger")
   expect_false(any(interactmeta:::forestplot_heading_is_combined(sg_no_comb$row_labels$heading)))
+
+  row_labels2 <- data.frame(
+    heading = c(
+      "Younger", "Younger", "Younger",
+      "Older", "Older", "Older",
+      "Combined", "Combined"
+    ),
+    label = rep(c("A", "Overall", "Prediction"), 2L),
+    stringsAsFactors = FALSE
+  )
+  resultsA2 <- resultsB2 <- data.frame(
+    yi = seq_len(nrow(row_labels2)),
+    row_kind = c(
+      "study", "overall", "prediction",
+      "study", "overall", "prediction",
+      "overall", "prediction"
+    ),
+    bold = c(rep(FALSE, 3L), rep(FALSE, 3L), TRUE, TRUE),
+    stringsAsFactors = FALSE
+  )
+  yng <- interactmeta:::forestplot_filter_type(
+    resultsA2, resultsB2, row_labels2,
+    type = "modifiers",
+    include_combined = FALSE,
+    modifier_panel = "Younger"
+  )
+  expect_equal(unique(yng$row_labels$heading), "Younger")
+  expect_equal(nrow(yng$resultsA), 3L)
+
+  comb <- interactmeta:::forestplot_filter_type(
+    resultsA2, resultsB2, row_labels2,
+    type = "modifiers",
+    modifier_panel = "Combined"
+  )
+  expect_true(all(interactmeta:::forestplot_heading_is_combined(comb$row_labels$heading)))
+  expect_equal(nrow(comb$resultsA), 2L)
 
   int <- interactmeta:::forestplot_filter_type(
     resultsA, resultsB, row_labels, type = "interaction"
@@ -762,6 +857,13 @@ test_that("forestplot_nice_axis() keeps 1 as the centred ratio tick", {
   nice <- interactmeta:::forestplot_nice_axis(c(0.4, 1.8), exponentiate = TRUE)
   expect_equal(nice$xticks, c(0.25, 0.5, 1, 2, 4))
   expect_equal(mean(log(nice$xlim)), log(1), tolerance = 1e-12)
+})
+
+test_that("forestplot_nice_axis() brackets wide low ratio limits", {
+  nice <- interactmeta:::forestplot_nice_axis(c(0.04, 2.5), exponentiate = TRUE)
+  expect_lte(min(nice$xlim), 0.04)
+  expect_gte(max(nice$xlim), 2.5)
+  expect_true(1 %in% nice$xticks)
 })
 
 test_that("explicit xlim and xticks are not recentred onto the null", {
@@ -917,7 +1019,7 @@ test_that("forestplot_figure_inches scales with rows and footnotes", {
 test_that("forestplot_height scales for a large multi-subgroup forest", {
   # ~4 blocks × 7 studies + pooled/prediction ≈ age-like default forest.
   n <- 36L
-  headings <- rep(c("Younger", "Older", "Interaction", "All"), each = 9L)
+  headings <- rep(c("Younger", "Older", "Interaction", "Combined"), each = 9L)
   fp <- structure(
     list(
       method = "REML",

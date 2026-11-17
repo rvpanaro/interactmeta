@@ -15,7 +15,7 @@ test_that("print() lazily builds the parameter matrix", {
   es <- fixture_age_escalc()
   fit <- suppressWarnings(cams(es, reference = "Younger", silent = 2))
   out <- paste(capture.output(print(fit, digits = 2)), collapse = "\n")
-  expect_match(out, "Ecological_Older", fixed = TRUE)
+  expect_match(out, "Delta_Older", fixed = TRUE)
   expect_true(interactmeta:::interactmeta_reporting_is_ready(fit))
 })
 

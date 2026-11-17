@@ -114,6 +114,12 @@ comparison_forestplot_from_fit <- function(fit,
     annotation_digits <- dots$heterogeneity_digits
     dots$heterogeneity_digits <- NULL
   }
+  outcome <- "unfavorable"
+  if ("outcome" %in% names(dots)) {
+    outcome <- dots$outcome
+    dots$outcome <- NULL
+  }
+  outcome <- forestplot_resolve_outcome(outcome)
   group <- match.arg(group, c("subgroup", "trial"))
   validate_forestplot_args(
     prob = prob,
@@ -209,6 +215,8 @@ comparison_forestplot_from_fit <- function(fit,
     ifrac = ifrac,
     group = group,
     show_annotations = isTRUE(show_annotations),
+    type = type,
+    outcome = outcome,
     dots = dots
   )
   fp
@@ -2117,7 +2125,7 @@ append_comparison_forest_block <- function(resultsA,
 
   # Axis detail: block name, else Overall/Prediction from subgroup for overall
   # rows, else title-cased row_kind. Avoids NBSP placeholders and duplicate
-  # "Younger" / "All" axis ticks.
+  # "Younger" / "Combined" axis ticks.
   detail_lab <- if (nzchar(block_lab)) {
     rep(block_lab, n_add)
   } else {

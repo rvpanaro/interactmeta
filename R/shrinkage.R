@@ -15,9 +15,12 @@
 #' not lie between the quoted estimate and the subgroup pooled diamond.
 #'
 #' Engine-native trial effects:
-#' - **bayesmeta**: DIRECT individual posteriors
-#'   (`bmr$shrink.moments` / `bayesmeta$cond.moment(individual=)`), the same
-#'   quantities stored in `fit$latent$mu_A` / `$mu_B`.
+#' - **bayesmeta**: DIRECT individual / shrinkage posteriors for
+#'   \eqn{\widetilde m_j} and \eqn{\widetilde g_j} (`bmr$shrink.moments` /
+#'   `bayesmeta$cond.moment(individual=)`), combined across blocks at each
+#'   trial's **fixed** design \eqn{\pi_j} (product of mixture nodes; see
+#'   [cams()] **Method**). Optional `fit$latent$mu_A` / `$mu_B` mirror this
+#'   reconstruction when the latent is materialized.
 #' - **metafor**: empirical-Bayes BLUPs of the orthogonal overall and
 #'   interaction blocks, then the same reconstruction.
 #'
@@ -263,7 +266,7 @@ comparison_shrinkage_resolve_type <- function(type = c("modifiers", "interaction
 #' @param fit A [`interactmeta`].
 #' @param ... Passed to [shrinkage_components()] (`max_support`, `ifrac`, …).
 #' @return A data frame with one row per trial.
-#' @seealso [shrinkage()], [shrinkage_components()]
+#' @seealso [shrinkage()], [shrinkage_components()], `vignette("trial-specific-effects-and-shrinkage")`
 #' @export
 shrinkage_diagnostics <- function(fit, ...) {
   cmp <- shrinkage_components(fit, ...)
@@ -487,7 +490,7 @@ comparison_shrinkage_rotation_bundle <- function(fit,
     v_B[[tr]] <- pmax(as.numeric(data_eval$vi[[i_non]]), 0)
   }
 
-  ifrac2_var <- paste0("ifrac2_", sub("^ifrac_", "", ifrac_var))
+  ifrac2_var <- paste0("ifrac2_", ifrac_design_col_strip(ifrac_var))
   if (!ifrac2_var %in% names(data_eval)) {
     ifrac2_var <- paste0("ifrac2_", nonref)
   }

@@ -9,7 +9,8 @@ test_that("print.interactmeta and summary.interactmeta are bayesmeta-style", {
   expect_match(out, "Bayesian estimates", fixed = TRUE)
   expect_match(out, "Interaction_Older", fixed = TRUE)
   expect_false(grepl("ifrac2_Older", out, fixed = TRUE))
-  expect_match(out, "Ecological_Older", fixed = TRUE)
+  expect_match(out, "Beta_m", fixed = TRUE)
+  expect_match(out, "Delta_Older", fixed = TRUE)
   expect_false(grepl("b_subgroupOlder", out, fixed = TRUE))
   expect_match(out, "tau", fixed = TRUE)
   expect_match(out, "central credible intervals", fixed = TRUE)
@@ -45,9 +46,10 @@ test_that("print.interactmeta and summary.interactmeta are bayesmeta-style", {
   expect_true(all(c("mode", "median", "mean", "sd", "95% lower", "95% upper") %in%
     rownames(s$parameters)))
   expect_true("tau" %in% colnames(s$parameters))
-  expect_true("Ecological_Older" %in% colnames(s$parameters))
+  expect_true("Beta_m" %in% colnames(s$parameters))
+  expect_true("Delta_Older" %in% colnames(s$parameters))
   expect_true("Interaction_Older" %in% colnames(s$parameters))
-  expect_false("ifrac_Older" %in% colnames(s$parameters))
+  expect_false("IF_Older" %in% colnames(s$parameters))
   expect_false("b_subgroupOlder" %in% colnames(s$parameters))
   expect_true(!is.null(s$data))
   expect_true(ncol(s$data) == 2L)
@@ -96,7 +98,8 @@ test_that("frequentist parameter summary uses metafor model-results layout", {
   expect_true("tau" %in% colnames(mat))
   expect_true("tau_gamma" %in% colnames(mat))
   expect_true("Intercept" %in% colnames(mat))
-  expect_true("Ecological_Older" %in% colnames(mat))
+  expect_true("Beta_m" %in% colnames(mat))
+  expect_true("Delta_Older" %in% colnames(mat))
   expect_true("Interaction_Older" %in% colnames(mat))
 
   cs_ov <- coef(summary(fit$metafor$overall))
@@ -111,9 +114,15 @@ test_that("frequentist parameter summary uses metafor model-results layout", {
     as.numeric(cs_int["intrcpt", "estimate"]),
     tolerance = 1e-10
   )
+  ifrac_term <- params$term[params$model == "overall" & grepl("^ifrac", params$term)][1L]
+  expect_equal(
+    mat["estimate", "Beta_m"],
+    as.numeric(cs_ov[ifrac_term, "estimate"]),
+    tolerance = 1e-10
+  )
   lin <- interactmeta:::interactmeta_metafor_lincomb(fit, c(0, 1), -1)
   expect_equal(
-    mat["estimate", "Ecological_Older"],
+    mat["estimate", "Delta_Older"],
     lin$estimate,
     tolerance = 1e-10
   )

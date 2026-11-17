@@ -80,9 +80,12 @@ not lie between the quoted estimate and the subgroup pooled diamond.
 \details{
 Engine-native trial effects:
 \itemize{
-\item \strong{bayesmeta}: DIRECT individual posteriors
-(\code{bmr$shrink.moments} / \code{bayesmeta$cond.moment(individual=)}), the same
-quantities stored in \code{fit$latent$mu_A} / \verb{$mu_B}.
+\item \strong{bayesmeta}: DIRECT individual / shrinkage posteriors for
+\eqn{\widetilde m_j} and \eqn{\widetilde g_j} (\code{bmr$shrink.moments} /
+\code{bayesmeta$cond.moment(individual=)}), combined across blocks at each
+trial's \strong{fixed} design \eqn{\pi_j} (product of mixture nodes; see
+\code{\link[=cams]{cams()}} \strong{Method}). Optional \code{fit$latent$mu_A} / \verb{$mu_B} mirror this
+reconstruction when the latent is materialized.
 \item \strong{metafor}: empirical-Bayes BLUPs of the orthogonal overall and
 interaction blocks, then the same reconstruction.
 }

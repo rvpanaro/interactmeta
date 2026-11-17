@@ -8,5 +8,5 @@ test_that("cams() precomputes reporting parameters and effect cache", {
   expect_identical(sg2, sg1)
 
   out <- paste(capture.output(print(fit, digits = 2)), collapse = "\n")
-  expect_match(out, "Ecological_Older", fixed = TRUE)
+  expect_match(out, "Delta_Older", fixed = TRUE)
 })

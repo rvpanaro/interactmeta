@@ -33,7 +33,8 @@ Event counts by trial and corticosteroid subgroup from the WHO REACT
 prospective meta-analysis of IL-6 antagonists in patients hospitalized
 for COVID-19. Some trials report only one corticosteroid subgroup
 (\code{n = 0} patients in the other subgroup); drop those empty rows before \code{\link[=escalc]{escalc()}} and
-let \code{\link[=ifrac]{ifrac()}} / \code{\link[=cams]{cams()}} complete the missing cells. See
-\code{vignette("worked-examples")}.
+let \code{\link[=ifrac]{ifrac()}} / \code{\link[=cams]{cams()}} complete unreported cells with a placeholder design row.
+See \code{vignette("worked-examples")} and \code{vignette("single-subgroup-trials")} (same pattern on
+\code{steroids}).
 }
 \keyword{datasets}

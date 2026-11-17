@@ -161,7 +161,7 @@ test_that("subgroups, combined, and interactions print tables without preamble",
 
   comb_out <- paste(capture.output(print(combined(fit, type = "Overall"))), collapse = "\n")
   expect_match(comb_out, "combined", fixed = TRUE)
-  expect_match(comb_out, "All", fixed = TRUE)
+  expect_match(comb_out, "Combined", fixed = TRUE)
   expect_match(comb_out, "Overall 95% CrI", fixed = TRUE)
   expect_false(grepl("Combined-population treatment effect", comb_out, fixed = TRUE))
 

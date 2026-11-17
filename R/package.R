@@ -22,7 +22,7 @@
 #' Same Weighting Across Different Analyses (SWADA) principle so those
 #' constructions share study contributions.
 #' [conventional()] is a compatibility bundle of DA and AD with
-#' analysis-specific weights. A Bayesian posterior on DA or AD does not add
+#' analysis-specific weights. A Bayesian posterior on DA or AD does not include
 #' information-fraction estimands.
 #'
 #' @section CAMS workflow:
@@ -37,13 +37,18 @@
 #' 4. [interactions()], [modifiers()], and [combined()] summarize
 #'    \eqn{\gamma} and effects at the reporting information fraction.
 #' 5. [plot()] and [forestplot()] visualize effects across \eqn{\pi} and by
-#'    trial (see `vignette("cams")` and `vignette("worked-examples")`).
+#'    trial (see `vignette("cams")`, the **After CAMS** articles below, and
+#'    `vignette("worked-examples")`).
 #'
 #' @section Documentation:
 #' \describe{
-#'   \item{Getting started}{`vignette("cams")` — estimands, assumptions, Bayesian and REML on the IV/NIV `steroids` example.}
-#'   \item{Export and QC}{`vignette("export-and-qc")` — `tidy()` exports and DA/AD/SWADA/CAMS sensitivity tables.}
-#'   \item{Other datasets}{`vignette("worked-examples")` — brief forests for `age`, `edss`, `il6`, and RESPIRE tables (including incomplete-subgroup patterns).}
+#'   \item{Getting started}{`vignette("cams")` — estimands, assumptions, Bayesian and REML on the IMV/Non-IMV `steroids` example.}
+#'   \item{Heterogeneity}{`vignette("heterogeneity-after-cams")` — tau marginals and profile plots (after `vignette("cams")`).}
+#'   \item{Shrinkage}{`vignette("trial-specific-effects-and-shrinkage")` — grey forest markers and `shrinkage()`.}
+#'   \item{Trace plots}{`vignette("traceplots")` — Bayesian shrinkage-vs-tau panels.}
+#'   \item{Single-subgroup trials}{`vignette("single-subgroup-trials")` — mixed tables and reporting IF.}
+#'   \item{DA / AD / SWADA}{`vignette("comparing-da-ad-swada")` — constructions vs CAMS (after `vignette("cams")`).}
+#'   \item{Example datasets}{`vignette("worked-examples")` — `steroids`, `age`, `edss`, `il6`, and RESPIRE tables (including incomplete-subgroup patterns).}
 #' }
 #'
 #' @section Inference:
@@ -55,8 +60,8 @@
 #'
 #' Default Bayesian heterogeneity priors match [bayesmeta::bayesmeta()]:
 #' improper uniform on \eqn{\tau_m} and \eqn{\tau_g}. Fixed effects use
-#' independent \eqn{\mathrm{Normal}(0,10)} on \eqn{(\alpha,\theta)} and on
-#' \eqn{\gamma}.
+#' independent \eqn{\mathrm{Normal}(0,10)} on \eqn{(\alpha,\beta_m)} and on
+#' \eqn{\gamma} (paper \eqn{\beta} on \eqn{m_j}, not \eqn{\delta})).
 #' Empirical work indicates interaction heterogeneity is often smaller than
 #' overall heterogeneity (Panaro, Röver & Friede, arXiv:2606.23968); vignettes
 #' set half-normal scales from that literature explicitly. See [cams()].
@@ -122,7 +127,10 @@
 #'   [combined()], [tidy()], [sensitivity()], [compare()], [predict_cams_by_if()],
 #'   [da()], [ad()],
 #'   [swada()], `vignette("cams", package = "interactmeta")`,
-#'   `vignette("export-and-qc", package = "interactmeta")`,
+#'   `vignette("heterogeneity-after-cams", package = "interactmeta")`,
+#'   `vignette("trial-specific-effects-and-shrinkage", package = "interactmeta")`,
+#'   `vignette("traceplots", package = "interactmeta")`,
+#'   `vignette("single-subgroup-trials", package = "interactmeta")`,
 #'   `vignette("worked-examples", package = "interactmeta")`
 #'
 #' @aliases interactmeta-package interactmeta

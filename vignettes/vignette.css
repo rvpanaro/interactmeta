@@ -8,12 +8,17 @@ body {
   line-height: 1.55;
   padding-left: 1.5rem;
   padding-right: 1.5rem;
+  text-align: justify;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+  hyphenate-limit-chars: 6 3 3;
 }
 
 h1, h2, h3, h4, h5, h6 {
   color: #1a1a1a;
   font-weight: 600;
   line-height: 1.25;
+  text-align: left;
 }
 
 h1 {
@@ -85,6 +90,7 @@ hr {
   border: 1px solid #E8E8E8;
   border-radius: 4px;
   background-color: #FAFAFA;
+  text-align: left;
 }
 
 img,
@@ -163,6 +169,7 @@ pre, code {
   background-color: #F6F7F8;
   color: #2A2A2A;
   border-radius: 4px;
+  text-align: left;
 }
 
 pre {

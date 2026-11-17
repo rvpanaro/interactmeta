@@ -7,13 +7,13 @@ test_that("plot() contribution type returns ggplot", {
     yi = c(0.1, 0.2, 0.15, 0.25),
     vi = 0.01,
     reference = "Younger",
-    ifrac_Older = c(0.3, 0.3, 0.4, 0.4),
+    IF_Older = c(0.3, 0.3, 0.4, 0.4),
     ifrac2_Older = c(-0.3, 0.7, -0.4, 0.6)
   )
   fit <- cams(
     dat,
         reference = "Younger")
-  p <- plot(fit, type = "contribution", ifrac_var = "ifrac_Older")
+  p <- plot(fit, type = "contribution", ifrac_var = "IF_Older")
   expect_s3_class(p, "ggplot")
   expect_true(length(p$layers) >= 4L)
   expect_false(any(vapply(
@@ -32,7 +32,7 @@ test_that("plot() contribution type returns ggplot", {
   xs <- unique(built$data[[point_layer[[1L]]]]$x)
   expect_equal(
     sort(xs),
-    sort(100 * unique(fit$data$ifrac_Older)),
+    sort(100 * unique(fit$data$IF_Older)),
     tolerance = 1e-6
   )
 
@@ -46,7 +46,7 @@ test_that("plot() contribution type returns ggplot", {
   expect_match(caption, "studies")
   expect_false(grepl("reference:", caption, fixed = TRUE))
 
-  p_no <- plot_contribution(fit, ifrac_var = "ifrac_Older", show_footnote = FALSE)
+  p_no <- plot_contribution(fit, ifrac_var = "IF_Older", show_footnote = FALSE)
   expect_null(p_no$labels$caption)
 
   lty_layer <- vapply(
@@ -64,7 +64,7 @@ test_that("plot() contribution type returns ggplot", {
 
   p_no_overall <- plot_contribution(
     fit,
-    ifrac_var = "ifrac_Older",
+    ifrac_var = "IF_Older",
     show_footnote = FALSE,
     show_overall_line = FALSE
   )

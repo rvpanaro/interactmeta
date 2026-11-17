@@ -6,19 +6,18 @@
 #' 1. overall meta-regression of trial-level IV-pooled effects on IF (`bmr`)
 #' 2. interaction RE meta-analysis of within-trial contrasts (`bayesmeta`)
 #'
-#' Fixed effects are recovered as
-#' \eqn{\alpha} = overall intercept, \eqn{\gamma} = interaction mean,
-#' \eqn{\beta = \theta - \gamma} where \eqn{\theta} is the IF slope of the
-#' overall meta-regression (\eqn{\alpha + \pi(\beta+\gamma)}).
+#' Fixed effects are recovered as \eqn{\alpha} (intercept),
+#' \eqn{\gamma} (interaction), \eqn{\beta_m} (slope on \eqn{\pi_j} in \eqn{m_j}),
+#' and \eqn{\delta=\beta_m-\gamma} stored as `b_ifrac` for reporting (Eq. 3.10).
 #'
-#' Published **engine-native** intervals on `$latent` use one rule
-#' (`interval.type`, default `"central"`): margins from `$post.interval`,
-#' independent-block sums from `bayesmeta::convolve()`. Public extractors and
-#' [predict_cams_by_if()] default to central intervals on the DIRECT-node
-#' Gaussian mixture; [plot_contribution()] ribbon limits default to central
-#' (equal-tailed) mixture intervals. `$support` is the Cartesian product
-#' of DIRECT tau-nodes with `.weight = w_i * v_k` (conditional means;
-#' within-node variance is in `.cond_*` and `$latent`). `$mu` remains the
+#' Each block's τ-grid and weights are **bayesmeta** DIRECT (`$support` on the
+#' stored `bmr` / `bayesmeta` fits). CAMS `$support` is the **product** of those
+#' two tables (`.weight = w_i * v_k`; conditional means on each row; within-τ
+#' variance in `.cond_*`). Public extractors and [predict_cams_by_if()] use
+#' central intervals on that combined mixture; [plot_contribution()] ribbon
+#' limits default to central (equal-tailed) mixture intervals. Published
+#' **engine-native** intervals on `$latent` may also use `$post.interval` or
+#' `bayesmeta::convolve()` on independent-block 1-D margins. `$mu` remains the
 #' **fixed-effect** linear predictor. No `rposterior()` calls.
 #'
 #' @noRd
@@ -122,12 +121,19 @@
     design = design
   )
   mu <- interactmeta_bayesmeta_mu_matrix(support, data_fit, design)
+  if (!isTRUE(lazy_latent) && silent < 2L) {
+    warning(
+      "`lazy_latent = FALSE` builds per-trial latent blocks inside cams(); ",
+      "default `lazy_latent = TRUE` is recommended.",
+      call. = FALSE
+    )
+  }
   latent <- interactmeta_bayesmeta_latent(
     overall_fit = overall_fit,
     interaction_fit = interaction_fit,
     blocks = blocks,
     interval.type = interval.type,
-    trial_marginals = if (isTRUE(lazy_latent)) "none" else "full"
+    trial_marginals = if (isTRUE(lazy_latent)) "none" else "trials"
   )
 
   structure(
@@ -366,7 +372,7 @@ interactmeta_bayesmeta_latent <- function(overall_fit,
                                           interaction_fit,
                                           blocks,
                                           interval.type = NULL,
-                                          trial_marginals = c("full", "none")) {
+                                          trial_marginals = c("full", "trials", "none")) {
   trial_marginals <- match.arg(trial_marginals)
   interval.type <- interactmeta_match_interval_type(
     interval.type %||% overall_fit$interval.type
@@ -417,85 +423,98 @@ interactmeta_bayesmeta_latent <- function(overall_fit,
   mu_B <- vector("list", length(trials))
   names(m) <- names(g) <- names(mu_A) <- names(mu_B) <- trials
   lazy_trials <- identical(trial_marginals, "none")
+  convolve_trials <- identical(trial_marginals, "full")
 
   if (!lazy_trials) {
-  for (j in seq_along(trials)) {
-    tr <- trials[[j]]
-    pij <- pi[[tr]]
-    gm_m <- interactmeta_gm_from_bmr_shrink(overall_fit, tr)
-    gm_g <- interactmeta_gm_from_bayesmeta_individual(interaction_fit, tr)
-    m[[tr]] <- one(
-      gm = gm_m,
-      name = paste0("m[", tr, "]"),
-      note = "marginal over overall-block hyperparameters; interval from bmr$shrink.interval",
-      published = interactmeta_native_published(overall_fit, "shrink", which = tr)
-    )
-    g[[tr]] <- one(
-      gm = gm_g,
-      name = paste0("g[", tr, "]"),
-      note = "marginal over interaction-block hyperparameters; interval from bayesmeta$post.interval(individual=)",
-      published = interactmeta_native_published(
-        interaction_fit, "effect", individual = tr
+    for (j in seq_along(trials)) {
+      tr <- trials[[j]]
+      pij <- pi[[tr]]
+      gm_m <- interactmeta_gm_from_bmr_shrink(overall_fit, tr)
+      gm_g <- interactmeta_gm_from_bayesmeta_individual(interaction_fit, tr)
+      m[[tr]] <- one(
+        gm = gm_m,
+        name = paste0("m[", tr, "]"),
+        note = "marginal over overall-block hyperparameters; interval from bmr$shrink.interval",
+        published = interactmeta_native_published(overall_fit, "shrink", which = tr)
       )
-    )
+      g[[tr]] <- one(
+        gm = gm_g,
+        name = paste0("g[", tr, "]"),
+        note = "marginal over interaction-block hyperparameters; interval from bayesmeta$post.interval(individual=)",
+        published = interactmeta_native_published(
+          interaction_fit, "effect", individual = tr
+        )
+      )
 
-    gm_A <- interactmeta_gm_linear_sum(gm_m, 1, gm_g, -pij)
-    gm_B <- interactmeta_gm_linear_sum(gm_m, 1, gm_g, 1 - pij)
-    dens_m <- interactmeta_bmr_shrink_density(overall_fit, tr)
-    cdf_m <- interactmeta_bmr_shrink_cdf(overall_fit, tr)
-    dens_g <- interactmeta_bayesmeta_individual_density(interaction_fit, tr)
-    cdf_g <- interactmeta_bayesmeta_individual_cdf(interaction_fit, tr)
-    conv_A <- NULL
-    pub_A <- NULL
-    if (abs(pij) >= 1e-15) {
-      conv_A <- interactmeta_convolve_sum(
-        dens1 = dens_m,
-        dens2 = interactmeta_scale_density(dens_g, -pij),
-        cdf1 = cdf_m,
-        cdf2 = interactmeta_scale_cdf(cdf_g, -pij),
-        delta = grid$delta,
-        epsilon = grid$epsilon
+      gm_A <- interactmeta_gm_linear_sum(gm_m, 1, gm_g, -pij)
+      gm_B <- interactmeta_gm_linear_sum(gm_m, 1, gm_g, 1 - pij)
+      conv_A <- NULL
+      pub_A <- NULL
+      conv_B <- NULL
+      pub_B <- NULL
+      if (isTRUE(convolve_trials)) {
+        dens_m <- interactmeta_bmr_shrink_density(overall_fit, tr)
+        cdf_m <- interactmeta_bmr_shrink_cdf(overall_fit, tr)
+        dens_g <- interactmeta_bayesmeta_individual_density(interaction_fit, tr)
+        cdf_g <- interactmeta_bayesmeta_individual_cdf(interaction_fit, tr)
+        if (abs(pij) >= 1e-15) {
+          conv_A <- interactmeta_convolve_sum(
+            dens1 = dens_m,
+            dens2 = interactmeta_scale_density(dens_g, -pij),
+            cdf1 = cdf_m,
+            cdf2 = interactmeta_scale_cdf(cdf_g, -pij),
+            delta = grid$delta,
+            epsilon = grid$epsilon
+          )
+        } else {
+          pub_A <- interactmeta_native_published(overall_fit, "shrink", which = tr)
+        }
+        cB <- 1 - pij
+        if (abs(cB) >= 1e-15) {
+          conv_B <- interactmeta_convolve_sum(
+            dens1 = dens_m,
+            dens2 = interactmeta_scale_density(dens_g, cB),
+            cdf1 = cdf_m,
+            cdf2 = interactmeta_scale_cdf(cdf_g, cB),
+            delta = grid$delta,
+            epsilon = grid$epsilon
+          )
+        } else {
+          pub_B <- interactmeta_native_published(overall_fit, "shrink", which = tr)
+        }
+      }
+      mu_note_A <- if (isTRUE(convolve_trials)) {
+        "trial-specific latent; mu_Aj = m_j - pi_j * g_j via convolve() (not modifiers() at pi*)"
+      } else {
+        "trial-specific latent; mu_Aj = m_j - pi_j * g_j on independent-block mixture product (not modifiers() at pi*)"
+      }
+      mu_note_B <- if (isTRUE(convolve_trials)) {
+        "trial-specific latent; mu_Bj = m_j + (1 - pi_j) * g_j via convolve() (not modifiers() at pi*)"
+      } else {
+        "trial-specific latent; mu_Bj = m_j + (1 - pi_j) * g_j on independent-block mixture product (not modifiers() at pi*)"
+      }
+      mu_A[[tr]] <- one(
+        gm = gm_A,
+        convolve = conv_A,
+        published = pub_A,
+        name = paste0("mu_A[", tr, "]"),
+        note = mu_note_A
       )
-    } else {
-      pub_A <- interactmeta_native_published(overall_fit, "shrink", which = tr)
-    }
-    conv_B <- NULL
-    pub_B <- NULL
-    cB <- 1 - pij
-    if (abs(cB) >= 1e-15) {
-      conv_B <- interactmeta_convolve_sum(
-        dens1 = dens_m,
-        dens2 = interactmeta_scale_density(dens_g, cB),
-        cdf1 = cdf_m,
-        cdf2 = interactmeta_scale_cdf(cdf_g, cB),
-        delta = grid$delta,
-        epsilon = grid$epsilon
+      mu_B[[tr]] <- one(
+        gm = gm_B,
+        convolve = conv_B,
+        published = pub_B,
+        name = paste0("mu_B[", tr, "]"),
+        note = mu_note_B
       )
-    } else {
-      pub_B <- interactmeta_native_published(overall_fit, "shrink", which = tr)
     }
-    mu_A[[tr]] <- one(
-      gm = gm_A,
-      convolve = conv_A,
-      published = pub_A,
-      name = paste0("mu_A[", tr, "]"),
-      note = "trial-specific latent; mu_Aj = m_j - pi_j * g_j via convolve() (not modifiers() at pi*)"
-    )
-    mu_B[[tr]] <- one(
-      gm = gm_B,
-      convolve = conv_B,
-      published = pub_B,
-      name = paste0("mu_B[", tr, "]"),
-      note = "trial-specific latent; mu_Bj = m_j + (1 - pi_j) * g_j via convolve() (not modifiers() at pi*)"
-    )
-  }
   }
 
-  list(
+  latent <- list(
     independence = "cross_block",
     interval.type = interval.type,
-    delta = grid$delta,
-    epsilon = grid$epsilon,
+    convolve_delta = grid$delta,
+    convolve_epsilon = grid$epsilon,
     tol.uniroot = grid$tol.uniroot,
     note = paste(
       "Marginal posteriors only. Combined and interaction blocks are independent.",
@@ -503,7 +522,7 @@ interactmeta_bayesmeta_latent <- function(overall_fit,
       "Published intervals on one stored fit use that object's $post.interval",
       "(or bmr$shrink.interval). Published intervals for independent-block sums",
       "use bayesmeta::convolve(). The Gaussian mixture is a check, not a second interval.",
-      "alpha and theta are not convolved: they share the overall-block support.",
+      "alpha and beta_m are not convolved: they share the overall-block support.",
       "latent$mu_A[[j]] / $mu_B[[j]] are trial-specific (m_j, g_j, pi_j),",
       "not population mu_A(pi*) / mu_B(pi*); those come from modifiers()."
     ),
@@ -513,10 +532,10 @@ interactmeta_bayesmeta_latent <- function(overall_fit,
       note = "interval from bmr$post.interval(which.beta = intercept)",
       published = interactmeta_native_published(overall_fit, "effect", which = intercept_nm)
     ),
-    theta = one(
+    beta_m = one(
       gm = gm_theta,
-      name = "theta",
-      note = "interval from bmr$post.interval(which.beta = slope). Not convolved with alpha.",
+      name = "beta_m",
+      note = "paper beta; slope on pi_j in m_j ~ pi_j (bmr ifrac). Not convolved with alpha.",
       published = interactmeta_native_published(overall_fit, "effect", which = slope_nm)
     ),
     gamma = one(
@@ -525,11 +544,11 @@ interactmeta_bayesmeta_latent <- function(overall_fit,
       note = "interval from bayesmeta$post.interval",
       published = interactmeta_native_published(interaction_fit, "effect")
     ),
-    beta = one(
+    delta = one(
       gm = gm_beta,
       convolve = conv_beta,
-      name = "beta",
-      note = "published posterior is convolve(theta, -gamma); gm is the exact mixture check"
+      name = "delta",
+      note = "paper delta = beta_m - gamma; convolve(beta_m, -gamma)"
     ),
     tau_m = interactmeta_discrete(overall_fit$support$tau, overall_fit$support$weight),
     tau_g = interactmeta_discrete(
@@ -545,6 +564,9 @@ interactmeta_bayesmeta_latent <- function(overall_fit,
     cache = new.env(parent = emptyenv()),
     .lazy_trials = lazy_trials
   )
+  latent$theta <- latent$beta_m
+  latent$beta <- latent$delta
+  latent
 }
 
 #' Whether per-trial `$latent$m` / `$g` Gaussian mixtures are materialized
@@ -586,10 +608,10 @@ interactmeta_ensure_bayesmeta_latent <- function(fit, full_trials = FALSE) {
     return(invisible(fit))
   }
   if (isTRUE(full_trials)) {
-    if (is.list(lat) && !isTRUE(lat$.lazy_trials)) {
+    if (interactmeta_bayesmeta_trial_latent_ready(fit)) {
       return(invisible(fit))
     }
-    mode <- "full"
+    mode <- "trials"
   } else {
     if (is.list(lat) && !is.null(lat$beta)) {
       return(invisible(fit))
@@ -739,9 +761,9 @@ interactmeta_bayesmeta_param_summary <- function(fit, prob = 0.95) {
   if (is.null(ov_sum) || is.null(int_sum)) {
     return(NULL)
   }
-  if (is.null(fit$latent$beta) || is.null(fit$latent$beta$convolve)) {
+  if (is.null(fit$latent$delta) || is.null(fit$latent$delta$convolve)) {
     stop(
-      "Bayesian ecological interval requires latent$beta from bayesmeta::convolve(theta, -gamma).",
+      "Bayesian delta interval requires latent$delta from bayesmeta::convolve(beta_m, -gamma).",
       call. = FALSE
     )
   }
@@ -773,18 +795,18 @@ interactmeta_bayesmeta_param_summary <- function(fit, prob = 0.95) {
     )
   }
 
-  beta_sm <- interactmeta_posterior_1d_summary(
-    fit$latent$beta,
+  delta_sm <- interactmeta_posterior_1d_summary(
+    fit$latent$delta,
     prob = prob,
     interval.type = interval.type
   )
-  beta_row <- c(
+  delta_row <- c(
     mode = NA_real_,
-    median = beta_sm$median,
-    mean = beta_sm$mean,
-    sd = beta_sm$sd,
-    lower = beta_sm$lower,
-    upper = beta_sm$upper
+    median = delta_sm$median,
+    mean = delta_sm$mean,
+    sd = delta_sm$sd,
+    lower = delta_sm$lower,
+    upper = delta_sm$upper
   )
 
   alpha_row <- native_col(ov_sum, bm$overall, intercept_nm, "effect", intercept_nm)
@@ -792,11 +814,14 @@ interactmeta_bayesmeta_param_summary <- function(fit, prob = 0.95) {
   tau_m <- native_col(ov_sum, bm$overall, "tau", "tau")
   tau_g <- native_col(int_sum, bm$interaction, "tau", "tau")
 
+  slope_nm <- interactmeta_bmr_coef_name(bm$overall, "slope")
+  beta_m_row <- native_col(ov_sum, bm$overall, slope_nm, "effect", slope_nm)
+
   st <- attr(fit, "interactmeta", exact = TRUE)
   nonref <- st$coef_map$ifrac_orig[[1L]] %||%
     (st$ifrac_vars[[1L]] %||% "Older")
-  nonref <- sub("^ifrac_", "", as.character(nonref)[[1L]])
-  eco_nm <- paste0("Ecological_", nonref)
+  nonref <- ifrac_design_col_strip(as.character(nonref)[[1L]])
+  delta_nm <- paste0("Delta_", nonref)
   int_nm <- paste0("Interaction_", nonref)
 
   lower_lab <- if (isTRUE(all.equal(prob, 0.95))) {
@@ -813,10 +838,11 @@ interactmeta_bayesmeta_param_summary <- function(fit, prob = 0.95) {
     tau = tau_m,
     tau_gamma = tau_g,
     Intercept = alpha_row,
-    Ecological = beta_row,
+    Beta_m = beta_m_row,
+    Delta = delta_row,
     Interaction = gamma_row
   )
-  colnames(mat)[4:5] <- c(eco_nm, int_nm)
+  colnames(mat)[5:6] <- c(delta_nm, int_nm)
   rownames(mat) <- c("mode", "median", "mean", "sd", lower_lab, upper_lab)
   attr(mat, "interval.type") <- interval.type
   if (isTRUE(all.equal(prob, 0.95))) {

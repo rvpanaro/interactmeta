@@ -21,7 +21,7 @@ fixture_cam_tiny <- function(
     yi = c(0.1, 0.2, 0.15, 0.25),
     vi = vi,
     reference = "Younger",
-    ifrac_Older = ifrac_older,
+    IF_Older = ifrac_older,
     ifrac2_Older = ifrac2_older
   )
 }

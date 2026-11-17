@@ -215,7 +215,7 @@ test_that("cams() uses bayesmeta by default with usable accessors", {
   expect_s3_class(fit, "interactmeta")
   expect_equal(attr(fit, "interactmeta")$backend, "bayesmeta")
   post <- as.data.frame(fit)
-  expect_true("b_Intercept" %in% names(post) || "b_ifrac_Older" %in% names(post))
+  expect_true("b_Intercept" %in% names(post) || "b_IF_Older" %in% names(post))
 })
 
 test_that("bayesmeta DIRECT stores orthogonal overall and interaction support", {

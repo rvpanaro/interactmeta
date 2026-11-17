@@ -19,10 +19,23 @@
 #'   When provided, only these labels are used (overrides `contrast_sep` filtering).
 #'
 #' @return The input data (subgroup rows only, unless `include_contrast_rows = TRUE`)
-#'   with columns `precision` and `ifrac_*` for each non-reference subgroup.
+#'   with columns `precision` and `IF_*` for each non-reference subgroup.
 #'
 #' @keywords internal
 #' @export
+ifrac_design_col_pattern <- function() "^IF_"
+ifrac_design_col_prefix <- function() "IF_"
+ifrac_design_col_name <- function(subgroup) {
+  paste0(ifrac_design_col_prefix(), subgroup)
+}
+ifrac_design_col_strip <- function(col) {
+  sub(ifrac_design_col_pattern(), "", col)
+}
+ifrac_design_col_detect <- function(nm) {
+  cols <- grep(ifrac_design_col_pattern(), nm, value = TRUE)
+  cols[!grepl("^ifrac2_", cols)]
+}
+
 add_ifrac_design <- function(dat,
                              trial_col = NULL,
                              subgroup_col = NULL,
@@ -112,7 +125,7 @@ add_ifrac_design <- function(dat,
         id_cols = dplyr::all_of(trial_col),
         names_from = dplyr::all_of(subgroup_col),
         values_from = "ifrac",
-        names_prefix = "ifrac_"
+        names_prefix = "IF_"
       )
 
     out <- out |>
@@ -120,7 +133,7 @@ add_ifrac_design <- function(dat,
 
     non_ref_labels <- sort(unique(non_ref[[subgroup_col]]))
     for (lab in non_ref_labels) {
-      icol <- paste0("ifrac_", lab)
+      icol <- ifrac_design_col_name(lab)
       if (!icol %in% names(out)) {
         next
       }
@@ -128,8 +141,7 @@ add_ifrac_design <- function(dat,
     }
   }
 
-  ifrac_k_cols <- sort(grep("^ifrac_", names(out), value = TRUE))
-  ifrac_k_cols <- ifrac_k_cols[!grepl("^ifrac2_", ifrac_k_cols)]
+  ifrac_k_cols <- sort(ifrac_design_col_detect(names(out)))
   design_cols <- c("precision", ifrac_k_cols)
   design_cols <- design_cols[design_cols %in% names(out)]
 
@@ -161,11 +173,10 @@ check_ifrac_design_cols <- function(dat, trial_col, subgroup_col, vi_col, refere
 #' @noRd
 add_ifrac2_design <- function(dat, subgroup_col = NULL) {
   subgroup_col <- subgroup_col %||% interactmeta_resolve_level_col(dat)
-  ifrac_cols <- grep("^ifrac_", names(dat), value = TRUE)
-  ifrac_cols <- ifrac_cols[!grepl("^ifrac2_", ifrac_cols)]
+  ifrac_cols <- ifrac_design_col_detect(names(dat))
   sg <- as.character(dat[[subgroup_col]])
   for (icol in ifrac_cols) {
-    lab <- sub("^ifrac_", "", icol)
+    lab <- ifrac_design_col_strip(icol)
     i2col <- paste0("ifrac2_", lab)
     if (!i2col %in% names(dat)) {
       dat[[i2col]] <- as.numeric(sg == lab) - as.numeric(dat[[icol]])
@@ -184,7 +195,7 @@ add_ifrac2_design <- function(dat, subgroup_col = NULL) {
 #'
 #' By default (`contrast = "all"`), all non-reference-vs-reference contrasts are
 #' added per trial. Set `contrast = NULL` to return only subgroup rows with wide
-#' `ifrac_<subgroup>` columns (one fraction per subgroup label).
+#' `IF_<subgroup>` columns (one fraction per subgroup label).
 #'
 #' When `contrast` is provided, the information fraction for each comparison is
 #' computed as the non-reference subgroup precision divided by the total subgroup
@@ -198,7 +209,7 @@ add_ifrac2_design <- function(dat, subgroup_col = NULL) {
 #' chosen scale). When `include_interaction = TRUE`, contrast rows are stacked
 #' below subgroup rows with `subgroup` labels like `"g2-g1"` (reference after
 #' `contrast_sep`), using `yi` and `vi` for the contrast estimate and variance.
-#' Wide columns `ifrac_<non-reference>` are filled
+#' Wide columns `IF_<non-reference>` are filled
 #' on every row (no `NA`), plus `precision`, and a `reference` column (last
 #' column). For each non-reference subgroup `k`, `ifrac_k` is the trial-level
 #' information fraction. On combined
@@ -227,7 +238,7 @@ add_ifrac2_design <- function(dat, subgroup_col = NULL) {
 #'   object, a row that already has the placeholder `yi = 0` and `vi = 8` keeps
 #'   that estimate, and `vi` is replaced by `big_var`. Defaults to `100^2`.
 #' @param ... Further arguments passed to methods.
-#' @param contrast Either `NULL` (subgroup rows only, wide `ifrac_<subgroup>`
+#' @param contrast Either `NULL` (subgroup rows only, wide `IF_<subgroup>`
 #'   columns), a character vector of length 2 giving the two subgroup labels to
 #'   contrast within each trial (computed as `label1 - label2`, where `label2` is
 #'   the reference), or `"all"` (default) to add each non-reference subgroup vs
@@ -250,18 +261,18 @@ add_ifrac2_design <- function(dat, subgroup_col = NULL) {
 #'   `subgroup = "Combined"`.
 #' @param include_interaction Logical. If `FALSE` (default), return subgroup rows
 #'   only while still using `contrast` to define the reference-centered
-#'   `ifrac_*` design columns. If `TRUE` and `contrast` is not
+#'   `IF_*` design columns. If `TRUE` and `contrast` is not
 #'   `NULL`, append interaction/contrast rows below subgroup rows.
 #'
-#' **Pooling** ( [`interactmeta`], or [ifrac()] data with `ifrac_*` columns):
+#' **Pooling** ( [`interactmeta`], or [ifrac()] data with `IF_*` columns):
 #' pass `ifrac` to pool trial-level fractions across studies.
 #' \deqn{\bar{\omega} = \sum_i \pi_i w_i / \sum_i w_i.}
 #' With `ifrac = "interaction"` (default),
 #' \eqn{w_i = 1/(\tau_\gamma^2 + \sigma_{Ai}^2 + \sigma_{Bi}^2)} using the
 #' interaction-block SD \eqn{\tau_\gamma}.
-#' With `ifrac = "overall"`, \eqn{w_i = 1/(\tau^2 + v_i)} using the
-#' overall-block intercept SD \eqn{\tau} and
-#' \eqn{v_i=\mathrm{Var}(m_i)=(1-\pi_i)^2\sigma_{Ai}^2+\pi_i^2\sigma_{Bi}^2}.
+#' With `ifrac = "overall"`, \eqn{w_j = 1/(\tau^2 + \sigma_j^2)} using the
+#' overall-block intercept SD \eqn{\tau} and combined sampling variance
+#' \eqn{\sigma_j^2=\mathrm{Var}(m_j)=(1-\pi_j)^2\sigma_{Aj}^2+\pi_j^2\sigma_{Bj}^2}.
 #' On Bayesian CAMS, \eqn{\tau} / \eqn{\tau_\gamma} are DIRECT posterior supports, so
 #' the pooled IF is a distribution. On frequentist CAMS (`engine = "metafor"`),
 #' pooling uses the fitted \eqn{\tau} or \eqn{\tau_\gamma}.
@@ -269,14 +280,14 @@ add_ifrac2_design <- function(dat, subgroup_col = NULL) {
 #'
 #' @param ifrac For pooling only: `"interaction"` (default) or `"overall"`.
 #' @param fit,tau,tau_gamma,ifrac_var,summary,prob Pooling options when `x` is a
-#'   [`interactmeta`] or design data with `ifrac_*` columns (`fit` or `tau` /
+#'   [`interactmeta`] or design data with `IF_*` columns (`fit` or `tau` /
 #'   `tau_gamma` required for data-only pooling).
 #'
 #' @return For the **design** method, a tibble with one row per `trial`-by-`subgroup` combination (subgroup
 #'   levels and contrast rows when requested), including `trial`, `subgroup`
 #'   (a factor with the reference subgroup as the first level on subgroup rows),
 #'   `yi`, `vi`, and information-fraction columns. Columns `yi`, `vi`, `precision`
-#'   (when present), and all `ifrac_<...>` columns are numeric.
+#'   (when present), and all `IF_<...>` columns are numeric.
 #'
 #'   For **pooling**, a `interactmeta_overall_ifrac` object (draws with metadata), or a
 #'   summary data frame when `summary = TRUE`.
@@ -292,7 +303,7 @@ add_ifrac2_design <- function(dat, subgroup_col = NULL) {
 #' # Name `subgroup`: the fourth positional argument is `modifier`.
 #' ifrac(yi = yi, vi = vi, trial = trial, subgroup = subgroup)
 #'
-#' # Subgroup rows only, wide ifrac_<subgroup> for every label
+#' # Subgroup rows only, wide IF_<subgroup> for every label
 #' ifrac(yi = yi, vi = vi, trial = trial, subgroup = subgroup, contrast = NULL)
 #'
 #' # Single contrast (g1 - g2, reference g2)
@@ -620,7 +631,7 @@ ifrac_design <- function(yi, vi = NULL, trial = NULL, subgroup = NULL, big_var =
       tidyr::pivot_wider(
         names_from = "subgroup",
         values_from = "ifrac",
-        names_glue = "ifrac_{subgroup}"
+        names_glue = "IF_{subgroup}"
       )
   }
 
@@ -646,8 +657,7 @@ ifrac_design <- function(yi, vi = NULL, trial = NULL, subgroup = NULL, big_var =
   if (isTRUE(include_combined)) {
     derived_out <- build_ifrac_combined_rows(dat_complete)
     if (!is.null(contrast) && nrow(derived_out) > 0L) {
-      ifrac_k_cols <- grep("^ifrac_", names(subgroup_out), value = TRUE)
-      ifrac_k_cols <- ifrac_k_cols[!grepl("^ifrac2_", ifrac_k_cols)]
+      ifrac_k_cols <- ifrac_design_col_detect(names(subgroup_out))
       design_by_trial <- subgroup_out |>
         dplyr::distinct(.data$trial, dplyr::across(dplyr::all_of(ifrac_k_cols)))
       derived_out <- derived_out |>
@@ -660,8 +670,7 @@ ifrac_design <- function(yi, vi = NULL, trial = NULL, subgroup = NULL, big_var =
   }
 
   if (isTRUE(include_interaction) && !is.null(contrast) && nrow(contrast_rows) > 0L) {
-    ifrac_k_cols <- grep("^ifrac_", names(subgroup_out), value = TRUE)
-    ifrac_k_cols <- ifrac_k_cols[!grepl("^ifrac2_", ifrac_k_cols)]
+    ifrac_k_cols <- ifrac_design_col_detect(names(subgroup_out))
     design_by_trial <- subgroup_out |>
       dplyr::distinct(.data$trial, dplyr::across(dplyr::all_of(ifrac_k_cols)))
 
@@ -694,8 +703,7 @@ ifrac_design <- function(yi, vi = NULL, trial = NULL, subgroup = NULL, big_var =
     out <- out |>
       dplyr::left_join(ifrac_wide, by = "trial")
   } else if (!is.null(contrast)) {
-    ifrac_k_cols <- grep("^ifrac_", names(out), value = TRUE)
-    ifrac_k_cols <- ifrac_k_cols[!grepl("^ifrac2_", ifrac_k_cols)]
+    ifrac_k_cols <- ifrac_design_col_detect(names(out))
     base_cols <- ifrac_output_base_cols(out)
     other_cols <- c("precision", ifrac_k_cols, "reference")
     other_cols <- other_cols[other_cols %in% names(out)]
@@ -718,8 +726,46 @@ ifrac_combined_label <- function() {
 }
 
 #' @noRd
-is_ifrac_contrast_row <- function(subgroup, contrast_sep = "-") {
-  grepl(contrast_sep, as.character(subgroup), fixed = TRUE)
+is_ifrac_contrast_row <- function(subgroup,
+                                  contrast_sep = "-",
+                                  component_labels = NULL) {
+  sg <- as.character(subgroup)
+  if (!length(sg)) {
+    return(logical(0))
+  }
+  pool <- unique(sg)
+  if (!is.null(component_labels)) {
+    pool <- unique(c(pool, as.character(component_labels)))
+  }
+  vapply(
+    sg,
+    function(lab) {
+      if (!grepl(contrast_sep, lab, fixed = TRUE)) {
+        return(FALSE)
+      }
+      if (!is.null(component_labels) && lab %in% component_labels) {
+        return(FALSE)
+      }
+      parts <- pool
+      np <- length(parts)
+      if (np < 2L) {
+        return(FALSE)
+      }
+      for (i in seq_len(np)) {
+        for (j in seq_len(np)) {
+          if (i == j) {
+            next
+          }
+          if (identical(lab, paste0(parts[[i]], contrast_sep, parts[[j]]))) {
+            return(TRUE)
+          }
+        }
+      }
+      FALSE
+    },
+    logical(1L),
+    USE.NAMES = FALSE
+  )
 }
 
 #' @noRd
@@ -728,8 +774,15 @@ is_ifrac_combined_row <- function(subgroup, combined_label = ifrac_combined_labe
 }
 
 #' @noRd
-is_ifrac_component_row <- function(subgroup, contrast_sep = "-", combined_label = ifrac_combined_label()) {
-  !is_ifrac_contrast_row(subgroup, contrast_sep) &
+is_ifrac_component_row <- function(subgroup,
+                                   contrast_sep = "-",
+                                   combined_label = ifrac_combined_label(),
+                                   component_labels = NULL) {
+  !is_ifrac_contrast_row(
+    subgroup,
+    contrast_sep = contrast_sep,
+    component_labels = component_labels
+  ) &
     !is_ifrac_combined_row(subgroup, combined_label)
 }
 
@@ -1403,7 +1456,7 @@ overall_ifrac_weighted_pool <- function(pi, den, hetero_sd) {
 #' the overall-block sampling variance
 #' \eqn{(1-\pi_j)^2\sigma_{Aj}^2+\pi_j^2\sigma_{Bj}^2}.
 #' Interaction denominator is \eqn{\sigma_{Aj}^2+\sigma_{Bj}^2=\mathrm{Var}(g_j)}.
-#' Weights are \eqn{w_j=1/(\tau^2+v_j)} at a supplied heterogeneity SD.
+#' Weights are \eqn{w_j=1/(\tau^2+\sigma_j^2)} at a supplied heterogeneity SD.
 #' @noRd
 overall_ifrac_trial_components <- function(data,
                                            trial_var,
@@ -1513,7 +1566,7 @@ comparison_tau_gamma_samples <- function(fit, ifrac_var, trial_var = NULL) {
   if (is.null(trial_var) || !nzchar(trial_var)) {
     trial_var <- if (!is.null(st) && !is.null(st$trial_var)) st$trial_var else "trial"
   }
-  subgroup <- sub("^ifrac_", "", ifrac_var)
+  subgroup <- ifrac_design_col_strip(ifrac_var)
   interaction_param <- paste0("Interaction_", subgroup)
   legacy_ifrac2_param <- paste0("ifrac2_", subgroup)
   specs <- comparison_heterogeneity_specs(fit, trial_var = trial_var, component = "slope")
@@ -1924,8 +1977,7 @@ is_ifrac_output <- function(x) {
   if (!is.data.frame(x)) {
     return(FALSE)
   }
-  cols <- grep("^ifrac_", names(x), value = TRUE)
-  cols <- cols[!grepl("^ifrac2_", cols)]
+  cols <- ifrac_design_col_detect(names(x))
   length(cols) > 0L
 }
 
@@ -1944,16 +1996,15 @@ prepare_ifrac_input <- function(x,
     ref <- interactmeta_reference(out, reference = reference, subgroup_var = subgroup)
     out <- interactmeta_ensure_reference_column(out, ref)
     # Reject ifrac_<reference> columns (pi must be non-reference only).
-    ifrac_cols <- grep("^ifrac_", names(out), value = TRUE)
-    ifrac_cols <- ifrac_cols[!grepl("^ifrac2_", ifrac_cols)]
-    bad <- ifrac_cols[sub("^ifrac_", "", ifrac_cols) == ref]
+    ifrac_cols <- ifrac_design_col_detect(names(out))
+    bad <- ifrac_cols[ifrac_design_col_strip(ifrac_cols) == ref]
     if (length(bad)) {
       stop(
         "Design column(s) ",
         paste(bad, collapse = ", "),
         " name the reference subgroup `",
         ref,
-        "`. CAMS `ifrac_*` columns must be non-reference only ",
+        "`. CAMS `IF_*` columns must be non-reference only ",
         "(pi = IF_nonref, reference weight = 1 - pi).",
         call. = FALSE
       )

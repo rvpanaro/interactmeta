@@ -268,7 +268,7 @@ test_that("plot_contribution() uses the IF grid and study-level points", {
     fit,
     interactmeta:::resolve_bubbleplot_settings(fit)
   )
-  if_frac_pct <- 100 * sort(unique(raw$ifrac_Older))
+  if_frac_pct <- 100 * sort(unique(raw$IF_Older))
   expect_equal(sort(xs), if_frac_pct, tolerance = 1e-6)
   expect_gt(length(xs), 1L)
   pts <- built$data[[point_layer[[1L]]]]

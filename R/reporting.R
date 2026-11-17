@@ -671,14 +671,13 @@ comparison_interaction_print_name <- function(ifrac2_name) {
 
 #' Print-facing name for a fixed-effect `b_ifrac_*` coefficient
 #'
-#' Maps `b_ifrac_Older` / `ifrac_Older` → `Ecological_Older` in the marginal
-#' posterior summary (composition / IF slope). Internal draw columns stay
-#' `b_ifrac_*`.
+#' Maps `b_ifrac_Older` / `ifrac_Older` to `Delta_Older` (paper \eqn{\delta}).
+#' Internal draw columns stay `b_ifrac_*`.
 #' @noRd
 comparison_ifrac_fe_print_name <- function(ifrac_coef) {
   nm <- as.character(ifrac_coef)[[1L]]
   nm <- sub("^b_", "", nm)
-  sub("^ifrac_", "Ecological_", nm)
+  sub(ifrac_design_col_pattern(), "Delta_", nm)
 }
 
 #' Print-facing name for a subgroup fixed-effect coefficient
@@ -815,9 +814,10 @@ interactmeta_cams_param_column_labels <- function(fit) {
   st <- attr(fit, "interactmeta", exact = TRUE)
   nonref <- st$coef_map$ifrac_orig[[1L]] %||%
     (st$ifrac_vars[[1L]] %||% "Older")
-  nonref <- sub("^ifrac_", "", as.character(nonref)[[1L]])
+  nonref <- ifrac_design_col_strip(as.character(nonref)[[1L]])
   list(
-    ecological = paste0("Ecological_", nonref),
+    beta_m = "Beta_m",
+    delta = paste0("Delta_", nonref),
     interaction = paste0("Interaction_", nonref)
   )
 }
@@ -833,7 +833,7 @@ interactmeta_metafor_df_stat_vec <- function(df, model, term) {
   stats::setNames(as.numeric(df[i[1L], stat_rows, drop = TRUE]), stat_rows)
 }
 
-#' Ecological (beta = theta - gamma) Wald stats from stored `rma` objects
+#' Paper delta (= beta_m - gamma) Wald stats from stored `rma` objects
 #' @noRd
 interactmeta_metafor_ecological_stat_vec <- function(fit, prob = 0.95) {
   stat_rows <- interactmeta_metafor_param_stat_rows()
@@ -883,10 +883,11 @@ interactmeta_metafor_param_summary <- function(fit, prob = 0.95) {
     tau = interactmeta_metafor_df_stat_vec(df, "overall", "tau"),
     tau_gamma = interactmeta_metafor_df_stat_vec(df, "interaction", "tau"),
     Intercept = interactmeta_metafor_df_stat_vec(df, "overall", "intrcpt"),
-    Ecological = interactmeta_metafor_ecological_stat_vec(fit, prob = prob),
+    Beta_m = interactmeta_metafor_df_stat_vec(df, "overall", ifrac_term),
+    Delta = interactmeta_metafor_ecological_stat_vec(fit, prob = prob),
     Interaction = interactmeta_metafor_df_stat_vec(df, "interaction", "intrcpt")
   )
-  colnames(mat)[4:5] <- c(labs$ecological, labs$interaction)
+  colnames(mat)[4:6] <- c(labs$beta_m, labs$delta, labs$interaction)
   rownames(mat) <- stat_rows
   attr(mat, "interval.type") <- "central"
   mat
@@ -997,50 +998,50 @@ comparison_draw_summary_vec <- function(x, prob = 0.95) {
 #' @noRd
 comparison_fit_param_summary_matrix <- function(x, prob = 0.95) {
   post <- comparison_support_df(x)
-  cols <- character()
-  labels <- character()
+  series <- list()
 
   if ("sd_trial__Intercept" %in% names(post)) {
-    cols <- c(cols, "sd_trial__Intercept")
-    labels <- c(labels, "tau")
+    series$tau <- post[["sd_trial__Intercept"]]
   }
   gamma_cols <- grep("^sd_trial__ifrac2_", names(post), value = TRUE)
   if (length(gamma_cols)) {
-    for (gc in gamma_cols) {
-      lab <- sub("^sd_trial__ifrac2_", "tau_gamma[", gc)
-      lab <- paste0(lab, "]")
-      if (length(gamma_cols) == 1L) {
-        lab <- "tau_gamma"
+    for (i in seq_along(gamma_cols)) {
+      gc <- gamma_cols[[i]]
+      lab <- if (length(gamma_cols) == 1L) {
+        "tau_gamma"
+      } else {
+        paste0("tau_gamma[", sub("^sd_trial__ifrac2_", "", gc), "]")
       }
-      cols <- c(cols, gc)
-      labels <- c(labels, lab)
+      series[[lab]] <- post[[gc]]
     }
   }
   if ("b_Intercept" %in% names(post)) {
-    cols <- c(cols, "b_Intercept")
-    labels <- c(labels, "Intercept")
+    series$Intercept <- post[["b_Intercept"]]
   }
   ifrac_b <- grep("^b_ifrac_", names(post), value = TRUE)
-  for (bc in ifrac_b) {
-    cols <- c(cols, bc)
-    labels <- c(labels, comparison_ifrac_fe_print_name(bc))
-  }
   sg_b <- grep("^b_subgroup", names(post), value = TRUE)
+  if (length(ifrac_b) && length(sg_b)) {
+    series$Beta_m <- post[[ifrac_b[[1L]]]] + post[[sg_b[[1L]]]]
+  }
+  for (bc in ifrac_b) {
+    lab <- comparison_ifrac_fe_print_name(bc)
+    series[[lab]] <- post[[bc]]
+  }
   for (bc in sg_b) {
-    cols <- c(cols, bc)
-    labels <- c(labels, comparison_subgroup_fe_print_name(bc))
+    lab <- comparison_subgroup_fe_print_name(bc)
+    series[[lab]] <- post[[bc]]
   }
 
-  if (!length(cols)) {
+  if (!length(series)) {
     return(matrix(NA_real_, nrow = 6L, ncol = 0L))
   }
 
   mat <- vapply(
-    cols,
-    function(nm) comparison_draw_summary_vec(post[[nm]], prob = prob),
+    series,
+    function(v) comparison_draw_summary_vec(v, prob = prob),
     numeric(6L)
   )
-  colnames(mat) <- make.unique(labels)
+  colnames(mat) <- make.unique(names(series))
   mat
 }
 

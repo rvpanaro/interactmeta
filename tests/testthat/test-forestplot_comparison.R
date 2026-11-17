@@ -20,7 +20,7 @@ test_that("forestplot() validates prob on the comparison path", {
     yi = c(0.1, 0.2, 0.15, 0.25),
     vi = 0.01,
     reference = "Younger",
-    ifrac_Older = c(0.3, 0.3, 0.55, 0.55),
+    IF_Older = c(0.3, 0.3, 0.55, 0.55),
     ifrac2_Older = c(-0.3, 0.7, -0.55, 0.45),
     n = 10
   )
@@ -52,7 +52,7 @@ test_that("marginal rows keep subgroup grouping labels for the forest renderer",
     yi = c(0.1, 0.2, 0.15, 0.25),
     vi = 0.01,
     reference = "Younger",
-    ifrac_Older = c(0.3, 0.3, 0.55, 0.55),
+    IF_Older = c(0.3, 0.3, 0.55, 0.55),
     ifrac2_Older = c(-0.3, 0.7, -0.55, 0.45),
     n = 10
   )
@@ -88,7 +88,7 @@ test_that("forestplot() includes shrinkage overlays by default", {
     yi = c(0.1, 0.2, 0.15, 0.25),
     vi = 0.01,
     reference = "Younger",
-    ifrac_Older = c(0.3, 0.3, 0.55, 0.55),
+    IF_Older = c(0.3, 0.3, 0.55, 0.55),
     ifrac2_Older = c(-0.3, 0.7, -0.55, 0.45)
   )
   fit <- cams(dat, reference = "Younger")
@@ -107,7 +107,7 @@ test_that("CAMS forest shrinkage fill is consistent within every trial after ren
     yi = c(0.1, 0.2, 0.15, 0.25, 0.12, 0.22),
     vi = 0.01,
     reference = "Younger",
-    ifrac_Older = c(0.3, 0.3, 0.5, 0.5, 0.7, 0.7),
+    IF_Older = c(0.3, 0.3, 0.5, 0.5, 0.7, 0.7),
     ifrac2_Older = c(-0.3, 0.7, -0.5, 0.5, -0.7, 0.3)
   )
   fit <- cams(dat, reference = "Younger")
@@ -132,7 +132,7 @@ test_that("forest markers are black with gray45 shrinkage", {
     yi = c(0.1, 0.2, 0.15, 0.25),
     vi = 0.01,
     reference = "Younger",
-    ifrac_Older = c(0.3, 0.3, 0.55, 0.55),
+    IF_Older = c(0.3, 0.3, 0.55, 0.55),
     ifrac2_Older = c(-0.3, 0.7, -0.55, 0.45),
     n = 10
   )
@@ -190,7 +190,7 @@ test_that("include_shrinkage with group=subgroup uses alphabetical trial pairs",
     vi = 0.01,
     n = 10,
     reference = "Younger",
-    ifrac_Older = c(0.3, 0.3, 0.5, 0.5, 0.7, 0.7),
+    IF_Older = c(0.3, 0.3, 0.5, 0.5, 0.7, 0.7),
     ifrac2_Older = c(-0.3, 0.7, -0.5, 0.5, -0.7, 0.3)
   )
   fit <- suppressWarnings(cams(
@@ -269,7 +269,7 @@ test_that("forestplot(fit) passes weight with shrinkage and exponentiate", {
     yi = c(0.1, 0.2, 0.15, 0.25),
     vi = c(0.01, 0.04, 0.02, 0.02),
     reference = "Younger",
-    ifrac_Older = c(0.3, 0.3, 0.6, 0.6),
+    IF_Older = c(0.3, 0.3, 0.6, 0.6),
     ifrac2_Older = c(-0.3, 0.7, -0.6, 0.4)
   )
   fit <- cams(
@@ -331,7 +331,7 @@ test_that("forestplot(fit) adds heterogeneity and overall-IF annotations", {
     yi = c(0.1, 0.2, 0.15, 0.25),
     vi = 0.01,
     reference = "Younger",
-    ifrac_Older = c(0.3, 0.3, 0.55, 0.55),
+    IF_Older = c(0.3, 0.3, 0.55, 0.55),
     ifrac2_Older = c(-0.3, 0.7, -0.55, 0.45)
   )
   fit <- cams(
@@ -383,7 +383,7 @@ test_that("all forestplot shrinkage rows match shrinkage() from the fit", {
     yi = c(0.1, 0.2, 0.15, 0.25),
     vi = c(0.04, 0.01, 0.04, 0.01),
     reference = "Younger",
-    ifrac_Older = c(0.3, 0.3, 0.55, 0.55),
+    IF_Older = c(0.3, 0.3, 0.55, 0.55),
     ifrac2_Older = c(-0.3, 0.7, -0.55, 0.45),
     n = 10
   )

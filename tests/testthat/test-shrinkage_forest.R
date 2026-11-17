@@ -9,7 +9,7 @@ test_that("pi is non-reference IF, not 1-pi / reference IF", {
     # Unequal precision so IF_Older != 0.5 and != IF_Younger
     vi = c(0.08, 0.02, 0.02, 0.08),
     reference = "Younger",
-    ifrac_Older = c(0.8, 0.8, 0.2, 0.2),
+    IF_Older = c(0.8, 0.8, 0.2, 0.2),
     ifrac2_Older = c(-0.8, 0.2, -0.2, 0.8),
     n = 10
   )
@@ -57,7 +57,7 @@ test_that("CAMS shrinkage g orientation is nonref - ref (Older - Younger)", {
     yi = c(0.10, 0.40, -0.05, 0.30),
     vi = c(0.08, 0.08, 0.02, 0.02),
     reference = "Younger",
-    ifrac_Older = c(0.5, 0.5, 0.3, 0.3),
+    IF_Older = c(0.5, 0.5, 0.3, 0.3),
     ifrac2_Older = c(-0.5, 0.5, -0.3, 0.7),
     n = 10
   )
@@ -92,7 +92,7 @@ test_that("draw-level reconstruction and round-trip identities hold", {
     yi = c(0.10, 0.40, -0.05, 0.30),
     vi = c(0.08, 0.08, 0.02, 0.02),
     reference = "Younger",
-    ifrac_Older = c(0.5, 0.5, 0.3, 0.3),
+    IF_Older = c(0.5, 0.5, 0.3, 0.3),
     ifrac2_Older = c(-0.5, 0.5, -0.3, 0.7),
     n = 10
   )
@@ -134,7 +134,7 @@ test_that("observed m,g recover original subgroup estimates", {
     yi = c(0.10, 0.40, -0.05, 0.30),
     vi = c(0.08, 0.08, 0.02, 0.02),
     reference = "Younger",
-    ifrac_Older = c(0.5, 0.5, 0.3, 0.3),
+    IF_Older = c(0.5, 0.5, 0.3, 0.3),
     ifrac2_Older = c(-0.5, 0.5, -0.3, 0.7),
     n = 10
   )
@@ -169,7 +169,7 @@ test_that("trial order and draw permutation do not change summaries", {
     yi = c(-0.05, 0.30, 0.10, 0.40),
     vi = c(0.02, 0.02, 0.08, 0.08),
     reference = "Younger",
-    ifrac_Older = c(0.3, 0.3, 0.5, 0.5),
+    IF_Older = c(0.3, 0.3, 0.5, 0.5),
     ifrac2_Older = c(-0.3, 0.7, -0.5, 0.5),
     n = 10
   )
@@ -221,7 +221,7 @@ test_that("forest shrinkage greys equal canonical accessor posterior QI", {
     yi = c(0.10, 0.40, -0.05, 0.30),
     vi = c(0.08, 0.08, 0.02, 0.02),
     reference = "Younger",
-    ifrac_Older = c(0.5, 0.5, 0.3, 0.3),
+    IF_Older = c(0.5, 0.5, 0.3, 0.3),
     ifrac2_Older = c(-0.5, 0.5, -0.3, 0.7),
     n = 10
   )
@@ -281,7 +281,7 @@ test_that("reconstruction identities hold with study-specific pi_j", {
     yi = c(0.2, 0.8, 0.1, 0.4),
     vi = c(0.05, 0.05, 0.04, 0.03),
     reference = "Younger",
-    ifrac_Older = c(0.25, 0.25, 0.45, 0.45),
+    IF_Older = c(0.25, 0.25, 0.45, 0.45),
     ifrac2_Older = c(-0.25, 0.75, -0.45, 0.55),
     n = 10
   )
@@ -307,7 +307,7 @@ test_that("exponentiation happens only after draw-level reconstruction", {
     yi = c(0.1, 0.5, 0.12, 0.28),
     vi = c(0.04, 0.02, 0.05, 0.03),
     reference = "Younger",
-    ifrac_Older = c(0.4, 0.4, 0.55, 0.55),
+    IF_Older = c(0.4, 0.4, 0.55, 0.55),
     ifrac2_Older = c(-0.4, 0.6, -0.55, 0.45),
     n = 10
   )
@@ -346,7 +346,7 @@ test_that("shrinkage_diagnostics table and Younger change identity", {
     yi = c(0.10, 0.40, -0.05, 0.30),
     vi = c(0.08, 0.08, 0.02, 0.02),
     reference = "Younger",
-    ifrac_Older = c(0.5, 0.5, 0.3, 0.3),
+    IF_Older = c(0.5, 0.5, 0.3, 0.3),
     ifrac2_Older = c(-0.5, 0.5, -0.3, 0.7),
     n = 10
   )
@@ -375,7 +375,7 @@ test_that("forest does not use pooled/prediction as study shrinkage", {
     yi = c(0.10, 0.40, -0.05, 0.30),
     vi = c(0.08, 0.08, 0.02, 0.02),
     reference = "Younger",
-    ifrac_Older = c(0.5, 0.5, 0.3, 0.3),
+    IF_Older = c(0.5, 0.5, 0.3, 0.3),
     ifrac2_Older = c(-0.5, 0.5, -0.3, 0.7),
     n = 10
   )

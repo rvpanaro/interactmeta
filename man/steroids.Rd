@@ -8,7 +8,7 @@
 A data frame with 14 rows and 8 variables:
 \describe{
 \item{study}{Study identifier.}
-\item{subgroup}{Ventilation support category (\code{IV}, \code{NIV}, etc.).}
+\item{subgroup}{Ventilation support category (\code{IMV}, \code{Non-IMV}, etc.).}
 \item{treatment}{Treatment label (drug).}
 \item{n}{Total patients (\code{treat.total} + \code{cont.total}).}
 \item{treat.events}{Events in the treatment arm.}
@@ -34,7 +34,7 @@ Event counts by trial, ventilation subgroup, and treatment from the WHO REACT
 prospective meta-analysis of systemic corticosteroids in critically ill
 patients with COVID-19. Some trials report only one ventilation subgroup
 (\code{n = 0} patients in the other subgroup); drop those empty rows before \code{\link[=escalc]{escalc()}} and
-let \code{\link[=ifrac]{ifrac()}} / \code{\link[=cams]{cams()}} complete the missing cells. See
-\code{vignette("cams")}.
+let \code{\link[=ifrac]{ifrac()}} / \code{\link[=cams]{cams()}} complete unreported cells with a placeholder design row.
+See \code{vignette("cams")}, \code{vignette("single-subgroup-trials")}, and \code{vignette("worked-examples")}.
 }
 \keyword{datasets}

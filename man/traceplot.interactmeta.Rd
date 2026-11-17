@@ -11,6 +11,7 @@
   xlab = NULL,
   tau.prior = "sqrt",
   X = NULL,
+  prior = FALSE,
   ...
 )
 }
@@ -18,9 +19,9 @@
 \item{x}{A Bayesian \code{\link{interactmeta}} from \code{\link[=cams]{cams()}}
 (\code{engine = "bayesmeta"}).}
 
-\item{type}{\code{"interaction"} or \code{"combined"}. \code{"modifiers"} / \code{"subgroups"} are rejected:
-Bayesian CAMS does not store
-separate per-subgroup meta-analyses.}
+\item{type}{\code{"interaction"} or \code{"combined"}. \code{"modifiers"} / \code{"subgroups"}
+are rejected: Bayesian CAMS does not store separate per-subgroup
+meta-analyses.}
 
 \item{ylab}{y-axis label passed to \code{\link[bayesmeta:traceplot]{bayesmeta::traceplot()}}. Default is
 \code{"Interaction"} for \code{type = "interaction"} and \code{"Effect"} for
@@ -37,6 +38,8 @@ objects already use the CAMS priors from the original \code{\link[=cams]{cams()}
 intercept plus mean trial information fraction from the \strong{stored}
 CAMS trial blocks.}
 
+\item{prior}{Passed to \code{\link[bayesmeta:traceplot]{bayesmeta::traceplot()}} when supported.}
+
 \item{...}{Further arguments passed to \code{\link[bayesmeta:traceplot]{bayesmeta::traceplot()}}
 (\code{mulim}, \code{taulim}, \code{ci}, \code{prior}, \code{infinity}, colours, …).}
 }
@@ -49,7 +52,7 @@ Draws \code{\link[bayesmeta:traceplot]{bayesmeta::traceplot()}} diagnostics from
 \code{bayesmeta} / \code{bmr} objects stored on a Bayesian CAMS fit
 (trial-specific shrinkage means vs heterogeneity τ, with the τ posterior
 underneath). Available \code{type} values are \strong{interaction} (the
-interaction-block \code{bayesmeta} fit) and \strong{combined} (the combined-population
+interaction-block \code{bayesmeta} fit), or \strong{combined} (the combined-population
 effects represented by the overall-block \code{bmr} fit).
 }
 \details{
@@ -71,5 +74,5 @@ traceplot(fit, type = "combined", prior = TRUE)
 }
 \seealso{
 \code{\link[=forestplot]{forestplot()}}, \code{\link[bayesmeta:traceplot]{bayesmeta::traceplot()}}, \code{\link[=plot_heterogeneity]{plot_heterogeneity()}},
-\code{\link[=native_fit]{native_fit()}}, \code{vignette("cams")}
+\code{\link[=native_fit]{native_fit()}}, \code{vignette("cams")}, \code{vignette("traceplots")}
 }

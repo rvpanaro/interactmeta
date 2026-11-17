@@ -66,7 +66,7 @@ For Bayesian CAMS, \code{lci}/\code{uci} follow \code{fit$interval.type} (defaul
 \description{
 Evaluates CAMS \strong{modifier-specific} treatment effects at the pooled
 (precision-weighted) information fraction from \code{\link[=ifrac]{ifrac()}}. Vignettes often
-use published \strong{subgroup} tables (IV/NIV, age strata, …); the same
+use published \strong{subgroup} tables (IMV/Non-IMV, age strata, …); the same
 extractor applies whenever each trial contributes one estimate per
 \strong{modifier level} (long format). The modifier column defaults to
 \code{"level"}; pass \strong{\verb{modifier =}} on \code{\link[=cams]{cams()}} to use another column name.
@@ -80,18 +80,18 @@ contribution structure \eqn{\widetilde{\pi}}.
 For each posterior draw, the linear predictor is evaluated at that draw's
 combined-population information fraction with the appropriate subgroup
 fixed effect:
-\deqn{\mu_A(\pi^\star)=\alpha+\pi^\star(\theta-\gamma),}
-\deqn{\mu_B(\pi^\star)=\alpha+\pi^\star(\theta-\gamma)+\gamma.}
-On the orthogonal CAMS factorization, \eqn{\theta} is the overall-block IF slope and
-stored \code{b_ifrac} is \eqn{\beta=\theta-\gamma}. This is \strong{not} the
+\deqn{\mu_A(\pi^\star)=\alpha+\pi^\star\delta,}
+\deqn{\mu_B(\pi^\star)=\alpha+\pi^\star\delta+\gamma,}
+with \eqn{\delta=\beta_m-\gamma} on each support row (\code{b_ifrac}). This is \strong{not} the
 trial-specific convolution on \code{fit$latent$mu_A[[j]]} /
 \code{fit$latent$mu_B[[j]]} (\eqn{\mu_{Aj}=m_j-\pi_j g_j} at that trial's
 \eqn{\pi_j}). A scalar \code{at} is a plug-in \eqn{\pi^\star};
 \code{NULL} mixes the \code{\link[=ifrac]{ifrac()}} posterior.
 
-\eqn{\alpha} and \eqn{\theta} share the overall-block support. Population
-\eqn{M^\star=\alpha+\pi^\star\theta} is formed from that joint, not by
-convolving the two mixture marginals.
+\eqn{\alpha} and \eqn{\beta_m} share the overall-block support. Population
+\eqn{m^\star=\alpha+\pi^\star\beta_m} is formed from that joint
+(\eqn{\beta_m=\delta+\gamma}),
+not by convolving the two mixture marginals.
 }
 \seealso{
 \code{\link[=combined]{combined()}}, \code{\link[=interactions]{interactions()}}, \code{\link[=shrinkage]{shrinkage()}}, \code{\link[=ifrac]{ifrac()}},

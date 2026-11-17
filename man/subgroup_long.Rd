@@ -21,7 +21,7 @@ A long data frame with \code{subgroup} and the value columns.
 \description{
 Shipped \strong{interactmeta} datasets are already long (one row per trial ×
 subgroup). If your source tables are wide (one row per trial, columns
-suffixed by subgroup such as \code{yi_Younger} or \code{n_IV}), use this helper before
+suffixed by subgroup such as \code{yi_Younger} or \code{n_IMV}), use this helper before
 \code{\link[=cams]{cams()}} or \code{\link[=escalc]{escalc()}}. Metadata on wide tables (\code{subgroups},
 \code{subgroup_id_cols}, \code{subgroup_value_cols}) drives the reshape; you can
 override those arguments when needed.

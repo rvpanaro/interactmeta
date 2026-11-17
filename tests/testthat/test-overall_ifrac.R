@@ -5,7 +5,7 @@ test_that("overall_ifrac_compute() matches hand calculation for two trials", {
     yi = c(0.1, 0.2, 0.15, 0.25),
     vi = 0.01,
     reference = "Younger",
-    ifrac_Older = c(0.3, 0.3, 0.6, 0.6)
+    IF_Older = c(0.3, 0.3, 0.6, 0.6)
   )
   tau <- c(0.1, 0.2)
   oi <- interactmeta:::overall_ifrac_compute(
@@ -13,7 +13,7 @@ test_that("overall_ifrac_compute() matches hand calculation for two trials", {
     trial_var = "study",
     subgroup_var = "level",
     reference = "Younger",
-    ifrac_var = "ifrac_Older",
+    ifrac_var = "IF_Older",
     tau = tau
   )
   expect_length(oi, 2L)
@@ -28,7 +28,7 @@ test_that("ifrac() works on data frame with fixed tau", {
     yi = c(0.1, 0.2, 0.15, 0.25),
     vi = 0.01,
     reference = "Younger",
-    ifrac_Older = c(0.3, 0.3, 0.6, 0.6)
+    IF_Older = c(0.3, 0.3, 0.6, 0.6)
   )
   oi <- ifrac(dat, tau = 0.15, reference = "Younger", ifrac = "overall")
   expect_s3_class(oi, "interactmeta_overall_ifrac")
@@ -49,7 +49,7 @@ test_that("ifrac() works on interactmeta", {
     yi = c(0.1, 0.2, 0.15, 0.25),
     vi = 0.01,
     reference = "Younger",
-    ifrac_Older = c(0.3, 0.3, 0.55, 0.55),
+    IF_Older = c(0.3, 0.3, 0.55, 0.55),
     ifrac2_Older = c(-0.3, 0.7, -0.55, 0.45)
   )
   fit <- cams(dat, reference = "Younger")
@@ -66,7 +66,7 @@ test_that("interaction_ifrac_compute() uses inverse interaction variance weights
     yi = c(0.1, 0.2, 0.15, 0.25),
     vi = c(0.01, 0.04, 0.02, 0.02),
     reference = "Younger",
-    ifrac_Older = c(0.3, 0.3, 0.6, 0.6)
+    IF_Older = c(0.3, 0.3, 0.6, 0.6)
   )
   tau_gamma <- 0.1
   oi <- interactmeta:::interaction_ifrac_compute(
@@ -74,7 +74,7 @@ test_that("interaction_ifrac_compute() uses inverse interaction variance weights
     trial_var = "study",
     subgroup_var = "level",
     reference = "Younger",
-    ifrac_var = "ifrac_Older",
+    ifrac_var = "IF_Older",
     tau_gamma = tau_gamma
   )
   den_a <- 0.01 + 0.04
@@ -123,7 +123,7 @@ test_that("interaction_ifrac() differs from ifrac() on data", {
     yi = c(0.1, 0.2, 0.15, 0.25),
     vi = c(0.01, 0.04, 0.02, 0.02),
     reference = "Younger",
-    ifrac_Older = c(0.3, 0.3, 0.6, 0.6)
+    IF_Older = c(0.3, 0.3, 0.6, 0.6)
   )
   oi <- ifrac(dat, tau = 0.15, reference = "Younger", ifrac = "overall")
   ii <- ifrac(dat, ifrac = "interaction", tau_gamma = 0.15, reference = "Younger")

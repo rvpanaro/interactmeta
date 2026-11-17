@@ -4,15 +4,19 @@
 \alias{cam-parameter-names}
 \title{CAMS internal parameter names}
 \description{
-Developer glossary. Public summaries still use descriptive labels
-(\verb{Ecological_*}, \verb{Interaction_*}, \code{tau}, …).
+Developer glossary. Public summaries use paper-aligned labels
+(\code{Beta_m}, \verb{Delta_*}, \verb{Interaction_*}, \code{tau}, …).
 }
 \details{
 \describe{
-\item{\code{alpha}}{Combined intercept; population mean at information fraction 0 for the reference subgroup.}
-\item{\code{beta}}{Ecological / composition slope (\code{b_ifrac}).}
-\item{\code{gamma}}{Interaction / subgroup offset (\code{b_subgroup}).}
-\item{\code{theta}}{Combined information-fraction slope; CAMS identity \code{theta = beta + gamma}.}
+\item{\code{alpha}}{Intercept \eqn{\alpha} in Panaro et al. (2025); \code{b_Intercept}.}
+\item{\code{beta_m}}{Ecological slope \eqn{\beta} in
+\eqn{\mathrm{E}[m_j]=\alpha+\beta\pi_j} (\code{bmr} / \code{rma} \code{ifrac} coefficient);
+\code{fixed.prior} targets \eqn{(\alpha,\beta_m)}.}
+\item{\code{delta}}{Explicit (global) slope \eqn{\delta=\beta_m-\gamma} in
+\eqn{\mu_A(\pi)=\alpha+\delta\pi}, \eqn{\mu_B(\pi)=\alpha+\delta\pi+\gamma};
+stored as \verb{b_ifrac_*}.}
+\item{\code{gamma}}{Interaction \eqn{\gamma} on contrasts \eqn{g_j}; \verb{b_subgroup*}.}
 \item{\code{tau_m}}{Combined-block heterogeneity SD (\code{sd_trial__Intercept}).}
 \item{\code{tau_g}}{Interaction-block heterogeneity SD (\verb{sd_trial__ifrac2_*}).}
 \item{\code{pi_j}}{Trial information fraction of the non-reference subgroup.}

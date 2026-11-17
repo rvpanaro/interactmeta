@@ -63,12 +63,14 @@
 # ---- il6.R ----
 #' IL-6 antagonist COVID-19 mortality data (REACT meta-analysis)
 #'
-#' Event counts by trial and corticosteroid subgroup from the WHO REACT
+#' Event counts by trial and corticosteroid subgroup from the World Health
+#' Organization (WHO) Rapid Evidence Appraisal for COVID-19 Therapies (REACT)
 #' prospective meta-analysis of IL-6 antagonists in patients hospitalized
 #' for COVID-19. Some trials report only one corticosteroid subgroup
 #' (`n = 0` patients in the other subgroup); drop those empty rows before [escalc()] and
-#' let [ifrac()] / [cams()] complete the missing cells. See
-#' `vignette("worked-examples")`.
+#' let [ifrac()] / [cams()] complete unreported cells with a placeholder design row.
+#' See `vignette("worked-examples")` and `vignette("single-subgroup-trials")` (same pattern on
+#' `steroids`).
 #'
 #' @format A data frame with 30 rows and 7 variables:
 #' \describe{
@@ -231,17 +233,18 @@ hr_ci_from_log <- function(yi, sei, ci_level) {
 # ---- steroids.R ----
 #' Corticosteroid COVID-19 mortality data (REACT meta-analysis)
 #'
-#' Event counts by trial, ventilation subgroup, and treatment from the WHO REACT
-#' prospective meta-analysis of systemic corticosteroids in critically ill
+#' Event counts by trial, ventilation subgroup, and treatment from the World
+#' Health Organization (WHO) Rapid Evidence Appraisal for COVID-19 Therapies
+#' (REACT) prospective meta-analysis of systemic corticosteroids in critically ill
 #' patients with COVID-19. Some trials report only one ventilation subgroup
 #' (`n = 0` patients in the other subgroup); drop those empty rows before [escalc()] and
-#' let [ifrac()] / [cams()] complete the missing cells. See
-#' `vignette("cams")`.
+#' let [ifrac()] / [cams()] complete unreported cells with a placeholder design row.
+#' See `vignette("cams")`, `vignette("single-subgroup-trials")`, and `vignette("worked-examples")`.
 #'
 #' @format A data frame with 14 rows and 8 variables:
 #' \describe{
 #'   \item{study}{Study identifier.}
-#'   \item{subgroup}{Ventilation support category (\code{IV}, \code{NIV}, etc.).}
+#'   \item{subgroup}{Ventilation support category (\code{IMV}, \code{Non-IMV}, etc.).}
 #'   \item{treatment}{Treatment label (drug).}
 #'   \item{n}{Total patients (`treat.total` + `cont.total`).}
 #'   \item{treat.events}{Events in the treatment arm.}

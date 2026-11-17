@@ -24,7 +24,7 @@ modifier-level aggregate data. `interactions()`, `modifiers()`, and
 
 | Start here | More |
 |----|----|
-| `vignette("cams")` — **Getting started** (estimands, assumptions, Bayesian & REML on `steroids`) | `vignette("export-and-qc")` — tables & sensitivity QC; `vignette("worked-examples")` — `age`, `edss`, and other datasets |
+| `vignette("cams")` — **Getting started** (estimands, assumptions, Bayesian & REML on `steroids`) | After CAMS: `heterogeneity-after-cams`, `trial-specific-effects-and-shrinkage`, `traceplots`, `single-subgroup-trials`; `vignette("worked-examples")` — example tables |
 
 ## Installation
 
@@ -54,7 +54,7 @@ es <- escalc(
   data = st
 )
 both <- c("CAPE COVID", "COVID STEROID", "REMAP-CAP", "Steroids-SARI")
-fit <- cams(es[es$study %in% both, ], reference = "NIV", method = "REML")
+fit <- cams(es[es$study %in% both, ], reference = "Non-IMV", method = "REML")
 interactions(fit, exponentiate = TRUE)
 modifiers(fit, exponentiate = TRUE)
 forestplot(fit, exponentiate = TRUE)

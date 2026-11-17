@@ -338,23 +338,22 @@ prior_to_bayesmeta <- function(prior) {
 
 #' Translate a CAMS fixed-effect prior for bayesmeta / bmr
 #'
-#' The numbers are not broadcast as one normal on the CAMS coefficients
-#' \eqn{(\alpha, \beta, \gamma)}. `bmr` is told the prior on \eqn{(\alpha, \theta)}
+#' The numbers are not broadcast as one normal on \eqn{(\alpha, \delta, \gamma)}.
+#' `bmr` is told the prior on \eqn{(\alpha, \beta_m)} (paper \eqn{\beta} on \eqn{m_j})
 #' explicitly (`beta.prior.mean`, `beta.prior.sd`, and `beta.prior.cov`).
 #' The covariance kept here is `diag(sd^2)`: independent normals on
-#' \eqn{(\alpha, \theta)}. `bayesmeta` is told `mu.prior` for \eqn{\gamma}
+#' \eqn{(\alpha, \beta_m)}. `bayesmeta` is told `mu.prior` for \eqn{\gamma}
 #' separately.
 #'
-#' Independent normals on \eqn{(\alpha, \theta)} are not independent normals on
-#' \eqn{(\alpha, \beta, \gamma)}, because \eqn{\theta = \beta + \gamma}.
+#' Independent normals on \eqn{(\alpha, \beta_m)} are not independent normals on
+#' \eqn{(\alpha, \delta, \gamma)}, because \eqn{\delta = \beta_m - \gamma}.
 #' @noRd
 prior_to_bayesmeta_fixed <- function(prior) {
   prior <- normalize_cam_prior(prior, role = "fixed")
   note <- paste(
-    "bmr receives the prior on (alpha, theta), including beta.prior.cov;",
+    "bmr prior on (alpha, beta_m), paper slope on m_j ~ pi_j;",
     "bayesmeta receives mu.prior for gamma separately.",
-    "Independent normals on (alpha, theta) are not independent normals on",
-    "(alpha, beta, gamma), because theta = beta + gamma."
+    "b_ifrac stores delta = beta_m - gamma, not the prior target."
   )
   if (identical(prior$family, "uniform") || cam_prior_is_improper_uniform(prior)) {
     return(list(
@@ -374,11 +373,11 @@ prior_to_bayesmeta_fixed <- function(prior) {
   sd <- prior$sd
   mean <- prior$mean
   cov <- diag(c(sd, sd)^2, nrow = 2L, ncol = 2L)
-  dimnames(cov) <- list(c("alpha", "theta"), c("alpha", "theta"))
+  dimnames(cov) <- list(c("alpha", "beta_m"), c("alpha", "beta_m"))
   list(
     mu.prior = c(mean = mean, sd = sd),
-    beta.prior.mean = c(alpha = mean, theta = mean),
-    beta.prior.sd = c(alpha = sd, theta = sd),
+    beta.prior.mean = c(alpha = mean, beta_m = mean),
+    beta.prior.sd = c(alpha = sd, beta_m = sd),
     beta.prior.cov = cov,
     note = note
   )

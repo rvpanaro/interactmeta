@@ -870,7 +870,7 @@ interactmeta_abort_non_cams <- function(object, feature) {
 #' @return For Bayesian CAMS, the list with `$overall`, `$interaction`, and
 #'   `$trial_blocks`. For frequentist CAMS, `fit$metafor`. For DA / AD /
 #'   SWADA / conventional, the stored `$fits` list. `NULL` if none is stored.
-#' @seealso [traceplot.interactmeta()], `vignette("cams")`
+#' @seealso [traceplot.interactmeta()], `vignette("cams")`, `vignette("traceplots")`
 #' @keywords internal
 #' @export
 native_fit <- function(fit) {
@@ -1360,14 +1360,18 @@ interactmeta_summarize_effects <- function(draws,
 # ---- fit_finalize.R ----
 #' CAMS internal parameter names
 #'
-#' Developer glossary. Public summaries still use descriptive labels
-#' (`Ecological_*`, `Interaction_*`, `tau`, …).
+#' Developer glossary. Public summaries use paper-aligned labels
+#' (`Beta_m`, `Delta_*`, `Interaction_*`, `tau`, …).
 #'
 #' \describe{
-#'   \item{`alpha`}{Combined intercept; population mean at information fraction 0 for the reference subgroup.}
-#'   \item{`beta`}{Ecological / composition slope (`b_ifrac`).}
-#'   \item{`gamma`}{Interaction / subgroup offset (`b_subgroup`).}
-#'   \item{`theta`}{Combined information-fraction slope; CAMS identity `theta = beta + gamma`.}
+#'   \item{`alpha`}{Intercept \eqn{\alpha} in Panaro et al. (2025); `b_Intercept`.}
+#'   \item{`beta_m`}{Ecological slope \eqn{\beta} in
+#'     \eqn{\mathrm{E}[m_j]=\alpha+\beta\pi_j} (`bmr` / `rma` `ifrac` coefficient);
+#'     `fixed.prior` targets \eqn{(\alpha,\beta_m)}.}
+#'   \item{`delta`}{Explicit (global) slope \eqn{\delta=\beta_m-\gamma} in
+#'     \eqn{\mu_A(\pi)=\alpha+\delta\pi}, \eqn{\mu_B(\pi)=\alpha+\delta\pi+\gamma};
+#'     stored as `b_ifrac_*`.}
+#'   \item{`gamma`}{Interaction \eqn{\gamma} on contrasts \eqn{g_j}; `b_subgroup*`.}
 #'   \item{`tau_m`}{Combined-block heterogeneity SD (`sd_trial__Intercept`).}
 #'   \item{`tau_g`}{Interaction-block heterogeneity SD (`sd_trial__ifrac2_*`).}
 #'   \item{`pi_j`}{Trial information fraction of the non-reference subgroup.}
@@ -1573,10 +1577,9 @@ interactmeta_priors_engine_representation <- function(priors, engine, design) {
     return(list(
       applied = TRUE,
       note = paste(
-        "bmr prior is on (alpha, theta), with beta.prior.cov = diag(sd^2);",
-        "mu.prior is for gamma only.",
-        "Independent normals on (alpha, theta) are not independent normals on",
-        "(alpha, beta, gamma), because theta = beta + gamma."
+        "bmr prior on (alpha, beta_m), paper slope on m_j ~ pi_j;",
+        "mu.prior for gamma only.",
+        "b_ifrac stores delta = beta_m - gamma, not the prior target."
       ),
       tau = if (is.character(tau_bm)) tau_bm else format(priors$tau),
       tau_interaction = if (is.character(tau_g_bm)) tau_g_bm else format(priors$tau_interaction),
@@ -1622,8 +1625,10 @@ fitted.interactmeta <- function(object, summary = TRUE, ...) {
 
 #' Parameter table of a CAMS fit
 #'
-#' Returns the stored `$support` data frame: DIRECT quadrature nodes for
-#' bayesmeta, or a single point-estimate row for metafor.
+#' Returns the stored `$support` data frame. For Bayesian CAMS this is the
+#' **product** of the two **bayesmeta** DIRECT support tables (overall `bmr`
+#' and interaction `bayesmeta`); for metafor, a single point-estimate row.
+#' See [cams()] **Method**.
 #'
 #' @param x An `interactmeta` from [cams()].
 #' @param row.names,optional Ignored.

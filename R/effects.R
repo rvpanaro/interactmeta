@@ -46,7 +46,7 @@ interactmeta_resolve_marginal_at <- function(at = NULL, contribution) {
 #'
 #' Evaluates CAMS **modifier-specific** treatment effects at the pooled
 #' (precision-weighted) information fraction from [ifrac()]. Vignettes often
-#' use published **subgroup** tables (IV/NIV, age strata, …); the same
+#' use published **subgroup** tables (IMV/Non-IMV, age strata, …); the same
 #' extractor applies whenever each trial contributes one estimate per
 #' **modifier level** (long format). The modifier column defaults to
 #' `"level"`; pass **`modifier =`** on [cams()] to use another column name.
@@ -59,18 +59,18 @@ interactmeta_resolve_marginal_at <- function(at = NULL, contribution) {
 #' For each posterior draw, the linear predictor is evaluated at that draw's
 #' combined-population information fraction with the appropriate subgroup
 #' fixed effect:
-#' \deqn{\mu_A(\pi^\star)=\alpha+\pi^\star(\theta-\gamma),}
-#' \deqn{\mu_B(\pi^\star)=\alpha+\pi^\star(\theta-\gamma)+\gamma.}
-#' On the orthogonal CAMS factorization, \eqn{\theta} is the overall-block IF slope and
-#' stored `b_ifrac` is \eqn{\beta=\theta-\gamma}. This is **not** the
+#' \deqn{\mu_A(\pi^\star)=\alpha+\pi^\star\delta,}
+#' \deqn{\mu_B(\pi^\star)=\alpha+\pi^\star\delta+\gamma,}
+#' with \eqn{\delta=\beta_m-\gamma} on each support row (`b_ifrac`). This is **not** the
 #' trial-specific convolution on `fit$latent$mu_A[[j]]` /
 #' `fit$latent$mu_B[[j]]` (\eqn{\mu_{Aj}=m_j-\pi_j g_j} at that trial's
 #' \eqn{\pi_j}). A scalar `at` is a plug-in \eqn{\pi^\star};
 #' `NULL` mixes the [ifrac()] posterior.
 #'
-#' \eqn{\alpha} and \eqn{\theta} share the overall-block support. Population
-#' \eqn{M^\star=\alpha+\pi^\star\theta} is formed from that joint, not by
-#' convolving the two mixture marginals.
+#' \eqn{\alpha} and \eqn{\beta_m} share the overall-block support. Population
+#' \eqn{m^\star=\alpha+\pi^\star\beta_m} is formed from that joint
+#' (\eqn{\beta_m=\delta+\gamma}),
+#' not by convolving the two mixture marginals.
 #'
 #' @param fit A [`interactmeta`] from [cams()].
 #' @param at Combined-population **information fraction** \eqn{\pi} at which to
@@ -361,7 +361,7 @@ combined <- function(fit,
     return(cached)
   }
 
-  if (length(type) == 1L && identical(type[[1L]], "Overall")) {
+  if (length(type) == 1L && identical(type[[1L]], "Overall") && !isTRUE(exponentiate)) {
     native <- interactmeta_try_native_combined(
       fit,
       at = at,
@@ -784,10 +784,10 @@ comparison_overall_shrinkage_draws <- function(sg_draws,
   dplyr::bind_rows(rows)
 }
 
-#' Row label for population [combined()] summaries (forest `All` block)
+#' Row label for population [combined()] summaries (forest `Combined` block)
 #' @noRd
 comparison_combined_population_label <- function() {
-  "All"
+  "Combined"
 }
 
 #' @noRd
@@ -1020,8 +1020,20 @@ comparison_marginal_design <- function(fit, contrast_sep = "-") {
 
 #' @noRd
 comparison_ifrac_coef_names <- function(fit) {
+  st <- attr(fit, "interactmeta", exact = TRUE)
+  iv <- st$ifrac_vars %||% character()
+  if (length(iv)) {
+    return(as.character(iv))
+  }
+  iv1 <- st$ifrac_var
+  if (!is.null(iv1) && length(iv1) == 1L && nzchar(iv1)) {
+    return(as.character(iv1))
+  }
   vars <- comparison_fit_variables(fit)
   hits <- vars[grepl("^b_ifrac", vars) & !grepl("ifrac2", vars)]
+  if (!length(hits)) {
+    hits <- vars[grepl("^b_IF_", vars) & !grepl("ifrac2", vars, ignore.case = TRUE)]
+  }
   sub("^b_", "", hits)
 }
 
@@ -1113,11 +1125,9 @@ interactmeta_has_direct_weights <- function(weight, n) {
   any(is.finite(w) & w > 0)
 }
 
-#' Combined-block IF slope \eqn{\theta = \beta_{\mathrm{pkg}} + \gamma}
+#' Ecological slope \eqn{\beta_m = \delta + \gamma} for \eqn{m(\pi)=\alpha+\beta_m\pi}.
 #'
-#' Stored `b_ifrac_*` is the common subgroup slope
-#' \eqn{\beta_{\mathrm{pkg}}=\theta-\gamma}, not the slope of \eqn{M(\pi)}.
-#' This composite is \eqn{\theta}, so \eqn{M(\pi)=\alpha+\theta\pi}.
+#' Stored `b_ifrac_*` is \eqn{\delta}; summing with \eqn{\gamma} gives \eqn{\beta_m}.
 #' @noRd
 comparison_marginal_overall_composite <- function(post, design, fit) {
   composite <- rep(0, nrow(post))
@@ -1145,7 +1155,7 @@ comparison_marginal_overall_composite <- function(post, design, fit) {
   composite
 }
 
-#' Posterior draws of \eqn{M(\pi)=\alpha+\theta\pi} with \eqn{\theta=b_{\mathrm{ifrac}}+\gamma}
+#' Posterior draws of \eqn{m(\pi)=\alpha+\beta_m\pi} with \eqn{\beta_m=b_{\mathrm{ifrac}}+\gamma}
 #' @noRd
 comparison_marginal_overall_effect_draws <- function(post,
                                                omega,
@@ -1254,10 +1264,10 @@ comparison_marginal_effect_draws <- function(post,
 
 #' Fixed-effect CAMS linpred at a chosen IF (no trial RE)
 #'
-#' Reference: \eqn{\alpha + \pi^\star(\theta-\gamma)}.
-#' Non-reference: \eqn{\alpha + \pi^\star(\theta-\gamma)+\gamma}.
-#' Uses the joint overall-block draw of \eqn{(\alpha,\theta)} already stored
-#' as `b_Intercept` and `b_ifrac` (`beta = theta - gamma` on that row).
+#' Reference: \eqn{\alpha + \pi^\star\delta}.
+#' Non-reference: \eqn{\alpha + \pi^\star\delta+\gamma}.
+#' Uses \eqn{(\alpha,\delta)} stored as `b_Intercept` and `b_ifrac`
+#' (\eqn{\delta=\beta_m-\gamma}).
 #' Not a convolution of the `alpha` and `theta` mixture marginals, and not
 #' `fit$latent$mu_A[[j]]`.
 #' @noRd
@@ -1483,7 +1493,7 @@ interactions <- function(fit,
     return(cached)
   }
 
-  if (length(type) == 1L && identical(type[[1L]], "Overall")) {
+  if (length(type) == 1L && identical(type[[1L]], "Overall") && !isTRUE(exponentiate)) {
     native <- interactmeta_try_native_interactions(
       fit,
       at = at,
@@ -1638,7 +1648,15 @@ comparison_interaction_design <- function(fit, contrast_sep = "-") {
   ref <- st$reference
   dat <- st$ifrac_data
   sg_chr <- as.character(dat[[subgroup_var]])
-  int_dat <- dat[grepl(contrast_sep, sg_chr, fixed = TRUE), , drop = FALSE]
+  comp_labs <- unique(sg_chr[
+    is_ifrac_component_row(sg_chr, contrast_sep = contrast_sep)
+  ])
+  is_contrast <- is_ifrac_contrast_row(
+    sg_chr,
+    contrast_sep = contrast_sep,
+    component_labels = comp_labs
+  )
+  int_dat <- dat[is_contrast, , drop = FALSE]
   if (!nrow(int_dat)) {
     sg_dat <- dat[
       is_ifrac_component_row(dat[[subgroup_var]], contrast_sep = contrast_sep),
@@ -1686,6 +1704,9 @@ comparison_interaction_coef_term <- function(fit, label, int_design, contrast_se
 
 #' @noRd
 comparison_contrast_non_reference <- function(label, reference, contrast_sep) {
+  if (identical(label, reference)) {
+    return(NA_character_)
+  }
   if (!grepl(contrast_sep, label, fixed = TRUE)) {
     return(NA_character_)
   }

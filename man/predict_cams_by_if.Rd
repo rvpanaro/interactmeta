@@ -40,25 +40,25 @@ Pass \code{"shortest"} for the narrowest equal-probability interval.}
 A data frame with one row per grid point and subgroup:
 \code{ifrac}, \code{subgroup}, \code{estimate}, \code{lower}, \code{upper}, plus
 \code{overall_estimate}, \code{overall_lower}, \code{overall_upper} for
-\eqn{M(\pi)=\alpha+\theta\pi} at that grid point.
+\eqn{m(\pi)=\alpha+\beta_m\pi} at that grid point.
 }
 \description{
 Evaluates the \strong{fitted} CAMS posterior at a grid of information fractions
 without refitting. Each posterior row already stores the joint pairing of
-\eqn{(\alpha,\theta)} (overall block) with the independent interaction
-draw \eqn{\gamma}. For draw \eqn{s} and grid value \eqn{\pi_k}:
-\deqn{M^{(s)}(\pi_k)=\alpha^{(s)}+\theta^{(s)}\pi_k,}
-\deqn{\mu_A^{(s)}(\pi_k)=M^{(s)}(\pi_k)-\pi_k\gamma^{(s)},}
-\deqn{\mu_B^{(s)}(\pi_k)=M^{(s)}(\pi_k)+(1-\pi_k)\gamma^{(s)}.}
-Stored \code{b_Intercept} is \eqn{\alpha}, stored \code{b_ifrac} is
-\eqn{\beta=\theta-\gamma}, and stored \verb{b_subgroup*} is \eqn{\gamma}, so
-\eqn{\theta=\beta+\gamma}. Subgroup lines are parallel with vertical
-gap \eqn{\gamma}.
+\eqn{(\alpha,\beta_m)} (overall block) with the independent interaction
+draw \eqn{\gamma}. For draw \eqn{s} and grid value \eqn{\pi_k} (Panaro et al.,
+2025, Eq. 3.10--3.11):
+\deqn{m^{(s)}(\pi_k)=\alpha^{(s)}+\beta_m^{(s)}\pi_k,}
+\deqn{\mu_A^{(s)}(\pi_k)=\alpha^{(s)}+\delta^{(s)}\pi_k,}
+\deqn{\mu_B^{(s)}(\pi_k)=\alpha^{(s)}+\delta^{(s)}\pi_k+\gamma^{(s)},}
+with \eqn{\delta^{(s)}=\beta_m^{(s)}-\gamma^{(s)}} stored as \code{b_ifrac}.
+Stored \code{b_Intercept} is \eqn{\alpha}, \verb{b_subgroup*} is \eqn{\gamma}. Subgroup
+lines are parallel with vertical gap \eqn{\gamma}.
 }
 \details{
 Pointwise \code{estimate} / \code{lower} / \code{upper} use mixture intervals from the
 DIRECT-node Gaussian mixture (weights \code{.weight}, within-node SDs
-\verb{.cond_*}). Alpha and theta stay on the joint overall-block support
+\verb{.cond_*}). Alpha and beta_m stay on the joint overall-block support
 (never convolved with each other).
 }
 \seealso{

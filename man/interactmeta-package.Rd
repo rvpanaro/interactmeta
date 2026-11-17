@@ -28,7 +28,7 @@ for one estimand and not alternative CAMS models. \code{\link[=swada]{swada()}} 
 Same Weighting Across Different Analyses (SWADA) principle so those
 constructions share study contributions.
 \code{\link[=conventional]{conventional()}} is a compatibility bundle of DA and AD with
-analysis-specific weights. A Bayesian posterior on DA or AD does not add
+analysis-specific weights. A Bayesian posterior on DA or AD does not include
 information-fraction estimands.
 }
 \section{CAMS workflow}{
@@ -44,16 +44,21 @@ meta-regression of \eqn{m_j} on \eqn{\pi_j}.
 \item \code{\link[=interactions]{interactions()}}, \code{\link[=modifiers]{modifiers()}}, and \code{\link[=combined]{combined()}} summarize
 \eqn{\gamma} and effects at the reporting information fraction.
 \item \code{\link[=plot]{plot()}} and \code{\link[=forestplot]{forestplot()}} visualize effects across \eqn{\pi} and by
-trial (see \code{vignette("cams")} and \code{vignette("worked-examples")}).
+trial (see \code{vignette("cams")}, the \strong{After CAMS} articles below, and
+\code{vignette("worked-examples")}).
 }
 }
 
 \section{Documentation}{
 
 \describe{
-\item{Getting started}{\code{vignette("cams")} — estimands, assumptions, Bayesian and REML on the IV/NIV \code{steroids} example.}
-\item{Export and QC}{\code{vignette("export-and-qc")} — \code{tidy()} exports and DA/AD/SWADA/CAMS sensitivity tables.}
-\item{Other datasets}{\code{vignette("worked-examples")} — brief forests for \code{age}, \code{edss}, \code{il6}, and RESPIRE tables (including incomplete-subgroup patterns).}
+\item{Getting started}{\code{vignette("cams")} — estimands, assumptions, Bayesian and REML on the IMV/Non-IMV \code{steroids} example.}
+\item{Heterogeneity}{\code{vignette("heterogeneity-after-cams")} — tau marginals and profile plots (after \code{vignette("cams")}).}
+\item{Shrinkage}{\code{vignette("trial-specific-effects-and-shrinkage")} — grey forest markers and \code{shrinkage()}.}
+\item{Trace plots}{\code{vignette("traceplots")} — Bayesian shrinkage-vs-tau panels.}
+\item{Single-subgroup trials}{\code{vignette("single-subgroup-trials")} — mixed tables and reporting IF.}
+\item{DA / AD / SWADA}{\code{vignette("comparing-da-ad-swada")} — constructions vs CAMS (after \code{vignette("cams")}).}
+\item{Example datasets}{\code{vignette("worked-examples")} — \code{steroids}, \code{age}, \code{edss}, \code{il6}, and RESPIRE tables (including incomplete-subgroup patterns).}
 }
 }
 
@@ -67,8 +72,8 @@ not two different scientific models. Default Bayesian fitting uses
 
 Default Bayesian heterogeneity priors match \code{\link[bayesmeta:bayesmeta]{bayesmeta::bayesmeta()}}:
 improper uniform on \eqn{\tau_m} and \eqn{\tau_g}. Fixed effects use
-independent \eqn{\mathrm{Normal}(0,10)} on \eqn{(\alpha,\theta)} and on
-\eqn{\gamma}.
+independent \eqn{\mathrm{Normal}(0,10)} on \eqn{(\alpha,\beta_m)} and on
+\eqn{\gamma} (paper \eqn{\beta} on \eqn{m_j}, not \eqn{\delta})).
 Empirical work indicates interaction heterogeneity is often smaller than
 overall heterogeneity (Panaro, Röver & Friede, arXiv:2606.23968); vignettes
 set half-normal scales from that literature explicitly. See \code{\link[=cams]{cams()}}.
@@ -140,7 +145,10 @@ A bivariate approach to meta-analysis. \emph{Statistics in Medicine},
 \code{\link[=combined]{combined()}}, \code{\link[=tidy]{tidy()}}, \code{\link[=sensitivity]{sensitivity()}}, \code{\link[=compare]{compare()}}, \code{\link[=predict_cams_by_if]{predict_cams_by_if()}},
 \code{\link[=da]{da()}}, \code{\link[=ad]{ad()}},
 \code{\link[=swada]{swada()}}, \code{vignette("cams", package = "interactmeta")},
-\code{vignette("export-and-qc", package = "interactmeta")},
+\code{vignette("heterogeneity-after-cams", package = "interactmeta")},
+\code{vignette("trial-specific-effects-and-shrinkage", package = "interactmeta")},
+\code{vignette("traceplots", package = "interactmeta")},
+\code{vignette("single-subgroup-trials", package = "interactmeta")},
 \code{vignette("worked-examples", package = "interactmeta")}
 }
 \author{

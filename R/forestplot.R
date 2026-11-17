@@ -15,7 +15,6 @@
 #' By default (`type = "modifiers"`) the plot shows **modifier-level** panels
 #' (each with **Overall** and **Prediction**), with overall-IF notes under the
 #' x-axis. Use `type = "interaction"` for the interaction block only.
-#' `type = "subgroups"` is deprecated (same as `"modifiers"`).
 #'
 #' @param x A CAMS fit from [cams()] (`interactmeta`), a construction fit from
 #'   [da()], [ad()], [swada()], or [conventional()], or another object handled by
@@ -31,6 +30,11 @@
 #'   `include_*` flags). Prefer `include_shrinkage` / `include_overall` /
 #'   `include_prediction` for new code. When `NULL` or the default `"Model 1"`,
 #'   layers follow those flags alone.
+#' @param modifier_panel For `type = "modifiers"`, optionally keep a single
+#'   modifier-level panel (subgroup heading, e.g. the reference level) after
+#'   stacking. `NULL` (default) keeps every modifier panel plus optional
+#'   **Combined**. Pass `"Combined"` for the trailing combined-population panel
+#'   only.
 #' @param include_shrinkage,include_overall,include_prediction,include_combined
 #'   Include shrinkage, overall-effect, prediction, and combined-population rows.
 #'   All four layers default to `TRUE`. Grey
@@ -39,14 +43,14 @@
 #'   fits only; frequentist (`REML` / `ML`) forests omit shrinkage rows.
 #'   Set `include_shrinkage = FALSE` to omit them on Bayesian fits.
 #'   For `type = "modifiers"`, `include_combined` controls a trailing
-#'   **All** section (**Overall** / **Prediction** for [combined()] at
+#'   **Combined** section (**Overall** / **Prediction** for [combined()] at
 #'   the reporting IF), not the subgroup panels. Switching off overall or
 #'   prediction keeps blank placeholder rows so the figure height and spacing
 #'   stay close to the full plot.
 #' @param type Which forest block(s) to draw. One of:
 #'   - `"modifiers"` (default): one section per modifier level (reference and
 #'     non-reference), each with **Overall** and **Prediction** when enabled;
-#'     optional trailing **All** summaries when `include_combined = TRUE`
+#'     optional trailing **Combined** summaries when `include_combined = TRUE`
 #'   - `"interaction"`: Interaction block only (Overall + Prediction)
 #'
 #'   Other features (favours, annotations, `include_shrinkage`, …) apply
@@ -70,11 +74,15 @@
 #'   intervals.
 #' @param annotation_digits Decimal places in annotation text (default `2`).
 #' @param favours Optional length-2 character labels placed under the x-axis
-#'   (left / right of the null). Default is `c("Control", "Experimental")`
-#'   for `type = "modifiers"`. For `type = "interaction"`, the
-#'   default names the reference and non-reference subgroups (same left/right
-#'   roles), and the IF column header is `IF (non-reference subgroup)`.
-#'   Set to `FALSE` to suppress favours.
+#'   (left / right of the null). When `NULL` (default), labels follow `outcome`
+#'   (see below). Set to `FALSE` to suppress favours.
+#' @param outcome For default favours when `favours` is `NULL`: `"unfavorable"`
+#'   (default) or `"favorable"`. Controls which side of the null names
+#'   treatment benefit direction for ratio-scale outcomes. Modifiers: unfavorable
+#'   is Experimental left, Control right; favorable swaps them. Interaction:
+#'   unfavorable is non-reference (B) left, reference (A) right; favorable
+#'   swaps them. The IF column header for interaction forests remains
+#'   `IF (non-reference subgroup)`.
 #' @param show_ci_text Logical; show estimate and CI text. Default `TRUE`.
 #' @param exponentiate Logical; if `TRUE`, show estimates on the ratio scale.
 #' @param col_right_heading Column heading for the effect column.
@@ -160,6 +168,7 @@ forestplot <- function(x,
                        show_annotations = TRUE,
                        annotation_digits = 2,
                        favours = NULL,
+                       outcome = c("unfavorable", "favorable"),
                        show_ci_text = NULL,
                        exponentiate = FALSE,
                        col_right_heading = NULL,
@@ -179,7 +188,8 @@ forestplot <- function(x,
                        grouping = NULL,
                        panel.height = NULL,
                        estimates_only = FALSE,
-                       type = c("modifiers", "interaction", "subgroups"),
+                       type = c("modifiers", "interaction"),
+                       modifier_panel = NULL,
                        which_panel = NULL,
                        ...) {
   if (is.character(modifier) && length(modifier) == 1L && nzchar(modifier)) {
@@ -211,13 +221,15 @@ forestplot <- function(x,
       show_ci_text <- TRUE
     }
     show_ci_text <- isTRUE(show_ci_text)
+    outcome <- forestplot_resolve_outcome(outcome)
     sg_pair <- forestplot_fit_reference_nonref(x)
     favours <- resolve_forestplot_favours(
       favours = favours,
       exponentiate = exponentiate,
       type = type,
       reference = sg_pair$reference,
-      nonref_subgroup = sg_pair$nonref
+      nonref_subgroup = sg_pair$nonref,
+      outcome = outcome
     )
     validate_forestplot_args(
       prob = prob,
@@ -241,6 +253,7 @@ forestplot <- function(x,
       show_annotations = show_annotations,
       annotation_digits = annotation_digits,
       favours = favours,
+      outcome = outcome,
       show_ci_text = show_ci_text,
       typography_auto = typography_auto,
       xlab = xlab,
@@ -259,7 +272,7 @@ forestplot <- function(x,
       xticks = xticks,
       grouping = grouping,
       estimates_only = estimates_only,
-      type = if (identical(type, "subgroups")) "modifiers" else type,
+      type = type,
       which_panel = which_panel
     )
     if (!identical(model_names, "Model 1")) {
@@ -297,21 +310,20 @@ forestplot <- function(x,
   } else {
     forestplot_parse_panel_type(type)
   }
-  if (identical(type_user, "subgroups")) {
-    .Deprecated(msg = 'type = "subgroups" is deprecated; use type = "modifiers".')
-  }
   type <- forestplot_resolve_type(type_user)
   if (is.null(show_ci_text)) {
     show_ci_text <- TRUE
   }
   show_ci_text <- isTRUE(show_ci_text)
+  outcome <- forestplot_resolve_outcome(outcome)
   sg_pair <- forestplot_fit_reference_nonref(x)
   favours <- resolve_forestplot_favours(
     favours = favours,
     exponentiate = exponentiate,
     type = type,
     reference = sg_pair$reference,
-    nonref_subgroup = sg_pair$nonref
+    nonref_subgroup = sg_pair$nonref,
+    outcome = outcome
   )
   validate_forestplot_args(
     prob = prob,
@@ -320,6 +332,12 @@ forestplot <- function(x,
     xticks = xticks,
     fill = fill,
     n_var = n_var
+  )
+  forestplot_validate_modifier_panel(
+    modifier_panel = modifier_panel,
+    type = type,
+    fit = x,
+    include_combined = include_combined
   )
 
   comparison_args <- list(
@@ -337,6 +355,7 @@ forestplot <- function(x,
     show_annotations = show_annotations,
     annotation_digits = annotation_digits,
     favours = favours,
+    outcome = outcome,
     show_ci_text = show_ci_text,
     typography_auto = typography_auto,
     xlab = xlab,
@@ -355,7 +374,8 @@ forestplot <- function(x,
     xticks = xticks,
     grouping = grouping,
     estimates_only = estimates_only,
-    type = if (identical(type, "subgroups")) "modifiers" else type,
+    type = type,
+    modifier_panel = modifier_panel,
     which_panel = which_panel
   )
   if (!identical(model_names, "Model 1")) {
@@ -484,7 +504,7 @@ forestplot_render <- function(resultsA,
                                          study_colour = NULL,
                                          grouping = NULL,
                                          estimates_only = FALSE,
-                                         type = c("modifiers", "interaction", "subgroups"),
+                                         type = c("modifiers", "interaction"),
                                          which_panel = NULL,
                                          xlim = NULL,
                                          xticks = NULL,
@@ -496,6 +516,7 @@ forestplot_render <- function(resultsA,
                                          panel.height = NULL,
                                          exponentiate = FALSE,
                                          favours = NULL,
+                                         outcome = c("unfavorable", "favorable"),
                                          show_ci_text = FALSE,
                                          typography_auto = FALSE,
                                          obs_row_index = NULL,
@@ -562,6 +583,11 @@ forestplot_render <- function(resultsA,
     include_combined <- dots$include_combined
     dots <- dots[!names(dots) %in% "include_combined"]
   }
+  modifier_panel <- NULL
+  if ("modifier_panel" %in% names(dots)) {
+    modifier_panel <- dots$modifier_panel
+    dots <- dots[!names(dots) %in% "modifier_panel"]
+  }
   if ("estimates_only" %in% names(dots)) {
     estimates_only <- dots$estimates_only
     dots <- dots[!names(dots) %in% "estimates_only"]
@@ -577,6 +603,7 @@ forestplot_render <- function(resultsA,
   }
   estimates_only <- isTRUE(estimates_only)
   type <- forestplot_resolve_type(as.character(type)[[1L]])
+  type_public <- forestplot_type_public(type)
   # Legacy printplot / quiet ignored — draw via print() / forestplot_draw().
   dots$printplot <- NULL
   dots$quiet <- NULL
@@ -592,6 +619,11 @@ forestplot_render <- function(resultsA,
     favours <- dots$favours
     dots <- dots[!names(dots) %in% "favours"]
   }
+  if ("outcome" %in% names(dots)) {
+    outcome <- dots$outcome
+    dots <- dots[!names(dots) %in% "outcome"]
+  }
+  outcome <- forestplot_resolve_outcome(outcome)
   if ("show_ci_text" %in% names(dots)) {
     show_ci_text <- dots$show_ci_text
     dots <- dots[!names(dots) %in% "show_ci_text"]
@@ -643,6 +675,7 @@ forestplot_render <- function(resultsA,
     include_shrinkage = include_shrinkage,
     include_prediction = include_prediction,
     include_combined = include_combined,
+    modifier_panel = modifier_panel,
     group = group
   )
   if (length(dots)) {
@@ -780,36 +813,40 @@ forestplot_render <- function(resultsA,
     resultsA = resultsA,
     ref = ref
   )
-  # Subgroup-only forests show each row's own IF — no non-ref header suffix.
-  if (identical(type, "subgroups")) {
+  # Modifier panels: each row's own IF and a plain `IF` header (not `IF (non-ref)`).
+  if (!identical(type, "interaction")) {
     nonref_subgroup <- ""
   }
   favours_user <- favours
   favours <- resolve_forestplot_favours(
     favours = favours_user,
     exponentiate = exponentiate,
-    type = type,
+    type = type_public,
     reference = ref,
-    nonref_subgroup = nonref_subgroup
+    nonref_subgroup = nonref_subgroup,
+    outcome = outcome
   )
   render_snapshot$favours <- favours
+  render_snapshot$outcome <- outcome
 
   filtered <- forestplot_filter_type(
     resultsA = resultsA,
     resultsB = resultsB,
     row_labels = row_labels,
     type = type,
-    include_combined = include_combined
+    include_combined = include_combined,
+    modifier_panel = modifier_panel
   )
   resultsA <- filtered$resultsA
   resultsB <- filtered$resultsB
   row_labels <- filtered$row_labels
-  # IF cells for the non-reference subgroup when `type = "interaction"`.
-  resultsA <- forestplot_restrict_ifrac_to_subgroup(
-    resultsA = resultsA,
-    row_labels = row_labels,
-    subgroup = nonref_subgroup
-  )
+  if (identical(type, "interaction")) {
+    resultsA <- forestplot_restrict_ifrac_to_subgroup(
+      resultsA = resultsA,
+      row_labels = row_labels,
+      subgroup = nonref_subgroup
+    )
+  }
   n_study <- sum(resultsA$row_kind == "study", na.rm = TRUE)
   fit_analysis <- dots$fit_analysis
   if ("fit_analysis" %in% names(dots)) {
@@ -876,7 +913,7 @@ forestplot_render <- function(resultsA,
 
   # One panel per forest type.
   panels_to_use <- list(resultsA)
-  panel_roles <- type
+  panel_roles <- type_public
   row_labels_panels <- row_labels
   if (is.list(col_right_heading)) {
     col_right_heading <- list(col_right_heading[[1L]])
@@ -908,7 +945,7 @@ forestplot_render <- function(resultsA,
   render_snapshot$panel.height <- panel.height
   render_snapshot$typography_auto <- typography_auto
   render_snapshot$show_ci_text <- show_ci_text
-  render_snapshot$type <- type
+  render_snapshot$type <- type_public
 
   forest_nullval <- if (isTRUE(exponentiate)) 1 else 0
 
@@ -985,7 +1022,7 @@ forestplot_render <- function(resultsA,
   attr(fp, "display_inches") <- metrics$device_inches
   attr(fp, "has_favours") <- !is.null(favours)
   attr(fp, "show_ci_text") <- show_ci_text
-  attr(fp, "type") <- type
+  attr(fp, "type") <- type_public
   if (!is.null(annotations) &&
         (length(annotations$lines) ||
            length(annotations$ifrac) ||
@@ -1297,6 +1334,48 @@ validate_forestplot_data <- function(data) {
 
 #' Validate top-level forest plot arguments
 #' @noRd
+forestplot_validate_modifier_panel <- function(modifier_panel,
+                                               type,
+                                               fit = NULL,
+                                               include_combined = TRUE) {
+  if (is.null(modifier_panel)) {
+    return(invisible(NULL))
+  }
+  type <- forestplot_resolve_type(type)
+  if (!identical(type, "modifiers")) {
+    stop(
+      "`modifier_panel` applies only when `type = \"modifiers\"`.",
+      call. = FALSE
+    )
+  }
+  if (!is.character(modifier_panel) || length(modifier_panel) != 1L ||
+        !nzchar(modifier_panel)) {
+    stop("`modifier_panel` must be a single non-empty string.", call. = FALSE)
+  }
+  mp <- as.character(modifier_panel)[[1L]]
+  is_combined <- identical(tolower(mp), "combined")
+  if (is_combined && !isTRUE(include_combined)) {
+    stop(
+      "`modifier_panel = \"Combined\"` requires `include_combined = TRUE`.",
+      call. = FALSE
+    )
+  }
+  if (!is.null(fit) && inherits(fit, "interactmeta") && !is_combined) {
+    sg <- forestplot_fit_reference_nonref(fit)
+    levels <- unique(c(sg$reference, sg$nonref))
+    if (!mp %in% levels) {
+      stop(
+        sprintf(
+          "`modifier_panel` must be a modifier level (%s) or `\"Combined\"`.",
+          paste(levels, collapse = ", ")
+        ),
+        call. = FALSE
+      )
+    }
+  }
+  invisible(NULL)
+}
+
 validate_forestplot_args <- function(prob = 0.95,
                                      which_panel = NULL,
                                      xlim = NULL,
@@ -1715,10 +1794,10 @@ forestplot_nonref_subgroup <- function(subgroup_vals, ref = NULL) {
 #' Forest block heading for the combined population ([combined()] estimand)
 #' @noRd
 forestplot_combined_block_label <- function() {
-  "All"
+  "Combined"
 }
 
-#' Block heading with optional non-reference subgroup, e.g. `"All (Older)"`
+#' Block heading with optional non-reference subgroup, e.g. `"Combined (Older)"`
 #' @noRd
 forestplot_heading_with_nonref <- function(base, subgroup) {
   base <- as.character(base)[[1L]]
@@ -2140,7 +2219,7 @@ forestplot_resolve_include_shrinkage <- function(fit,
 #' @noRd
 forestplot_resolve_fit_type <- function(
     fit,
-    type = c("modifiers", "interaction", "subgroups"),
+    type = c("modifiers", "interaction"),
     call = NULL) {
   if (is.null(call)) {
     call <- match.call(expand.dots = FALSE)
@@ -2155,9 +2234,6 @@ forestplot_resolve_fit_type <- function(
   } else {
     forestplot_parse_panel_type(type)
   }
-  if (identical(type_user, "subgroups")) {
-    .Deprecated(msg = 'type = "subgroups" is deprecated; use type = "modifiers".')
-  }
   type_resolved <- forestplot_resolve_type(type_user)
   forestplot_assert_panel_type_for_fit(
     fit = fit,
@@ -2165,11 +2241,7 @@ forestplot_resolve_fit_type <- function(
     type_user = type_user,
     subgroup_panels = subgroup_panels
   )
-  if (identical(type_resolved, "subgroups")) {
-    "modifiers"
-  } else {
-    type_resolved
-  }
+  type_resolved
 }
 
 #' Error when `forestplot()` `type` is not implemented for this analysis
@@ -2191,7 +2263,7 @@ forestplot_assert_panel_type_for_fit <- function(fit,
     " forests support only `type = \"interaction\"` ",
     "(the interaction block). ",
     "`type = \"modifiers\"` draws subgroup modifier panels and the optional ",
-    "**All** section (`include_combined`); those are not defined for ",
+    "**Combined** section (`include_combined`); those are not defined for ",
     acr,
     ". You passed `type = ", shQuote(type_user), "`.",
     call. = FALSE
@@ -2212,12 +2284,18 @@ forestplot_parse_panel_type <- function(type) {
     stop(
       "`type = \"combined\"` is no longer supported in `forestplot()`. ",
       "Use `type = \"modifiers\"` with `include_combined = TRUE` (default) ",
-      "for the combined-population **All** section, or ",
+      "for the combined-population **Combined** section, or ",
       "`include_combined = FALSE` to omit it.",
       call. = FALSE
     )
   }
-  allowed <- c("modifiers", "interaction", "subgroups")
+  if (identical(raw, "subgroups")) {
+    stop(
+      "`type = \"subgroups\"` is not supported; use `type = \"modifiers\"`.",
+      call. = FALSE
+    )
+  }
+  allowed <- c("modifiers", "interaction")
   if (!raw %in% allowed) {
     stop(
       "`type` must be `\"modifiers\"` or `\"interaction\"`. ",
@@ -2228,15 +2306,15 @@ forestplot_parse_panel_type <- function(type) {
   raw
 }
 
-#' Resolve `forestplot()` `type` (subgroups or interaction only)
+#' Resolve `forestplot()` `type` (`modifiers` or `interaction`)
 #' @noRd
 forestplot_resolve_type <- function(type) {
   type <- forestplot_parse_panel_type(type)
   if (identical(type, "interaction")) {
     return("interaction")
   }
-  if (type %in% c("modifiers", "subgroups")) {
-    return("subgroups")
+  if (identical(type, "modifiers")) {
+    return("modifiers")
   }
   stop(
     "`type` must be `\"modifiers\"` or `\"interaction\"`.",
@@ -2244,13 +2322,26 @@ forestplot_resolve_type <- function(type) {
   )
 }
 
+#' Public `forestplot()` panel type (`modifiers` or `interaction`)
+#' @noRd
+forestplot_type_public <- function(type) {
+  forestplot_resolve_type(type)
+}
+
+#' Whether a forest `type` is modifier panels (not interaction-only)
+#' @noRd
+forestplot_type_is_modifier_panels <- function(type) {
+  identical(forestplot_resolve_type(type), "modifiers")
+}
+
 #' Keep only the requested forest type block(s) after stacking
 #' @noRd
 forestplot_filter_type <- function(resultsA,
                                        resultsB,
                                        row_labels,
-                                       type = c("modifiers", "interaction", "subgroups"),
-                                       include_combined = TRUE) {
+                                       type = c("modifiers", "interaction"),
+                                       include_combined = TRUE,
+                                       modifier_panel = NULL) {
   type <- forestplot_resolve_type(type)
   n <- nrow(resultsA)
   if (!n) {
@@ -2272,7 +2363,7 @@ forestplot_filter_type <- function(resultsA,
     }
   }
 
-  idx <- if (identical(type, "subgroups")) {
+  idx <- if (identical(type, "modifiers")) {
     keep <- !forestplot_heading_is_interaction(heading)
     if (!comparison_forest_layer_on(include_combined)) {
       keep <- keep & !forestplot_heading_is_combined(heading)
@@ -2281,12 +2372,33 @@ forestplot_filter_type <- function(resultsA,
   } else {
     forestplot_heading_is_interaction(heading)
   }
+  if (!is.null(modifier_panel)) {
+    type_resolved <- forestplot_resolve_type(type)
+    if (!identical(type_resolved, "modifiers")) {
+      stop(
+        "`modifier_panel` applies only when `type = \"modifiers\"`.",
+        call. = FALSE
+      )
+    }
+    mp <- as.character(modifier_panel)[[1L]]
+    panel_keep <- if (identical(tolower(mp), "combined")) {
+      forestplot_heading_is_combined(heading)
+    } else {
+      heading == mp
+    }
+    idx <- idx & panel_keep
+  }
   if (!any(idx)) {
     stop(
       sprintf(
         "`type = \"%s\"` produced an empty forest. ",
         type
       ),
+      if (!is.null(modifier_panel)) {
+        sprintf("No rows matched `modifier_panel = \"%s\"`. ", modifier_panel)
+      } else {
+        ""
+      },
       "Check `include_overall` / `include_prediction` / `include_combined` ",
       "and that the fit has rows for this type.",
       call. = FALSE
@@ -2302,14 +2414,14 @@ forestplot_filter_type <- function(resultsA,
 #' Drop annotation notes that do not belong to the active type
 #' @noRd
 forestplot_filter_annotations_type <- function(annotations,
-                                                  type = c("modifiers", "interaction", "subgroups"),
+                                                  type = c("modifiers", "interaction"),
                                                   fit_analysis = NULL) {
   type <- forestplot_resolve_type(type)
   annotations <- forestplot_normalize_annotations(annotations)
-  # `subgroups` keeps the full footnote stack (overall IF + both heterogeneity
+  # `modifiers` keeps the full footnote stack (overall IF + both heterogeneity
   # notes). Interaction keeps its slice; DA interaction uses subgroup-specific
   # tau from the separate subgroup RE-MAs.
-  if (identical(type, "subgroups")) {
+  if (identical(type, "modifiers")) {
     return(annotations)
   }
   het <- annotations$heterogeneity
@@ -2427,16 +2539,30 @@ forestplot_nice_axis <- function(xlim,
 forestplot_nice_axis_ratio <- function(xlim, nullval = 1) {
   xlim <- pmax(as.numeric(xlim), 1e-8)
   nullval <- max(as.numeric(nullval)[1L], 1e-8)
+  data_lo <- xlim[[1L]]
+  data_hi <- xlim[[2L]]
+  if (!is.finite(data_hi) || data_hi < data_lo) {
+    data_hi <- data_lo
+  }
   # Powers of 2 about the null (usually 1): …, 0.25, 0.5, 1, 2, 4, …
-  # so ticks are log-even and the reference line has an explicit label.
-  log2_lo <- log2(xlim[[1L]] / nullval)
-  log2_hi <- log2(xlim[[2L]] / nullval)
+  # Symmetric in log₂, but extend outward until the padded data range fits
+  # inside clip (bayesmeta uses `xlim` as hard clip on HR CIs).
+  log2_lo <- log2(data_lo / nullval)
+  log2_hi <- log2(data_hi / nullval)
   k_lo <- floor(log2_lo)
   k_hi <- ceiling(log2_hi)
-  # Centre the null on a symmetric power-of-2 grid.
   k_half <- max(abs(k_lo), abs(k_hi), 1L)
-  ks <- seq.int(-k_half, k_half)
-  ticks <- as.numeric(nullval * (2^ks))
+  repeat {
+    ks <- seq.int(-k_half, k_half)
+    ticks <- as.numeric(nullval * (2^ks))
+    if (min(ticks) <= data_lo && max(ticks) >= data_hi) {
+      break
+    }
+    k_half <- k_half + 1L
+    if (k_half > 40L) {
+      break
+    }
+  }
   list(xlim = range(ticks), xticks = ticks)
 }
 
@@ -2509,20 +2635,18 @@ resolve_forestplot_limits <- function(panels,
       return(if (isTRUE(exponentiate)) c(0.25, 4) else c(-1, 1))
     }
     if (isTRUE(exponentiate)) {
-      vals <- exp(vals)
+      hr <- exp(vals)
       # Drop underflow (exp of huge negative CIs is 0) so imputed missing
       # rows with vi = big_var do not collapse the ratio axis to 0.
-      vals <- vals[is.finite(vals) & vals > 1e-6]
-      if (!length(vals)) {
+      hr <- hr[is.finite(hr) & hr > 1e-6]
+      if (!length(hr)) {
         return(c(0.25, 4))
       }
-      vals <- c(vals, nullval)
-      rng <- range(vals, na.rm = TRUE)
-      pad <- 0.08
-      return(c(
-        max(rng[[1]] * (1 - pad), 0.05),
-        rng[[2]] * (1 + pad)
-      ))
+      hr <- c(hr, nullval)
+      log_hr <- log(pmax(hr, 1e-8))
+      rng <- range(log_hr, na.rm = TRUE)
+      pad <- max(0.08, 0.12 * diff(rng))
+      return(exp(c(rng[[1L]] - pad, rng[[2L]] + pad)))
     }
     vals <- c(vals, nullval)
     rng <- range(vals, na.rm = TRUE)

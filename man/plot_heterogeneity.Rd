@@ -97,6 +97,6 @@ plot_heterogeneity(fit, which = "combined")
 }
 \seealso{
 \code{\link[=heterogeneity]{heterogeneity()}}, \link[bayesmeta:plot.bayesmeta]{bayesmeta::plot.bayesmeta},
-\link[metafor:profile.rma]{metafor::profile.rma}, \code{vignette("cams")}
+\link[metafor:profile.rma]{metafor::profile.rma}, \code{vignette("cams")}, \code{vignette("heterogeneity-after-cams")}
 }
 \keyword{internal}

@@ -17,6 +17,8 @@
 A data frame.
 }
 \description{
-Returns the stored \verb{$support} data frame: DIRECT quadrature nodes for
-bayesmeta, or a single point-estimate row for metafor.
+Returns the stored \verb{$support} data frame. For Bayesian CAMS this is the
+\strong{product} of the two \strong{bayesmeta} DIRECT support tables (overall \code{bmr}
+and interaction \code{bayesmeta}); for metafor, a single point-estimate row.
+See \code{\link[=cams]{cams()}} \strong{Method}.
 }

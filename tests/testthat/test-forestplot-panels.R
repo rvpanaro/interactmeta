@@ -121,7 +121,7 @@ test_that("CAMS forest panels keep log-scale marginal estimates on the ratio sca
     yi = log(c(1.1, 1.2, 1.15, 1.25)),
     vi = 0.01,
     reference = "Younger",
-    ifrac_Older = c(0.3, 0.3, 0.55, 0.55),
+    IF_Older = c(0.3, 0.3, 0.55, 0.55),
     ifrac2_Older = c(-0.3, 0.7, -0.55, 0.45)
   )
   fit <- cams(dat, reference = "Younger")
@@ -155,7 +155,7 @@ test_that("forestplot_render() keeps log-scale panels when exponentiate is TRUE"
     yi = c(0.1, 0.2, 0.15, 0.25),
     vi = 0.01,
     reference = "Younger",
-    ifrac_Older = c(0.3, 0.3, 0.55, 0.55),
+    IF_Older = c(0.3, 0.3, 0.55, 0.55),
     ifrac2_Older = c(-0.3, 0.7, -0.55, 0.45)
   )
   fit <- cams(dat, reference = "Younger")
@@ -281,7 +281,7 @@ test_that("comparison_forest_shrinkage returns fitted values", {
     yi = c(0.1, 0.2, 0.15, 0.25),
     vi = 0.01,
     reference = "Younger",
-    ifrac_Older = c(0.3, 0.3, 0.55, 0.55),
+    IF_Older = c(0.3, 0.3, 0.55, 0.55),
     ifrac2_Older = c(-0.3, 0.7, -0.55, 0.45)
   )
   fit <- cams(dat, reference = "Younger")
@@ -458,7 +458,7 @@ test_that("comparison_forest_build_fit_panels() includes shrinkage when include_
     yi = c(0.1, 0.2, 0.15, 0.25),
     vi = 0.01,
     reference = "Younger",
-    ifrac_Older = c(0.3, 0.3, 0.55, 0.55),
+    IF_Older = c(0.3, 0.3, 0.55, 0.55),
     ifrac2_Older = c(-0.3, 0.7, -0.55, 0.45)
   )
   fit <- cams(dat, reference = "Younger")
@@ -483,7 +483,7 @@ test_that("comparison_forest_build_fit_panels() omits shrinkage when include_shr
     yi = c(0.1, 0.2, 0.15, 0.25),
     vi = 0.01,
     reference = "Younger",
-    ifrac_Older = c(0.3, 0.3, 0.55, 0.55),
+    IF_Older = c(0.3, 0.3, 0.55, 0.55),
     ifrac2_Older = c(-0.3, 0.7, -0.55, 0.45)
   )
   fit <- cams(dat, reference = "Younger")
@@ -509,7 +509,7 @@ test_that("comparison_forest_build_fit_panels() omits combined rows when include
     yi = c(0.1, 0.2, 0.15, 0.25),
     vi = 0.01,
     reference = "Younger",
-    ifrac_Older = c(0.3, 0.3, 0.55, 0.55),
+    IF_Older = c(0.3, 0.3, 0.55, 0.55),
     ifrac2_Older = c(-0.3, 0.7, -0.55, 0.45)
   )
   fit <- cams(dat, reference = "Younger")
@@ -534,7 +534,7 @@ test_that("comparison_forest_build_fit_panels() keeps NA placeholders when inclu
     yi = c(0.1, 0.2, 0.15, 0.25),
     vi = 0.01,
     reference = "Younger",
-    ifrac_Older = c(0.3, 0.3, 0.55, 0.55),
+    IF_Older = c(0.3, 0.3, 0.55, 0.55),
     ifrac2_Older = c(-0.3, 0.7, -0.55, 0.45),
     n = 10
   )
@@ -575,7 +575,7 @@ test_that("comparison_forest_build_fit_panels() keeps NA placeholders when inclu
     yi = c(0.1, 0.2, 0.15, 0.25),
     vi = 0.01,
     reference = "Younger",
-    ifrac_Older = c(0.3, 0.3, 0.55, 0.55),
+    IF_Older = c(0.3, 0.3, 0.55, 0.55),
     ifrac2_Older = c(-0.3, 0.7, -0.55, 0.45),
     n = 10
   )
@@ -610,7 +610,7 @@ test_that("comparison_forest_build_fit_panels() includes prediction when include
     yi = c(0.1, 0.2, 0.15, 0.25),
     vi = 0.01,
     reference = "Younger",
-    ifrac_Older = c(0.3, 0.3, 0.55, 0.55),
+    IF_Older = c(0.3, 0.3, 0.55, 0.55),
     ifrac2_Older = c(-0.3, 0.7, -0.55, 0.45)
   )
   fit <- cams(dat, reference = "Younger")
@@ -641,7 +641,7 @@ test_that("comparison_forest_build_fit_panels() uses diamonds and grey shrinkage
     yi = c(0.1, 0.2, 0.15, 0.25),
     vi = 0.01,
     reference = "Younger",
-    ifrac_Older = c(0.3, 0.3, 0.55, 0.55),
+    IF_Older = c(0.3, 0.3, 0.55, 0.55),
     ifrac2_Older = c(-0.3, 0.7, -0.55, 0.45)
   )
   fit <- cams(dat, reference = "Younger")
@@ -710,7 +710,7 @@ test_that("comparison_forest_build_fit_panels() uses diamonds and grey shrinkage
   marg_ix <- c(overall_ix, pred_ix, combined_ix)
   expect_equal(
     unique(panels$row_labels$subheading[marg_ix]),
-    c("Younger", "Older", "All")
+    c("Younger", "Older", "Combined")
   )
   expect_equal(
     panels$row_labels$subheading[combined_ix],

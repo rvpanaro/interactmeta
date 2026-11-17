@@ -3,19 +3,19 @@
 #'
 #' Evaluates the **fitted** CAMS posterior at a grid of information fractions
 #' without refitting. Each posterior row already stores the joint pairing of
-#' \eqn{(\alpha,\theta)} (overall block) with the independent interaction
-#' draw \eqn{\gamma}. For draw \eqn{s} and grid value \eqn{\pi_k}:
-#' \deqn{M^{(s)}(\pi_k)=\alpha^{(s)}+\theta^{(s)}\pi_k,}
-#' \deqn{\mu_A^{(s)}(\pi_k)=M^{(s)}(\pi_k)-\pi_k\gamma^{(s)},}
-#' \deqn{\mu_B^{(s)}(\pi_k)=M^{(s)}(\pi_k)+(1-\pi_k)\gamma^{(s)}.}
-#' Stored `b_Intercept` is \eqn{\alpha}, stored `b_ifrac` is
-#' \eqn{\beta=\theta-\gamma}, and stored `b_subgroup*` is \eqn{\gamma}, so
-#' \eqn{\theta=\beta+\gamma}. Subgroup lines are parallel with vertical
-#' gap \eqn{\gamma}.
+#' \eqn{(\alpha,\beta_m)} (overall block) with the independent interaction
+#' draw \eqn{\gamma}. For draw \eqn{s} and grid value \eqn{\pi_k} (Panaro et al.,
+#' 2025, Eq. 3.10--3.11):
+#' \deqn{m^{(s)}(\pi_k)=\alpha^{(s)}+\beta_m^{(s)}\pi_k,}
+#' \deqn{\mu_A^{(s)}(\pi_k)=\alpha^{(s)}+\delta^{(s)}\pi_k,}
+#' \deqn{\mu_B^{(s)}(\pi_k)=\alpha^{(s)}+\delta^{(s)}\pi_k+\gamma^{(s)},}
+#' with \eqn{\delta^{(s)}=\beta_m^{(s)}-\gamma^{(s)}} stored as `b_ifrac`.
+#' Stored `b_Intercept` is \eqn{\alpha}, `b_subgroup*` is \eqn{\gamma}. Subgroup
+#' lines are parallel with vertical gap \eqn{\gamma}.
 #'
 #' Pointwise `estimate` / `lower` / `upper` use mixture intervals from the
 #' DIRECT-node Gaussian mixture (weights `.weight`, within-node SDs
-#' `.cond_*`). Alpha and theta stay on the joint overall-block support
+#' `.cond_*`). Alpha and beta_m stay on the joint overall-block support
 #' (never convolved with each other).
 #'
 #' @param fit A [`interactmeta`] from [cams()].
@@ -34,7 +34,7 @@
 #' @return A data frame with one row per grid point and subgroup:
 #'   `ifrac`, `subgroup`, `estimate`, `lower`, `upper`, plus
 #'   `overall_estimate`, `overall_lower`, `overall_upper` for
-#'   \eqn{M(\pi)=\alpha+\theta\pi} at that grid point.
+#'   \eqn{m(\pi)=\alpha+\beta_m\pi} at that grid point.
 #'
 #' @seealso [modifiers()], [combined()], [plot_contribution()]
 #' @name predict_cams_by_if
@@ -216,11 +216,12 @@ predict_cam_if_qi <- function(x, post, a_alpha, a_theta, a_gamma, level, exponen
 #' @param effects,re_formula,resolution Passed to the conditional-effects helper
 #'   (`re_formula = NA` by default, population effects only).
 #' @param subgroup_labels,legend_math,colors,fills,ylab Plot styling.
-#' @param xlab Axis label; default `"Information fraction (IF) (%)"`.
+#' @param xlab Axis label; default uses the non-reference subgroup implied by
+#'   `ifrac_var` (e.g. `"Information fraction (Older) (%)"` for `IF_Older`).
 #' @param xlim,ylim,x_breaks,y_breaks Axis limits and breaks (`xlim` / `x_breaks`
 #'   are on the **percent** scale, 0–100).
 #' @param show_overall_line Logical; dashed \eqn{M(\pi)=\alpha+\theta\pi} line
-#'   (legend \dQuote{All} when drawn).
+#'   (legend \dQuote{Combined} when drawn).
 #' @param ribbon_interval.type `"central"` or `"shortest"` credible interval
 #'   for subgroup ribbon limits on the DIRECT mixture (default `"central"`).
 #' @param point_size_range Range for precision-scaled study points.
@@ -258,7 +259,7 @@ plot_contribution <- function(fit,
                                     colors = NULL,
                                     fills = NULL,
                                     xlab = NULL,
-                                    ylab = "Treatment effect",
+                                    ylab = "Effect",
                                     xlim = NULL,
                                     ylim = NULL,
                                     x_breaks = NULL,
@@ -327,7 +328,7 @@ build_contribution_plot <- function(fit,
                                           colors = NULL,
                                           fills = NULL,
                                           xlab = NULL,
-                                          ylab = "Treatment effect",
+                                          ylab = "Effect",
                                           xlim = NULL,
                                           ylim = NULL,
                                           x_breaks = NULL,
@@ -402,8 +403,6 @@ build_contribution_plot <- function(fit,
     prob = prob,
     exponentiate = exponentiate
   )
-  seg_df <- trial_yi_segments(raw_df, study_var = study_var, ifrac_var = "ifrac_x")
-
   overall_df <- unique(ce_df[, c("ifrac_x", "overall_estimate", "overall_lower", "overall_upper")])
   names(overall_df)[names(overall_df) == "overall_estimate"] <- "estimate__"
 
@@ -424,7 +423,7 @@ build_contribution_plot <- function(fit,
 
   xlab_user <- xlab
   if (is.null(xlab_user)) {
-    xlab <- bubbleplot_default_xlab(ifrac_var)
+    xlab <- bubbleplot_default_xlab(ifrac_var, interactmeta = fit)
   } else {
     xlab <- interactmeta_as_ggplot_label(xlab_user)
   }
@@ -446,10 +445,6 @@ build_contribution_plot <- function(fit,
 
   ce_df$ifrac_x <- interactmeta_ifrac_fraction_to_axis_pct(ce_df$ifrac_x)
   raw_df$ifrac_x <- interactmeta_ifrac_fraction_to_axis_pct(raw_df$ifrac_x)
-  if (nrow(seg_df)) {
-    seg_df$ifrac_x <- interactmeta_ifrac_fraction_to_axis_pct(seg_df$ifrac_x)
-    seg_df$ifrac_xend <- seg_df$ifrac_x
-  }
   if (nrow(overall_df)) {
     overall_df$ifrac_x <- interactmeta_ifrac_fraction_to_axis_pct(overall_df$ifrac_x)
   }
@@ -506,22 +501,6 @@ build_contribution_plot <- function(fit,
           linetype = .data$overall_lty
         ),
         colour = const$overall_line_colour,
-        linewidth = const$line_mid,
-        inherit.aes = FALSE
-      )
-  }
-
-  if (nrow(seg_df)) {
-    p_out <- p_out +
-      ggplot2::geom_segment(
-        data = seg_df,
-        ggplot2::aes(
-          x = .data$ifrac_x,
-          xend = .data$ifrac_x,
-          y = .data$yi_1,
-          yend = .data$yi_2
-        ),
-        colour = const$segment_colour,
         linewidth = const$line_mid,
         inherit.aes = FALSE
       )
@@ -614,7 +593,7 @@ build_contribution_plot <- function(fit,
       ggplot2::scale_linetype_manual(
         name = NULL,
         values = stats::setNames("22", overall_lty_key),
-        labels = stats::setNames("All", overall_lty_key),
+        labels = stats::setNames("Combined", overall_lty_key),
         guide = ggplot2::guide_legend(
           order = 2L,
           override.aes = list(
@@ -631,9 +610,7 @@ build_contribution_plot <- function(fit,
 #' Shared IF / contribution-plot helpers
 #' @noRd
 detect_ifrac_vars <- function(dat) {
-  cols <- grep("^ifrac_", names(dat), value = TRUE)
-  cols <- cols[!grepl("^ifrac2_", cols)]
-  sort(cols)
+  sort(ifrac_design_col_detect(names(dat)))
 }
 
 resolve_bubbleplot_settings <- function(object) {
@@ -886,18 +863,6 @@ add_effects_null_line <- function(p_out, y_vals, exponentiate, const) {
     )
 }
 
-trial_yi_segments <- function(raw, study_var, ifrac_var) {
-  raw |>
-    dplyr::group_by(.data[[study_var]]) |>
-    dplyr::filter(dplyr::n() == 2L) |>
-    dplyr::summarise(
-      ifrac_x = .data[[ifrac_var]][1],
-      yi_1 = .data$yi[1],
-      yi_2 = .data$yi[2],
-      .groups = "drop"
-    )
-}
-
 resolve_bubbleplot_level_keys <- function(raw_df, display_levels, subgroup_var) {
   if (!subgroup_var %in% names(raw_df)) {
     return(display_levels)
@@ -997,13 +962,14 @@ overall_ifrac_subgroup_label <- function(ifrac_var, interactmeta = NULL) {
   interactmeta_ifrac_subgroup_label(ifrac_var)
 }
 
-#' Subgroup label from an ifrac column name (e.g. `ifrac_Older` -> `Older`)
+#' Subgroup label from an ifrac column name (e.g. `IF_Older` -> `Older`)
 #' @noRd
 interactmeta_ifrac_subgroup_label <- function(ifrac_var) {
   if (is.null(ifrac_var) || !nzchar(ifrac_var)) {
     return(NULL)
   }
-  sub("^ifrac2?_", "", ifrac_var)
+  lab <- sub("^ifrac2?_", "", ifrac_var)
+  sub("^IF_", "", lab)
 }
 
 #' Default x-axis label for overall IF plots
@@ -1023,8 +989,9 @@ overall_ifrac_default_xlab <- function(subgroup_label = NULL) {
 
 #' Default x-axis label for [plot_contribution()] (percent-scale axis)
 #' @noRd
-bubbleplot_default_xlab <- function(ifrac_var = NULL) {
-  paste0("Information fraction (IF)", " (%)")
+bubbleplot_default_xlab <- function(ifrac_var = NULL, interactmeta = NULL) {
+  sg <- overall_ifrac_subgroup_label(ifrac_var, interactmeta = interactmeta)
+  overall_ifrac_default_xlab(sg)
 }
 
 #' Parse legend labels that may use plotmath strings

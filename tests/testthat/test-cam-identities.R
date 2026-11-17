@@ -26,13 +26,13 @@ test_that("CAMS identities hold by independent calculation (equal variances)", {
     level = c("A", "B"),
     yi = c(yA, yB),
     vi = c(vA, vB),
-    ifrac_B = pi
+    IF_B = pi
   )
   blocks <- interactmeta:::comparison_trial_effect_blocks(
     data = dat,
     reference = "A",
     nonref = "B",
-    ifrac_var = "ifrac_B"
+    ifrac_var = "IF_B"
   )
   expect_equal(blocks$overall$yi, m, tolerance = 1e-12)
   expect_equal(blocks$overall$vi, vm, tolerance = 1e-12)
@@ -63,13 +63,13 @@ test_that("CAMS identities hold with unequal variances and unbalanced IF", {
     level = c("A", "B"),
     yi = c(yA, yB),
     vi = c(vA, vB),
-    ifrac_B = pi
+    IF_B = pi
   )
   blocks <- interactmeta:::comparison_trial_effect_blocks(
     data = dat,
     reference = "A",
     nonref = "B",
-    ifrac_var = "ifrac_B"
+    ifrac_var = "IF_B"
   )
   expect_equal(unname(blocks$overall$yi), m, tolerance = 1e-12)
   expect_equal(unname(blocks$overall$vi), vm, tolerance = 1e-12)
@@ -106,11 +106,11 @@ test_that("nonzero interaction with equal variances is a location shift", {
   expect_equal(-(1 - pi) * vA + pi * vB, 0)
 })
 
-test_that("slope identity theta = beta + gamma is algebraic", {
+test_that("paper identity beta_m = delta + gamma is algebraic", {
   alpha <- 0.1
-  beta <- -0.2
+  delta <- -0.2
   gamma <- 0.5
-  theta <- beta + gamma
-  expect_equal(theta - gamma, beta)
-  expect_equal(alpha + theta * 0.3, alpha + beta * 0.3 + gamma * 0.3)
+  beta_m <- delta + gamma
+  expect_equal(beta_m - gamma, delta)
+  expect_equal(alpha + beta_m * 0.3, alpha + delta * 0.3 + gamma * 0.3)
 })

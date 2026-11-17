@@ -11,11 +11,15 @@ test_that("add_ifrac_design() matches the three-subgroup centered design", {
 
   expect_equal(res$precision, c(100, 25, 6.25), tolerance = 1e-10)
   expect_true(is.numeric(res$precision))
-  expect_true(all(vapply(res[grep("^ifrac", names(res), value = TRUE)], is.numeric, logical(1L))))
+  expect_true(all(vapply(
+    res[interactmeta:::ifrac_design_col_detect(names(res))],
+    is.numeric,
+    logical(1L)
+  )))
   expect_false("ifrac" %in% names(res))
 
-  expect_equal(res$ifrac_g2, rep(25 / 131.25, 3), tolerance = 1e-10)
-  expect_equal(res$ifrac_g3, rep(6.25 / 131.25, 3), tolerance = 1e-10)
+  expect_equal(res$IF_g2, rep(25 / 131.25, 3), tolerance = 1e-10)
+  expect_equal(res$IF_g3, rep(6.25 / 131.25, 3), tolerance = 1e-10)
   expect_false(any(grepl("^ifrac2_", names(res))))
 })
 
@@ -30,12 +34,12 @@ test_that("add_ifrac_design() uses arbitrary subgroup labels", {
 
   res <- add_ifrac_design(dat)
 
-  expect_true(all(c("ifrac_medium", "ifrac_high") %in% names(res)))
+  expect_true(all(c("IF_medium", "IF_high") %in% names(res)))
   expect_false(any(grepl("^ifrac2_", names(res))))
-  expect_false(any(grepl("^ifrac_low", names(res))))
+  expect_false(any(grepl("^IF_low", names(res))))
 
   row_med <- res[res$level == "medium", , drop = FALSE]
-  expect_equal(row_med$ifrac_medium, (1 / 2) / (1 + 1 / 2 + 1 / 4), tolerance = 1e-12)
+  expect_equal(row_med$IF_medium, (1 / 2) / (1 + 1 / 2 + 1 / 4), tolerance = 1e-12)
 })
 
 test_that("add_ifrac2_design() is added only for CAMS fitting", {
@@ -51,7 +55,7 @@ test_that("add_ifrac2_design() is added only for CAMS fitting", {
   expect_true("ifrac2_g2" %in% names(fit_dat))
   expect_equal(
     fit_dat$ifrac2_g2,
-    as.numeric(fit_dat == "g2") - fit_dat$ifrac_g2,
+    as.numeric(fit_dat$level == "g2") - fit_dat$IF_g2,
     tolerance = 1e-12
   )
 })

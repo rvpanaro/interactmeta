@@ -1,0 +1,34 @@
+/* Vignette prose on pkgdown article pages (Bootstrap 5 template). */
+
+body.template-article main p,
+body.template-article main li,
+body.template-article main blockquote {
+  text-align: justify;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+  hyphenate-limit-chars: 6 3 3;
+}
+
+body.template-article main h1,
+body.template-article main h2,
+body.template-article main h3,
+body.template-article main h4,
+body.template-article main h5,
+body.template-article main h6,
+body.template-article main pre,
+body.template-article main pre code,
+body.template-article main .sourceCode,
+body.template-article main table,
+body.template-article main table th,
+body.template-article main table td,
+body.template-article main table caption,
+body.template-article main .figure,
+body.template-article main figcaption {
+  text-align: left;
+}
+
+body.template-article main .figure img {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}

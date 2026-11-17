@@ -30,11 +30,11 @@ interactmeta_metafor_latent <- function(overall_fit,
     as.numeric(blocks$overall$ifrac),
     trials
   )
-  list(
+  out <- list(
     alpha = alpha,
-    theta = theta,
+    beta_m = theta,
     gamma = gamma,
-    beta = beta,
+    delta = beta,
     tau_m = wald(tau_m, overall_fit$se.tau2 / (2 * max(tau_m, .Machine$double.eps))),
     tau_g = wald(tau_g, interaction_fit$se.tau2 / (2 * max(tau_g, .Machine$double.eps))),
     pi = pi,
@@ -42,4 +42,7 @@ interactmeta_metafor_latent <- function(overall_fit,
     interval.type = "central",
     cache = new.env(parent = emptyenv())
   )
+  out$theta <- out$beta_m
+  out$beta <- out$delta
+  out
 }

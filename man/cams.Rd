@@ -64,18 +64,19 @@ both orthogonal frequentist blocks (e.g. \code{"REML"}, \code{"ML"}, \code{"DL"}
 (overall) and \eqn{\tau_g} (interaction), passed to bayesmeta.
 Defaults when both are omitted match bayesmeta: improper
 \code{"uniform"} on both blocks (see \strong{Priors}). \code{"uniform"} and \code{"sqrt"}
-are the improper bayesmeta densities. A half-normal or half-Cauchy is a
-density, for example
-\code{function(tau) bayesmeta::dhalfnormal(tau, scale = 0.5)}.
+are the improper bayesmeta densities. For half-normal or half-Cauchy
+heterogeneity priors, prefer \code{\link[=cam_prior]{cam_prior()}}, e.g.
+\code{cam_prior("half-normal", scale = 0.5)}, or supply any bayesmeta-compatible
+density function.
 If \code{tau.interaction.prior = NULL} and the user supplied \code{tau.prior},
 the interaction prior inherits \code{tau.prior}.}
 
 \item{fixed.prior}{Normal prior for the bayesmeta fixed effects, as
 \code{c(mean = 0, sd = 10)}. \code{NULL} uses that default (needed for a stable
 \code{bmr} overall block with improper tau; not bayesmeta's improper flat
-\eqn{\mu}). Applied as independent normals on \eqn{(\alpha,\theta)} and
-on \eqn{\gamma}, not as an independent normal on the reconstructed
-\eqn{\beta=\theta-\gamma}. \code{"uniform"} is the improper flat prior.}
+\eqn{\mu}). Applied as independent normals on \eqn{(\alpha,\beta_m)} and
+on \eqn{\gamma}, not on stored \code{b_ifrac} (\eqn{\delta}). \code{"uniform"} is the
+improper flat prior.}
 
 \item{fit_args}{List passed to the backend (bayesmeta quadrature or
 \code{metafor::rma()}). Model choices such as priors do not belong here.
@@ -88,9 +89,11 @@ the effect cache before returning (legacy eager behaviour). Default \code{FALSE}
 \code{\link[=print.interactmeta]{print.interactmeta()}}, \code{\link[=summary.interactmeta]{summary.interactmeta()}}, and \code{\link[=tidy]{tidy()}} trigger
 reporting work on first use.}
 
-\item{lazy_latent}{For Bayesian fits, skip per-trial \code{convolve()} marginals
-at fit time (default \code{TRUE}). Trial-level \verb{$latent} objects are built when
-shrinkage or other code needs them. Set \code{FALSE} for the full latent at fit.}
+\item{lazy_latent}{For Bayesian fits, defer per-trial \code{fit$latent} blocks until
+the first \code{\link[=shrinkage]{shrinkage()}}, \code{\link[=shrinkage_components]{shrinkage_components()}}, or grey \code{\link[=forestplot]{forestplot()}}
+(default \code{TRUE}, recommended). \code{FALSE} builds trial blocks inside \code{\link[=cams]{cams()}}
+for tests or caching; it does not improve forest intervals and is slower on
+large meta-analyses.}
 
 \item{silent}{Sampler verbosity; default \code{2} suppresses messages.}
 
@@ -129,24 +132,27 @@ frequentist inference.
 \section{Sampling assumption (within-trial covariance)}{
 
 Within each trial,
-\eqn{g_j=y_{Bj}-y_{Aj}} with \eqn{\mathrm{Var}(g_j)=v_{Aj}+v_{Bj}} and
-information fraction
-\eqn{\pi_j=(1/v_{Bj})/(1/v_{Aj}+1/v_{Bj})} (IV weight of the non-reference
-subgroup). That choice makes \eqn{\mathrm{Cov}(m_j,g_j)=0} when
-\eqn{\mathrm{Cov}(y_{Aj},y_{Bj})=0}. This package currently assumes that
-within-trial subgroup sampling covariance is zero. Separate overall and
-interaction fits (\code{bmr}/\code{bayesmeta} or two \code{rma}s) rely on that
-orthogonality. If subgroup estimates share a control arm or other
-within-trial dependence, both \eqn{\mathrm{Var}(g_j)} and separate
-fits for \eqn{m_j} and \eqn{g_j} are misspecified unless \eqn{\pi_j} and the variances are
-redefined with the covariance (not implemented here).
+\eqn{g_j=y_{Bj}-y_{Aj}} with \eqn{\mathrm{Var}(g_j)=\sigma_{Aj}^2+\sigma_{Bj}^2}
+and information fraction
+\eqn{\pi_j=\sigma_{Bj}^{-2}/(\sigma_{Aj}^{-2}+\sigma_{Bj}^{-2})}
+(precision share of the non-reference subgroup). Input column \code{vi} stores
+\eqn{\sigma^2} on each subgroup row. That choice makes
+\eqn{\mathrm{Cov}(m_j,g_j)=0} when \eqn{\mathrm{Cov}(y_{Aj},y_{Bj})=0}. This
+package currently assumes that within-trial subgroup sampling covariance is
+zero. Separate overall and interaction fits (\code{bmr}/\code{bayesmeta} or two
+\code{rma}s) rely on that orthogonality. If subgroup estimates share a control arm
+or other within-trial dependence, both \eqn{\mathrm{Var}(g_j)} and separate
+fits for \eqn{m_j} and \eqn{g_j} are misspecified unless \eqn{\pi_j} and the
+variances are redefined with the covariance (not implemented here).
 }
 
 \section{Model}{
 
-\code{\link[=cams]{cams()}} fits the \strong{comparison} CAMS model with free ecological /
-composition slope \eqn{\beta} (\code{b_ifrac}): population lines
-\eqn{\mu_A=\alpha}, \eqn{\mu_B=\alpha+\gamma+\beta}, \eqn{M(\pi)=\alpha+\pi\beta+\gamma}.
+\code{\link[=cams]{cams()}} fits the explicit-slope CAMS model (Panaro et al., 2025, §3.4.2):
+\eqn{\mu_A(\pi)=\alpha+\delta\pi}, \eqn{\mu_B(\pi)=\alpha+\delta\pi+\gamma},
+\eqn{m(\pi)=\alpha+(\delta+\gamma)\pi=\alpha+\beta_m\pi} with ecological
+slope \eqn{\beta_m} in \eqn{\mathrm{E}[m_j]=\alpha+\beta_m\pi_j} and
+\eqn{\delta=\beta_m-\gamma}. Stored \verb{b_ifrac_*} is \eqn{\delta}.
 }
 
 \section{Inference}{
@@ -155,7 +161,7 @@ CAMS can be fitted using Bayesian or frequentist inference. These are not
 two different scientific models. Set \strong{\code{method = "Bayesian"}} (default) for
 \strong{bayesmeta}, or any \strong{\code{metafor::rma()}} \code{method} for the two
 frequentist components (default frequentist choice is \strong{\code{"REML"}}). See
-\code{vignette("cams")}.
+\code{vignette("cams")} and the \strong{After CAMS} vignettes (see \link{interactmeta-package}).
 
 For Bayesian fits, bayesmeta options may go in \code{fit_args} or \code{...}.
 For metafor fits, further \strong{\code{rma()}} arguments (e.g. \code{test}, \code{control}) may
@@ -190,6 +196,20 @@ The fit stores \code{fit$method} (e.g. \code{"Bayesian"}, \code{"REML"}), \code{
 and \code{fit$support} (DIRECT quadrature support or one-row metafor estimate).
 \code{\link[=print.interactmeta]{print.interactmeta()}} shows the same wording as
 the \code{cams(..., method = )} argument (\code{Bayesian}, \code{REML}, …).
+
+For \strong{\code{method = "Bayesian"}}, quadrature on each CAMS block is
+\strong{bayesmeta DIRECT} (\code{bmr()} for overall, \code{\link[bayesmeta:bayesmeta]{bayesmeta::bayesmeta()}} for
+interaction): τ-nodes, weights, and within-block moments come from those
+fit objects, not a separate posterior engine. \strong{\code{fit$support}} is the
+\strong{product} of the two stored \verb{$support} tables (weights multiply); α
+and θ on each row come from the overall \code{bmr} grid (with their within-τ
+covariance), γ from the interaction row. Trial-level design information
+fractions \eqn{\pi_j} are \strong{fixed} from the input variances; reporting
+information fractions for population curves are \strong{fixed} choices per call.
+Trial shrinkage quantities use \strong{bayesmeta} individual / shrinkage
+marginals for \eqn{\widetilde m_j} and \eqn{\widetilde g_j} and the CAMS
+map \eqn{\widetilde\mu_{Aj}=\widetilde m_j-\pi_j\widetilde g_j} at each
+trial's own \eqn{\pi_j}.
 }
 
 \section{Priors}{
@@ -197,11 +217,10 @@ the \code{cams(..., method = )} argument (\code{Bayesian}, \code{REML}, …).
 Bayesian CAMS passes priors through to bayesmeta. They are stored on
 \code{fit$priors}. \strong{Heterogeneity defaults match \code{\link[bayesmeta:bayesmeta]{bayesmeta::bayesmeta()}}}:
 \describe{
-\item{fixed effects}{independent \eqn{\mathrm{Normal}(0, 10)} on the
-overall-block means \eqn{(\alpha,\theta)} and on the interaction mean
-\eqn{\gamma}, with \eqn{\theta=\beta+\gamma}. Stored \code{b_ifrac} is the
-reconstructed ecological slope \eqn{\beta=\theta-\gamma}; that prior is
-\strong{not} an independent \eqn{N(0,10)} on \eqn{\beta}. (bayesmeta's
+\item{fixed effects}{independent \eqn{\mathrm{Normal}(0, 10)} on
+overall-block \eqn{(\alpha,\beta_m)} (paper \eqn{\beta} on \eqn{m_j}) and on
+interaction mean \eqn{\gamma}. Stored \code{b_ifrac} is \eqn{\delta=\beta_m-\gamma};
+the prior is \strong{not} on \eqn{\delta}. (bayesmeta's
 improper flat \eqn{\mu} is not the CAMS default: the overall block is
 fit with \code{bmr}, where a proper normal is the reliable companion to
 improper tau)}
@@ -230,10 +249,10 @@ set those half-normal densities \strong{explicitly}; they are not silently
 applied by \code{\link[=cams]{cams()}}.
 
 \strong{Fixed-effect parameterization:} bayesmeta/bmr receive independent
-\eqn{N(0, 10)} on \eqn{(\alpha,\theta)} (\code{beta.prior.cov = diag(sd^2)}) and
+\eqn{N(0, 10)} on \eqn{(\alpha,\beta_m)} (\code{beta.prior.cov = diag(sd^2)}) and
 \code{mu.prior} on \eqn{\gamma}. That prior factors across the two orthogonal
-blocks. Independent normals on \eqn{(\alpha,\beta,\gamma)} would couple
-\eqn{\theta} and \eqn{\gamma} a priori and are not what this engine uses.
+blocks. Independent normals on \eqn{(\alpha,\delta,\gamma)} would not match
+the fitted \eqn{(\alpha,\beta_m,\gamma)} parameterization.
 }
 
 \section{Intervals}{
@@ -249,6 +268,10 @@ other requests still use the mixture grid.
 \code{\link[=plot_contribution]{plot_contribution()}} uses central (equal-tailed) mixture intervals for
 ribbon limits by default (\code{ribbon_interval.type}). Alpha and theta are never
 convolved with each other.
+Those mixture intervals are on the \strong{combined bayesmeta} support rows.
+Trial-level \code{\link[=shrinkage]{shrinkage()}} and grey \code{\link[=forestplot]{forestplot()}} rows use the
+independent-block mixture product at each trial's \verb{\\pi_j}; population
+extractors use the combined DIRECT support.
 }
 
 \examples{
@@ -286,5 +309,8 @@ heterogeneity parameter in Bayesian random-effects meta-analysis.
 \url{https://doi.org/10.1002/jrsm.1475}
 }
 \seealso{
-\code{\link[=conventional]{conventional()}}, \code{\link[=da]{da()}}, \code{\link[=ad]{ad()}}, \code{\link[=swada]{swada()}}, \code{\link[=forestplot]{forestplot()}}
+\code{\link[=conventional]{conventional()}}, \code{\link[=da]{da()}}, \code{\link[=ad]{ad()}}, \code{\link[=swada]{swada()}}, \code{\link[=forestplot]{forestplot()}},
+\code{vignette("cams")}, \code{vignette("heterogeneity-after-cams")},
+\code{vignette("trial-specific-effects-and-shrinkage")},
+\code{vignette("single-subgroup-trials")}
 }

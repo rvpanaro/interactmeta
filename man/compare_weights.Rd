@@ -31,4 +31,3 @@ Historical two-argument call \code{compare_weights(conventional, swada)}
 still works. CAMS information fractions are not SWADA weights; compare
 pooled IF with \code{\link[=compare_ifrac]{compare_ifrac()}}.
 }
-\keyword{internal}

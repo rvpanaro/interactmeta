@@ -18,13 +18,13 @@ test_that("trial-effect blocks match the CAMS IV rotation and are orthogonal", {
     level = c("Younger", "Older"),
     yi = c(yA, yB),
     vi = c(vA, vB),
-    ifrac_Older = pi
+    IF_Older = pi
   )
   blocks <- interactmeta:::comparison_trial_effect_blocks(
     data = dat,
     reference = "Younger",
     nonref = "Older",
-    ifrac_var = "ifrac_Older"
+    ifrac_var = "IF_Older"
   )
   expect_equal(blocks$overall$yi, (1 - pi) * yA + pi * yB, tolerance = 1e-12)
   expect_equal(blocks$overall$vi, 1 / (1 / vA + 1 / vB), tolerance = 1e-12)
@@ -304,7 +304,7 @@ test_that("engine-native latent intervals follow bayesmeta post.interval and con
     tolerance = 1e-8
   )
 
-  eco <- grep("^Ecological_", colnames(pars), value = TRUE)
+  eco <- grep("^Delta_", colnames(pars), value = TRUE)
   eco_bounds <- interactmeta:::interactmeta_interval_from_distribution(
     fit$latent$beta$convolve$quantile,
     fit$latent$beta$convolve$cdf,

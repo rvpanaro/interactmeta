@@ -17,7 +17,7 @@ check_bayesmeta <- function() {
 #' `bayesmeta` / `bmr` objects stored on a Bayesian CAMS fit
 #' (trial-specific shrinkage means vs heterogeneity τ, with the τ posterior
 #' underneath). Available `type` values are **interaction** (the
-#' interaction-block `bayesmeta` fit) and **combined** (the combined-population
+#' interaction-block `bayesmeta` fit), or **combined** (the combined-population
 #' effects represented by the overall-block `bmr` fit).
 #'
 #' This method does **not** fit auxiliary [bayesmeta::bayesmeta()] models.
@@ -28,9 +28,9 @@ check_bayesmeta <- function() {
 #'
 #' @param x A Bayesian [`interactmeta`] from [cams()]
 #'   (`engine = "bayesmeta"`).
-#' @param type `"interaction"` or `"combined"`. `"modifiers"` / `"subgroups"` are rejected:
-#'   Bayesian CAMS does not store
-#'   separate per-subgroup meta-analyses.
+#' @param type `"interaction"` or `"combined"`. `"modifiers"` / `"subgroups"`
+#'   are rejected: Bayesian CAMS does not store separate per-subgroup
+#'   meta-analyses.
 #' @param ylab y-axis label passed to [bayesmeta::traceplot()]. Default is
 #'   `"Interaction"` for `type = "interaction"` and `"Effect"` for
 #'   `"combined"`.
@@ -42,6 +42,7 @@ check_bayesmeta <- function() {
 #' @param X Optional design row for [bayesmeta::traceplot.bmr]. Default is
 #'   intercept plus mean trial information fraction from the **stored**
 #'   CAMS trial blocks.
+#' @param prior Passed to [bayesmeta::traceplot()] when supported.
 #' @param ... Further arguments passed to [bayesmeta::traceplot()]
 #'   (`mulim`, `taulim`, `ci`, `prior`, `infinity`, colours, …).
 #'
@@ -58,7 +59,7 @@ check_bayesmeta <- function() {
 #' }
 #'
 #' @seealso [forestplot()], [bayesmeta::traceplot()], [plot_heterogeneity()],
-#'   [native_fit()], `vignette("cams")`
+#'   [native_fit()], `vignette("cams")`, `vignette("traceplots")`
 #' @export
 #' @exportS3Method bayesmeta::traceplot interactmeta
 traceplot.interactmeta <- function(x,
@@ -67,10 +68,20 @@ traceplot.interactmeta <- function(x,
                                xlab = NULL,
                                tau.prior = "sqrt",
                                X = NULL,
+                               prior = FALSE,
                                ...) {
   check_comparison_fit(x)
   check_bayesmeta()
-  type <- comparison_resolve_effect_type(match.arg(type))
+  type_chr <- as.character(type)[[1L]]
+  if (identical(type_chr, "modifier")) {
+    stop(
+      "traceplot(type = \"modifier\") is not available. ",
+      "Use type = \"interaction\" or type = \"combined\".",
+      call. = FALSE
+    )
+  }
+  type <- match.arg(type)
+  type <- comparison_resolve_effect_type(type)
   force(tau.prior)
   labs <- comparison_traceplot_axis_labels(type, ylab = ylab, xlab = xlab)
 
@@ -85,9 +96,13 @@ traceplot.interactmeta <- function(x,
     on.exit(graphics::par(old_par), add = TRUE)
   }
 
+  dots <- list(...)
+  if (!"prior" %in% names(dots)) {
+    dots$prior <- isTRUE(prior)
+  }
   for (nm in names(objs)) {
     obj <- objs[[nm]]
-    args <- list(x = obj, ylab = labs$ylab, ...)
+    args <- c(list(x = obj, ylab = labs$ylab), dots)
     if (inherits(obj, "bmr")) {
       args$X <- X %||% comparison_traceplot_default_bmr_X(x, obj)
     }

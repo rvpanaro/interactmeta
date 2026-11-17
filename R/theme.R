@@ -205,7 +205,12 @@ interaction_row_colours <- function(labels, yi, reference = NULL, contrast_sep =
     }
 
     non_ref <- NULL
-    if (grepl(contrast_sep, lab, fixed = TRUE)) {
+    is_contrast <- is_ifrac_contrast_row(
+      lab,
+      contrast_sep = contrast_sep,
+      component_labels = levels
+    )
+    if (is_contrast) {
       parts <- strsplit(lab, contrast_sep, fixed = TRUE)[[1]]
       if (length(parts) >= 2L) {
         non_ref <- parts[[1]]
@@ -347,7 +352,6 @@ interactmeta_plot_constants <- function() {
     line_hair = 0.35,
     line_mid = 0.7,
     line_strong = 1,
-    segment_colour = "#D8D8D8",
     overall_line_colour = "#8A8A8A",
     na_colour = "#B0B0B0",
     text_muted = "#4A4A4A",

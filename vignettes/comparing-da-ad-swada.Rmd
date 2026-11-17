@@ -1,0 +1,129 @@
+---
+title: "Comparing DA, AD, SWADA, and CAMS"
+bibliography: references.bib
+link-citations: true
+output:
+  rmarkdown::html_vignette:
+    css:
+      - !expr system.file("rmarkdown/templates/html_vignette/resources/vignette.css", package = "rmarkdown")
+      - vignette.css
+vignette: >
+  %\VignetteIndexEntry{Comparing DA, AD, SWADA, and CAMS}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options:
+  markdown:
+    wrap: 72
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 8,
+  fig.height = 4,
+  fig.align = "center",
+  fig.retina = 2,
+  out.width = "100%",
+  cache.extra = packageVersion("interactmeta")
+)
+```
+
+This article is the next step after [`vignette("cams")`](cams.html). There you fitted CAMS on `steroids`, saw how pooled modifier and combined effects depend on the reporting information fraction (`plot(..., type = "contribution")`), and read the estimands (`interactions()`, `modifiers()`, `combined()`). Here we place CAMS as the reference model and contrast it with three older constructions on one complete subgroup table: Difference of Averages (DA), Average Difference (AD), and Same Weighting Across Different Analyses (SWADA) [@panaro2026subgroup].
+
+Those three are not alternative CAMS models; they answer different
+questions with the same $(y_{Aj},y_{Bj})$ inputs [@panaro2026subgroup;
+@dacosta2019subgroup]. **DA** and **AD** name two interaction estimands:
+pool each subgroup then subtract, or pool within-trial contrasts
+[@panaro2026subgroup]. Different weights imply
+$\hat{\gamma}_{\mathrm{DA}} \neq \hat{\gamma}_{\mathrm{AD}}$ (REACT
+`steroids` [@panaro2026subgroup; @stern2020react]); `sensitivity()` and
+`compare()` fit both on one call.
+Fisher's deluded/deft presentations are *analogous* on aggregate subgroup
+data [@fisher2017bmj]; they do not define `da()` or `ad()` (`?da`). Riley
+et al. motivate within-trial evidence [@riley2020ipd].
+
+The example is `respire_age` (RESPIRE bronchiectasis; log hazard ratios already in `yi` / `vi`; every trial reports both age strata). Table details: [`vignette("worked-examples")`](worked-examples.html).
+
+```{r load}
+library(interactmeta)
+```
+
+```{r data}
+head(respire_age[, c("study", "subgroup", "hr", "yi", "vi")])
+```
+
+## What DA, AD, SWADA, and CAMS are
+
+**Difference in averages (DA; `da()`)** pools treatment effects separately for each subgroup and then subtracts the pooled means [@panaro2026subgroup]. Because the subgroup analyses generally use different inverse-variance weights, their difference need not agree with the pooled within-trial interaction.
+
+**Average difference (AD; `ad()`)** first calculates the treatment-effect difference between subgroups within each trial and then meta-analyses these contrasts [@panaro2026subgroup]. It uses interaction-specific weights and does not separately estimate pooled subgroup effects.
+
+**Same Weighting Across Different Analyses (SWADA; `swada()`)** is a common-weighting principle rather than a separate likelihood. It applies the same study weights to both subgroup effects and their interaction, ensuring agreement between the difference of pooled subgroup effects and the pooled interaction [@panaro2026subgroup]. When AD interaction weights are used, SWADA reproduces the AD interaction estimate. The approach addresses weighting discrepancies illustrated by invasive versus non-invasive ventilation subgroups in the `steroids` data [@stern2020react].
+
+**Contribution-adjusted Meta-analysis by Subgroup (CAMS; `cams()`)** is a model-based approach described in [`vignette("cams")`](cams.html) [@panaro2025cams]. It separates study-level mean and interaction components into orthogonal blocks using subgroup information fractions. Subgroup effects can then be reported at a selected pooled information fraction, while preserving within-trial interaction inference under the model assumptions.
+
+**`conventional()`** bundles DA and AD, retaining their respective weighting schemes. It is not itself SWADA or CAMS.
+
+## Fit all constructions (frequentist, for comparability)
+
+We use `method = "REML"` on every fit so this article contrasts estimands, not default Bayesian vs frequentist engines. (`vignette("cams")` already covers Bayesian CAMS on `steroids`.)
+
+```{r fit-sensitivity, cache = TRUE}
+sens <- sensitivity(
+  respire_age,
+  reference = "<65",
+  subgroup = "subgroup",
+  method = "REML",
+  constructions = c("da", "ad", "swada", "cams")
+)
+fits <- sens$fits
+```
+
+## Interaction $\gamma$
+
+DA is the construction that need not match the others. Under default random-effects weights, SWADA equals AD. CAMS $\gamma$ pools the same within-trial contrasts $g_j$ as AD, but with CAMS-specific random-effects structure and links back to subgroup means via information fractions $\pi_j$.
+
+```{r compare-int}
+interactmeta::compare(
+  sens,
+  estimand = "interaction",
+  exponentiate = TRUE,
+  type = "Overall"
+)
+```
+
+## Modifier-level means
+
+AD has no pooled subgroup means of its own. This table compares DA vs SWADA vs CAMS at the Overall row (hazard ratios back on the ratio scale).
+
+```{r compare-mod}
+interactmeta::compare(
+  sens,
+  estimand = "modifiers",
+  exponentiate = TRUE,
+  type = "Overall"
+)
+```
+
+CAMS reports $\mu_A(\widetilde{\pi})$ and $\mu_B(\widetilde{\pi})$ at the pooled information fraction. DA gives independent pooled subgroup means. SWADA reweights DA's series so the difference matches AD. The three columns are therefore different estimands, even when numbers look similar.
+
+## Study weights (SWADA principle)
+
+Which inverse-variance weights each construction assigns per trial (`compare_weights()`). CAMS is not listed here: it adjusts contributions through trial information fractions $\pi_j$ and the combined/interaction parameters $(m_j, g_j)$, not through a single shared weight vector like SWADA (`compare_ifrac()` compares pooled reporting IFs for CAMS fits).
+
+```{r weights}
+interactmeta::compare_weights(fits$da, fits$ad, fits$swada)
+```
+
+## What CAMS adds beyond DA / AD / SWADA
+
+Contribution-adjusted curves and trial-specific shrinkage are CAMS-only summaries.
+
+```{r contribution, fig.height = 5, cache = TRUE}
+plot(fits$cams, type = "contribution")
+```
+
+Grey shrinkage rows on `forestplot()` and the trial-level panels in [`vignette("trial-specific-effects-and-shrinkage")`](trial-specific-effects-and-shrinkage.html) likewise require a CAMS fit. Bayesian versus frequentist inference for the **same** CAMS model specification (same data and $\pi_j$) is a separate question (see archived `engine-comparison` material and `method = "REML"` in `?cams`).
+
+When you return to the main workflow, continue from [`vignette("cams")`](cams.html) on your own data, or browse [`vignette("worked-examples")`](worked-examples.html) for other tables.

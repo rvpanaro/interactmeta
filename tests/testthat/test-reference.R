@@ -5,7 +5,7 @@ test_that("interactmeta_reference is the single source of truth on fits and data
     yi = c(0.1, 0.2),
     vi = c(0.04, 0.01),
     reference = "Younger",
-    ifrac_Older = 0.8,
+    IF_Older = 0.8,
     ifrac2_Older = c(-0.8, 0.2),
     stringsAsFactors = FALSE
   )
@@ -32,7 +32,7 @@ test_that("ifrac_<reference> design columns are rejected", {
     yi = 0.1,
     vi = 0.01,
     reference = "Younger",
-    ifrac_Younger = 0.7,
+    IF_Younger = 0.7,
     ifrac2_Younger = -0.7,
     stringsAsFactors = FALSE
   )

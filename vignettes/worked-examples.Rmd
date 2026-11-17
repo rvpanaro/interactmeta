@@ -1,5 +1,5 @@
 ---
-title: "Other example datasets"
+title: "Example datasets"
 bibliography: references.bib
 link-citations: true
 output:
@@ -8,7 +8,7 @@ output:
       - !expr system.file("rmarkdown/templates/html_vignette/resources/vignette.css", package = "rmarkdown")
       - vignette.css
 vignette: >
-  %\VignetteIndexEntry{Other example datasets}
+  %\VignetteIndexEntry{Example datasets}
   %\VignetteEncoding{UTF-8}
   %\VignetteEngine{knitr::rmarkdown}
 editor_options:
@@ -17,136 +17,64 @@ editor_options:
 ---
 
 ```{r, include = FALSE}
-knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>",
-  fig.width = 8,
-  fig.height = 4,
-  fig.align = "center",
-  fig.retina = 2,
-  out.width = "100%"
-)
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 ```
 
-This vignette lists the **other** datasets shipped with **interactmeta**.
-The CAMS workflow (subgroup pairs, information fractions, **`cams()`**,
-**`forestplot()`**) is developed on **`steroids`** (IV / NIV) in
-[`vignette("cams")`](cams.html). Here we only note disease context,
-subgroup labels, and effect scale.
+interactmeta ships the example tables below as package data. Each section summarizes setting, subgroups, and the effect scale, and shows a few rows. Object names match `data()`. Step-by-step CAMS on `steroids` is in [`vignette("cams")`](cams.html); follow-up topics are in [`vignette("heterogeneity-after-cams")`](heterogeneity-after-cams.html), [`vignette("trial-specific-effects-and-shrinkage")`](trial-specific-effects-and-shrinkage.html), and [`vignette("single-subgroup-trials")`](single-subgroup-trials.html). After the CAMS checkpoint, compare **DA**, **AD**, **SWADA**, and **CAMS** in [`vignette("comparing-da-ad-swada")`](comparing-da-ad-swada.html).
 
-```{r load-interactmeta, warning=FALSE, message=FALSE}
-library(interactmeta)
-library(dplyr)
+## COVID-19 Corticosteroids: `steroids` and IL-6 antagonists: `il6`
+
+World Health Organization (WHO) Rapid Evidence Appraisal for COVID-19 Therapies (REACT) prospective meta-analysis of systemic corticosteroids in critically ill patients with COVID-19 [@stern2020react]. Ventilation modifiers are IMV (invasive mechanical ventilation) and Non-IMV. Some trials report only one subgroup (`n = 0` means no patients in the other stratum). The getting-started walk-through in [`vignette("cams")`](cams.html) uses this table as in [@panaro2025cams]; imbalance among **DA**, **AD**, and **SWADA** on the same counts is worked through in [@panaro2026subgroup]. Single-subgroup behaviour on the same CAMS fit is in [`vignette("single-subgroup-trials")`](single-subgroup-trials.html).
+
+```{r steroids}
+data(steroids, package = "interactmeta")
+head(steroids)
 ```
 
-| Dataset | Setting | Subgroups | Effect on `yi` scale |
-|---------|---------|-----------|----------------------|
-| `age` | MS immunotherapies; relapse | Younger, Older | Log incidence-rate ratio |
-| `edss` | Same review; relapse | Lower, Higher EDSS | Log incidence-rate ratio |
-| `il6` | IL-6 antagonists, COVID-19 mortality | Corticosteroids yes / no | Log odds ratio from counts |
-| `respire_age` | RESPIRE bronchiectasis; time to exacerbation | `<65`, `>=65` | Log hazard ratio |
-| `respire_sex` | Same trials | Female, Male | Log hazard ratio |
+Hospitalised COVID-19 mortality by concomitant corticosteroids (yes / no) [@stern2021il6]. As for `steroids` above, some trials contribute only one subgroup (`n = 0` means no patients in the other stratum, not zero events). Drop those empty rows before `escalc()`; `ifrac()` can append a large-variance placeholder so CAMS can fit a mixed table (`?ifrac`; see [`vignette("single-subgroup-trials")`](single-subgroup-trials.html)).
 
-**`age`** and **`edss`** follow @heesen2024; **`il6`** follows
-@stern2021il6; **`respire_age`** and **`respire_sex`** follow
-@desoyza2018respire1 and @aksamit2018respire2.
-
-## Multiple sclerosis: `age`
-
-Published log rate ratios are already in **`yi`** / **`vi`**. CONFIRM
-arms are split as **`CONFIRM-B`** and **`CONFIRM-C`**.
-
-```{r age-head}
-age |>
-  select(study, subgroup, treatment, yi, vi) |>
-  head()
+```{r il6}
+data(il6, package = "interactmeta")
+head(il6)
 ```
 
-```{r age-fit, cache = TRUE}
-age_es <- escalc(measure = "IRR", yi = yi, vi = vi, data = age)
-fit_age <- cams(
-  age_es,
-  reference = "Younger",
-  method = "REML"
-)
+## Multiple sclerosis: `age` and `edss`
+
+From a systematic review of relapsing–remitting MS immunotherapies [@heesen2024] (also used in [@panaro2025cams]), several trials report treatment effects in Younger and Older patient strata; the endpoint is relapse rate (incidence rate ratio on the `yi` scale). Numeric age cut-offs from the review are not stored in the object. Published log rate ratios are already in `yi` with $\sigma^2$ in `vi`. CONFIRM arms are split as `CONFIRM-B` and `CONFIRM-C`.
+
+```{r age}
+data(age, package = "interactmeta")
+head(age)
 ```
 
-```{r age-forest, fig.width = 8, fig.height = 5}
-forestplot(fit_age, exponentiate = TRUE)
-```
+Same review and endpoint as `age`, with Lower vs Higher EDSS disability strata instead of age. The EDSS threshold for each trial is in the primary publication, not in this table.
 
-## Multiple sclerosis: `edss`
-
-Same review as **`age`**, EDSS strata instead of age.
-
-```{r edss-head}
-edss |>
-  select(study, subgroup, treatment, yi, vi) |>
-  head()
-```
-
-```{r edss-fit, cache = TRUE}
-edss_es <- escalc(measure = "IRR", yi = yi, vi = vi, data = edss)
-fit_edss <- cams(edss_es, reference = "Lower", method = "REML")
-```
-
-```{r edss-forest, fig.width = 8, fig.height = 5}
-forestplot(fit_edss, exponentiate = TRUE)
-```
-
-## COVID-19 IL-6 antagonists: `il6`
-
-Some trials report only one corticosteroid subgroup (as for **`steroids`**
-in [`vignette("cams")`](cams.html)). Drop **`n = 0`** rows before
-**`escalc()`**; use **`ifrac()`** / **`cams()`** on the completed table.
-
-```{r il6-pattern}
-il6_obs <- il6 |>
-  filter(n > 0)
-table(il6_obs$study, il6_obs$subgroup)
-```
-
-```{r il6-fit, cache = TRUE}
-il6_es <- escalc(
-  measure = "OR",
-  ai = treat.events,
-  bi = treat.total - treat.events,
-  ci = cont.events,
-  di = cont.total - cont.events,
-  data = il6_obs
-)
-fit_il6 <- cams(il6_es, reference = "no", method = "REML")
-```
-
-```{r il6-forest, fig.width = 8, fig.height = 7}
-forestplot(fit_il6, exponentiate = TRUE)
+```{r edss}
+data(edss, package = "interactmeta")
+head(edss)
 ```
 
 ## RESPIRE: `respire_age` and `respire_sex`
 
-Log hazard ratios and variances are precomputed from published intervals
-(use trial-specific **`ci_level`** when converting from HR tables).
+RESPIRE 1 and 2 (bronchiectasis; time to exacerbation). `respire_age` uses `<65` vs `>=65`; `respire_sex` uses Female vs Male. Both tables are complete (every trial has two rows). Log HRs and $\sigma^2$ (`vi`) are precomputed from published intervals (respect each trial’s `ci_level` when converting from tables). `respire_age` is the contrast table in [@panaro2026subgroup]; see [`vignette("comparing-da-ad-swada")`](comparing-da-ad-swada.html) for `sensitivity()` and `compare()` on it.
 
-```{r respire-age-fit, cache = TRUE}
-fit_ra <- cams(
-  escalc(measure = "GEN", yi = respire_age$yi, vi = respire_age$vi, data = respire_age),
-  reference = "<65",
-  method = "REML"
-)
+```{r respire_age}
+data(respire_age, package = "interactmeta")
+head(respire_age)
 ```
 
-```{r respire-sex-fit, cache = TRUE}
-fit_rs <- cams(
-  escalc(measure = "GEN", yi = respire_sex$yi, vi = respire_sex$vi, data = respire_sex),
-  reference = "Male",
-  method = "REML"
-)
+```{r respire_sex}
+data(respire_sex, package = "interactmeta")
+head(respire_sex)
 ```
 
-```{r respire-forests, fig.width = 8, fig.height = 5}
-forestplot(fit_ra, exponentiate = TRUE)
-```
+## Overview
 
-```{r respire-sex-forest, fig.width = 8, fig.height = 5}
-forestplot(fit_rs, exponentiate = TRUE)
-```
+| Dataset | Setting | Subgroups | Effect on `yi` scale | Reference |
+|----|----|----|----|----|
+| `steroids` | Systemic corticosteroids, COVID-19 mortality | IMV, Non-IMV | Log odds ratio from counts | @stern2020react |
+| `age` | MS immunotherapies; relapse | Younger, Older | Log incidence-rate ratio | @heesen2024 |
+| `edss` | Same review; relapse | Lower, Higher EDSS | Log incidence-rate ratio | @heesen2024 |
+| `il6` | IL-6 antagonists, COVID-19 mortality | Corticosteroids yes / no | Log odds ratio from counts | @stern2021il6 |
+| `respire_age` | RESPIRE bronchiectasis; time to exacerbation | `<65`, `>=65` | Log hazard ratio | @desoyza2018respire1 |
+| `respire_sex` | Same trials | Female, Male | Log hazard ratio | @aksamit2018respire2 |

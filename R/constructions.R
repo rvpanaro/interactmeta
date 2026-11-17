@@ -1929,7 +1929,7 @@ interactmeta_warn_incomparable_fits <- function(fits, labels, caller) {
 #' @param swada A [swada()] fit. Optional when `ad` is already a SWADA object.
 #' @return A tibble with one row per trial and class
 #'   `interactmeta_compare_weights` (plottable).
-#' @keywords internal
+#' @export
 compare_weights <- function(da, ad = NULL, swada = NULL) {
   cams_fits <- interactmeta_compact_fits(da, ad, swada)
   if (interactmeta_all_cams(cams_fits)) {

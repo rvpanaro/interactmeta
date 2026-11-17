@@ -10,7 +10,7 @@ test_that("character shorthands normalize to explicit CAMS priors", {
   expect_equal(s$family, "sqrt")
   expect_true(interactmeta:::cam_prior_is_improper(s))
 
-  p <- interactmeta:::cam_prior("half-normal", scale = 0.5)
+  p <- cam_prior("half-normal", scale = 0.5)
   expect_equal(format(p), "Half-Normal(0, 0.5)")
   expect_identical(interactmeta:::normalize_cam_prior(p, role = "tau"), p)
 
@@ -18,7 +18,8 @@ test_that("character shorthands normalize to explicit CAMS priors", {
     interactmeta:::normalize_cam_prior("half-normal", role = "tau"),
     "scale"
   )
-  expect_error(interactmeta:::cam_prior("half-normal", scale = -1), "positive")
+  expect_error(cam_prior("half-normal", scale = -1), "positive")
+  expect_true("cam_prior" %in% getNamespaceExports("interactmeta"))
 })
 
 test_that("interaction prior inherits only when the user supplies tau.prior", {

@@ -6,7 +6,7 @@ test_that("heterogeneity() extracts trial SD parameters", {
     yi = c(0.1, 0.2, 0.15, 0.25),
     vi = 0.01,
     reference = "Younger",
-    ifrac_Older = c(0.3, 0.3, 0.4, 0.4),
+    IF_Older = c(0.3, 0.3, 0.4, 0.4),
     ifrac2_Older = c(-0.3, 0.7, -0.4, 0.6)
   )
   fit <- cams(

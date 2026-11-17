@@ -21,29 +21,32 @@
 #'
 #' @section Sampling assumption (within-trial covariance):
 #' Within each trial,
-#' \eqn{g_j=y_{Bj}-y_{Aj}} with \eqn{\mathrm{Var}(g_j)=v_{Aj}+v_{Bj}} and
-#' information fraction
-#' \eqn{\pi_j=(1/v_{Bj})/(1/v_{Aj}+1/v_{Bj})} (IV weight of the non-reference
-#' subgroup). That choice makes \eqn{\mathrm{Cov}(m_j,g_j)=0} when
-#' \eqn{\mathrm{Cov}(y_{Aj},y_{Bj})=0}. This package currently assumes that
-#' within-trial subgroup sampling covariance is zero. Separate overall and
-#' interaction fits (`bmr`/`bayesmeta` or two `rma`s) rely on that
-#' orthogonality. If subgroup estimates share a control arm or other
-#' within-trial dependence, both \eqn{\mathrm{Var}(g_j)} and separate
-#' fits for \eqn{m_j} and \eqn{g_j} are misspecified unless \eqn{\pi_j} and the variances are
-#' redefined with the covariance (not implemented here).
+#' \eqn{g_j=y_{Bj}-y_{Aj}} with \eqn{\mathrm{Var}(g_j)=\sigma_{Aj}^2+\sigma_{Bj}^2}
+#' and information fraction
+#' \eqn{\pi_j=\sigma_{Bj}^{-2}/(\sigma_{Aj}^{-2}+\sigma_{Bj}^{-2})}
+#' (precision share of the non-reference subgroup). Input column `vi` stores
+#' \eqn{\sigma^2} on each subgroup row. That choice makes
+#' \eqn{\mathrm{Cov}(m_j,g_j)=0} when \eqn{\mathrm{Cov}(y_{Aj},y_{Bj})=0}. This
+#' package currently assumes that within-trial subgroup sampling covariance is
+#' zero. Separate overall and interaction fits (`bmr`/`bayesmeta` or two
+#' `rma`s) rely on that orthogonality. If subgroup estimates share a control arm
+#' or other within-trial dependence, both \eqn{\mathrm{Var}(g_j)} and separate
+#' fits for \eqn{m_j} and \eqn{g_j} are misspecified unless \eqn{\pi_j} and the
+#' variances are redefined with the covariance (not implemented here).
 #'
 #' @section Model:
-#' [cams()] fits the **comparison** CAMS model with free ecological /
-#' composition slope \eqn{\beta} (`b_ifrac`): population lines
-#' \eqn{\mu_A=\alpha}, \eqn{\mu_B=\alpha+\gamma+\beta}, \eqn{M(\pi)=\alpha+\pi\beta+\gamma}.
+#' [cams()] fits the explicit-slope CAMS model (Panaro et al., 2025, §3.4.2):
+#' \eqn{\mu_A(\pi)=\alpha+\delta\pi}, \eqn{\mu_B(\pi)=\alpha+\delta\pi+\gamma},
+#' \eqn{m(\pi)=\alpha+(\delta+\gamma)\pi=\alpha+\beta_m\pi} with ecological
+#' slope \eqn{\beta_m} in \eqn{\mathrm{E}[m_j]=\alpha+\beta_m\pi_j} and
+#' \eqn{\delta=\beta_m-\gamma}. Stored `b_ifrac_*` is \eqn{\delta}.
 #'
 #' @section Inference:
 #' CAMS can be fitted using Bayesian or frequentist inference. These are not
 #' two different scientific models. Set **`method = "Bayesian"`** (default) for
 #' **bayesmeta**, or any **`metafor::rma()`** `method` for the two
 #' frequentist components (default frequentist choice is **`"REML"`**). See
-#' `vignette("cams")`.
+#' `vignette("cams")` and the **After CAMS** vignettes (see [interactmeta-package]).
 #'
 #' For Bayesian fits, bayesmeta options may go in `fit_args` or `...`.
 #' For metafor fits, further **`rma()`** arguments (e.g. `test`, `control`) may
@@ -75,15 +78,28 @@
 #' [print.interactmeta()] shows the same wording as
 #' the `cams(..., method = )` argument (`Bayesian`, `REML`, …).
 #'
+#' For **`method = "Bayesian"`**, quadrature on each CAMS block is
+#' **bayesmeta DIRECT** (`bmr()` for overall, [bayesmeta::bayesmeta()] for
+#' interaction): τ-nodes, weights, and within-block moments come from those
+#' fit objects, not a separate posterior engine. **`fit$support`** is the
+#' **product** of the two stored `$support` tables (weights multiply); α
+#' and θ on each row come from the overall `bmr` grid (with their within-τ
+#' covariance), γ from the interaction row. Trial-level design information
+#' fractions \eqn{\pi_j} are **fixed** from the input variances; reporting
+#' information fractions for population curves are **fixed** choices per call.
+#' Trial shrinkage quantities use **bayesmeta** individual / shrinkage
+#' marginals for \eqn{\widetilde m_j} and \eqn{\widetilde g_j} and the CAMS
+#' map \eqn{\widetilde\mu_{Aj}=\widetilde m_j-\pi_j\widetilde g_j} at each
+#' trial's own \eqn{\pi_j}.
+#'
 #' @section Priors:
 #' Bayesian CAMS passes priors through to bayesmeta. They are stored on
 #' `fit$priors`. **Heterogeneity defaults match [bayesmeta::bayesmeta()]**:
 #' \describe{
-#'   \item{fixed effects}{independent \eqn{\mathrm{Normal}(0, 10)} on the
-#'     overall-block means \eqn{(\alpha,\theta)} and on the interaction mean
-#'     \eqn{\gamma}, with \eqn{\theta=\beta+\gamma}. Stored `b_ifrac` is the
-#'     reconstructed ecological slope \eqn{\beta=\theta-\gamma}; that prior is
-#'     **not** an independent \eqn{N(0,10)} on \eqn{\beta}. (bayesmeta's
+#'   \item{fixed effects}{independent \eqn{\mathrm{Normal}(0, 10)} on
+#'     overall-block \eqn{(\alpha,\beta_m)} (paper \eqn{\beta} on \eqn{m_j}) and on
+#'     interaction mean \eqn{\gamma}. Stored `b_ifrac` is \eqn{\delta=\beta_m-\gamma};
+#'     the prior is **not** on \eqn{\delta}. (bayesmeta's
 #'     improper flat \eqn{\mu} is not the CAMS default: the overall block is
 #'     fit with `bmr`, where a proper normal is the reliable companion to
 #'     improper tau)}
@@ -112,10 +128,10 @@
 #' applied by [cams()].
 #'
 #' **Fixed-effect parameterization:** bayesmeta/bmr receive independent
-#' \eqn{N(0, 10)} on \eqn{(\alpha,\theta)} (`beta.prior.cov = diag(sd^2)`) and
+#' \eqn{N(0, 10)} on \eqn{(\alpha,\beta_m)} (`beta.prior.cov = diag(sd^2)`) and
 #' `mu.prior` on \eqn{\gamma}. That prior factors across the two orthogonal
-#' blocks. Independent normals on \eqn{(\alpha,\beta,\gamma)} would couple
-#' \eqn{\theta} and \eqn{\gamma} a priori and are not what this engine uses.
+#' blocks. Independent normals on \eqn{(\alpha,\delta,\gamma)} would not match
+#' the fitted \eqn{(\alpha,\beta_m,\gamma)} parameterization.
 #'
 #' @section Intervals:
 #' For Bayesian CAMS, public extractors ([modifiers()], [interactions()],
@@ -129,6 +145,10 @@
 #' [plot_contribution()] uses central (equal-tailed) mixture intervals for
 #' ribbon limits by default (`ribbon_interval.type`). Alpha and theta are never
 #' convolved with each other.
+#' Those mixture intervals are on the **combined bayesmeta** support rows.
+#' Trial-level [shrinkage()] and grey [forestplot()] rows use the
+#' independent-block mixture product at each trial's `\pi_j`; population
+#' extractors use the combined DIRECT support.
 #'
 #' @param x A [`metafor::escalc`] object, a data frame with `yi` / `vi`, or output
 #'   from [ifrac()] (must include `ifrac_*` design columns). Also accepts a
@@ -167,9 +187,9 @@
 #' @param fixed.prior Normal prior for the bayesmeta fixed effects, as
 #'   `c(mean = 0, sd = 10)`. `NULL` uses that default (needed for a stable
 #'   `bmr` overall block with improper tau; not bayesmeta's improper flat
-#'   \eqn{\mu}). Applied as independent normals on \eqn{(\alpha,\theta)} and
-#'   on \eqn{\gamma}, not as an independent normal on the reconstructed
-#'   \eqn{\beta=\theta-\gamma}. `"uniform"` is the improper flat prior.
+#'   \eqn{\mu}). Applied as independent normals on \eqn{(\alpha,\beta_m)} and
+#'   on \eqn{\gamma}, not on stored `b_ifrac` (\eqn{\delta}). `"uniform"` is the
+#'   improper flat prior.
 #' @param fit_args List passed to the backend (bayesmeta quadrature or
 #'   `metafor::rma()`). Model choices such as priors do not belong here.
 #'   For Bayesian fits, optional `n_support` (integer) is forwarded to both
@@ -179,9 +199,11 @@
 #'   the effect cache before returning (legacy eager behaviour). Default `FALSE`:
 #'   [print.interactmeta()], [summary.interactmeta()], and [tidy()] trigger
 #'   reporting work on first use.
-#' @param lazy_latent For Bayesian fits, skip per-trial `convolve()` marginals
-#'   at fit time (default `TRUE`). Trial-level `$latent` objects are built when
-#'   shrinkage or other code needs them. Set `FALSE` for the full latent at fit.
+#' @param lazy_latent For Bayesian fits, defer per-trial `fit$latent` blocks until
+#'   the first [shrinkage()], [shrinkage_components()], or grey [forestplot()]
+#'   (default `TRUE`, recommended). `FALSE` builds trial blocks inside [cams()]
+#'   for tests or caching; it does not improve forest intervals and is slower on
+#'   large meta-analyses.
 #' @param silent Sampler verbosity; default `2` suppresses messages.
 #' @param seed Random seed for reproducible draws (default from option
 #'   `"interactmeta.seed"`, currently `42L`). Set to `NA` for a non-reproducible draw.
@@ -224,7 +246,10 @@
 #' heterogeneity parameter in Bayesian random-effects meta-analysis.
 #' \emph{Research Synthesis Methods}, 12(4), 448--474.
 #' \url{https://doi.org/10.1002/jrsm.1475}
-#' @seealso [conventional()], [da()], [ad()], [swada()], [forestplot()]
+#' @seealso [conventional()], [da()], [ad()], [swada()], [forestplot()],
+#'   `vignette("cams")`, `vignette("heterogeneity-after-cams")`,
+#'   `vignette("trial-specific-effects-and-shrinkage")`,
+#'   `vignette("single-subgroup-trials")`
 #' @name cams
 #' @export
 cams <- function(x,
@@ -517,19 +542,19 @@ resolve_comparison_design <- function(data,
     ref <- ref[[1]]
   }
 
-  ifrac_cols <- grep("^ifrac_", names(data), value = TRUE)
+  ifrac_cols <- ifrac_design_col_detect(names(data))
   ifrac_cols <- ifrac_cols[!grepl("^ifrac2_", ifrac_cols)]
   ifrac_cols <- sort(ifrac_cols)
 
   if (length(ifrac_cols) == 0L) {
     stop(
-      "No `ifrac_<subgroup>` columns found after running `ifrac()`.",
+      "No `IF_<subgroup>` columns found after running `ifrac()`.",
       call. = FALSE
     )
   }
 
   n_nonref <- length(ifrac_cols)
-  non_ref_labels <- sub("^ifrac_", "", ifrac_cols)
+  non_ref_labels <- ifrac_design_col_strip(ifrac_cols)
   ifrac2_vars <- paste0("ifrac2_", non_ref_labels)
   missing_ifrac2 <- setdiff(ifrac2_vars, names(data))
   if (length(missing_ifrac2)) {
@@ -538,7 +563,7 @@ resolve_comparison_design <- function(data,
 
   if (any(non_ref_labels == ref)) {
     stop(
-      "Non-reference `ifrac_*` columns must differ from `reference` (",
+      "Non-reference `IF_*` columns must differ from `reference` (",
       ref,
       ").",
       call. = FALSE
@@ -636,13 +661,13 @@ interactmeta_settings <- function(object) {
     "ifrac"
   } else if (length(ifrac_vars) > 1L) {
     stop(
-      "Multiple `ifrac_*` columns found; fit with `cams()` or pass `ifrac_var` to `plot_contribution()`.",
+      "Multiple `IF_*` columns found; fit with `cams()` or pass `ifrac_var` to `plot_contribution()`.",
       call. = FALSE
     )
   } else {
-    stop("No `ifrac_*` column found in model data.", call. = FALSE)
+    stop("No `IF_*` column found in model data.", call. = FALSE)
   }
-  ifrac2_var <- paste0("ifrac2_", sub("^ifrac_", "", ifrac_var))
+  ifrac2_var <- paste0("ifrac2_", ifrac_design_col_strip(ifrac_var))
   if (!(ifrac2_var %in% names(dat))) {
     ifrac2_var <- NA_character_
   }

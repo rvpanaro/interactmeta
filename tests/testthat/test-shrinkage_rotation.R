@@ -7,7 +7,7 @@ test_that("CAMS shrinkage is study-specific at pi_j", {
     yi = c(0.10, 0.25, 0.12, 0.22),
     vi = c(0.04, 0.02, 0.05, 0.03),
     reference = "Younger",
-    ifrac_Older = c(0.60, 0.60, 0.40, 0.40),
+    IF_Older = c(0.60, 0.60, 0.40, 0.40),
     ifrac2_Older = c(-0.60, 0.40, -0.40, 0.60),
     n = 10
   )
@@ -65,7 +65,7 @@ test_that("standardized differs from shrinkage when pi_j != omega", {
     yi = c(0.10, 0.25, 0.12, 0.22),
     vi = c(0.04, 0.02, 0.05, 0.03),
     reference = "Younger",
-    ifrac_Older = c(0.60, 0.60, 0.40, 0.40),
+    IF_Older = c(0.60, 0.60, 0.40, 0.40),
     ifrac2_Older = c(-0.60, 0.40, -0.40, 0.60),
     n = 10
   )
@@ -95,7 +95,7 @@ test_that("shrinkage and modifiers(shrinkage=TRUE) share draws", {
     yi = c(0.1, 0.3, 0.12, 0.22),
     vi = c(0.04, 0.04, 0.05, 0.03),
     reference = "Younger",
-    ifrac_Older = c(0.5, 0.5, 0.4, 0.4),
+    IF_Older = c(0.5, 0.5, 0.4, 0.4),
     ifrac2_Older = c(-0.5, 0.5, -0.4, 0.6),
     n = 10
   )

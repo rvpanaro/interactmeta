@@ -92,10 +92,10 @@ interactmeta_nonref <- function(x,
   if (is_comparison_fit(x) || inherits(x, "interactmeta")) {
     st <- attr(x, "interactmeta", exact = TRUE)
     if (!is.null(st$ifrac_vars) && length(st$ifrac_vars)) {
-      return(sub("^ifrac_", "", as.character(st$ifrac_vars)))
+      return(ifrac_design_col_strip(as.character(st$ifrac_vars)))
     }
     if (!is.null(st$ifrac_var) && nzchar(st$ifrac_var)) {
-      return(sub("^ifrac_", "", as.character(st$ifrac_var)[[1L]]))
+      return(ifrac_design_col_strip(as.character(st$ifrac_var)[[1L]]))
     }
     dat <- st$ifrac_data %||% x$data
   } else {

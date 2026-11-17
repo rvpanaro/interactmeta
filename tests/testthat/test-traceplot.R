@@ -41,6 +41,19 @@ test_that("traceplot() uses native bayesmeta objects and does not refit", {
   expect_identical(objs_ov[[1L]], fit$bayesmeta$overall)
 })
 
+test_that("traceplot(type = modifier) is rejected", {
+  skip_if_not_installed("bayesmeta")
+  skip_if_not_installed("metafor")
+
+  es <- metafor::escalc(measure = "IRR", yi = age$yi, vi = age$vi, data = age)
+  fit <- suppressWarnings(cams(
+    es,
+    reference = "Younger",
+    silent = 2
+  ))
+  expect_error(traceplot(fit, type = "modifier"), "not available")
+})
+
 test_that("traceplot() does not substitute bayesmeta on another engine", {
   skip_if_not_installed("metafor")
   es <- metafor::escalc(measure = "IRR", yi = age$yi, vi = age$vi, data = age)

@@ -97,7 +97,7 @@ forestplot_overall_summary_colour <- forestplot_default_summary_colour
 #' Summary diamond / prediction-bar colour for a forest block heading
 #'
 #' All summary diamonds use palette navy, independent of `group`
-#' and block role (subgroups, Interaction, Combined).
+#' and block role (modifiers, Interaction, Combined).
 #'
 #' @param heading Block heading (unused for colour; kept for call compatibility).
 #' @param reference Optional reference subgroup label (unused for colour).
@@ -182,12 +182,16 @@ forestplot_default_poly_fonts <- function(family = NULL) {
   stats::setNames(c(2L, 2L), c(family, family))
 }
 
+#' Resolve `forestplot()` `outcome` for favour defaults
+#' @noRd
+forestplot_resolve_outcome <- function(outcome = c("unfavorable", "favorable")) {
+  match.arg(outcome, c("unfavorable", "favorable"))
+}
+
 #' Default / validate axis favour labels
 #'
-#' For `type = "interaction"`, defaults name the non-reference and reference
-#' subgroups (same left/right roles as Control / Experimental). Other types
-#' keep `c("Control", "Experimental")`. Pass length-2 labels or `FALSE` to
-#' override.
+#' Direction defaults depend on `outcome` (see [forestplot()] `outcome` argument).
+#' Pass length-2 `favours` or `favours = FALSE` to override.
 #'
 #' @noRd
 resolve_forestplot_favours <- function(favours,
@@ -195,8 +199,10 @@ resolve_forestplot_favours <- function(favours,
                                        exponentiate = FALSE,
                                        type = NULL,
                                        reference = NULL,
-                                       nonref_subgroup = NULL) {
+                                       nonref_subgroup = NULL,
+                                       outcome = c("unfavorable", "favorable")) {
   force(exponentiate)
+  outcome <- forestplot_resolve_outcome(outcome)
   if (isFALSE(favours)) {
     return(NULL)
   }
@@ -210,31 +216,48 @@ resolve_forestplot_favours <- function(favours,
   if (identical(as.character(type %||% "")[[1L]], "interaction")) {
     int_fav <- forestplot_interaction_favours(
       reference = reference,
-      nonref_subgroup = nonref_subgroup
+      nonref_subgroup = nonref_subgroup,
+      outcome = outcome
     )
     if (!is.null(int_fav)) {
-      # Leading spaces nudge the right-hand label (same as Experimental).
+      # Leading spaces nudge the right-hand label.
       return(c(int_fav[[1L]], paste0("   ", int_fav[[2L]])))
     }
   }
-  # Leading spaces nudge "Experimental" right under the forest column
-  # (bayesmeta / forestplot favours band alignment).
-  c("Control", "   Experimental")
+  forestplot_modifier_favours(outcome = outcome)
+}
+
+#' Modifier-forest favour labels (treatment vs control)
+#'
+#' @param outcome `"unfavorable"` (default): Experimental left, Control right.
+#'   `"favorable"`: Control left, Experimental right.
+#' @noRd
+forestplot_modifier_favours <- function(outcome = c("unfavorable", "favorable")) {
+  outcome <- forestplot_resolve_outcome(outcome)
+  if (identical(outcome, "favorable")) {
+    return(c("Control", "   Experimental"))
+  }
+  c("Experimental", "   Control")
 }
 
 #' Interaction-plot favour labels (subgroup comparison)
 #'
-#' Left / right match Control / Experimental: reference on the left (negative
-#' contrast), non-reference on the right (positive contrast).
+#' @param outcome `"unfavorable"`: non-reference (B) left, reference (A) right.
+#'   `"favorable"`: reference left, non-reference right.
 #' @noRd
 forestplot_interaction_favours <- function(reference = NULL,
-                                           nonref_subgroup = NULL) {
+                                           nonref_subgroup = NULL,
+                                           outcome = c("unfavorable", "favorable")) {
+  outcome <- forestplot_resolve_outcome(outcome)
   ref <- as.character(reference %||% "")[[1L]]
   nonref <- as.character(nonref_subgroup %||% "")[[1L]]
   if (!nzchar(ref) || !nzchar(nonref)) {
     return(NULL)
   }
-  c(ref, nonref)
+  if (identical(outcome, "favorable")) {
+    return(c(ref, nonref))
+  }
+  c(nonref, ref)
 }
 
 #' Reference / first non-reference subgroup labels from a CAMS fit
@@ -258,7 +281,7 @@ forestplot_fit_reference_nonref <- function(fit) {
   nonref <- ""
   ifrac_orig <- st$coef_map$ifrac_orig %||% st$ifrac_vars
   if (length(ifrac_orig)) {
-    nonref <- sub("^ifrac_", "", as.character(ifrac_orig)[[1L]])
+    nonref <- ifrac_design_col_strip(as.character(ifrac_orig)[[1L]])
   } else if (length(st$subgroup_levels)) {
     others <- setdiff(as.character(st$subgroup_levels), ref)
     if (length(others)) {
@@ -876,6 +899,31 @@ forestplot_apply_display_metrics <- function(panels,
   )
 }
 
+#' Resolve `type` for typography refit (never default to modifiers)
+#' @noRd
+forestplot_refit_panel_type <- function(x, opts = NULL, snap = NULL) {
+  ty <- NULL
+  if (is.list(opts) && !is.null(opts$type)) {
+    ty <- opts$type
+  }
+  if (is.null(ty)) {
+    ty <- attr(x, "type", exact = TRUE)
+  }
+  if (is.null(ty) && is.list(snap) && !is.null(snap$type)) {
+    ty <- snap$type
+  }
+  if (is.null(ty) && is.list(x$specs) && !is.null(x$specs$panel_roles)) {
+    pr <- as.character(x$specs$panel_roles)[[1L]]
+    if (identical(pr, "interaction") || identical(pr, "modifiers")) {
+      ty <- pr
+    }
+  }
+  if (is.null(ty) || !nzchar(as.character(ty)[[1L]])) {
+    return(NULL)
+  }
+  forestplot_resolve_type(as.character(ty)[[1L]])
+}
+
 #' Re-render forest typography when the active device size changes
 #' @noRd
 forestplot_refit_typography <- function(x) {
@@ -919,6 +967,14 @@ forestplot_refit_typography <- function(x) {
     if (is.null(render_args) || is.null(opts)) {
       return(x)
     }
+    refit_type <- forestplot_refit_panel_type(x, opts = opts)
+    if (is.null(refit_type)) {
+      warning(
+        "Forest typography refit could not resolve `type`; keeping the existing plot.",
+        call. = FALSE
+      )
+      return(x)
+    }
     dots <- opts$dots %||% list()
     override <- list(
       prob = opts$prob,
@@ -929,11 +985,20 @@ forestplot_refit_typography <- function(x) {
       panel.height = metrics$panel.height,
       typography_auto = TRUE,
       annotations = attr(x, "annotations", exact = TRUE),
-      group = opts$group %||% "subgroup"
+      group = opts$group %||% "subgroup",
+      type = refit_type,
+      outcome = opts$outcome %||% "unfavorable"
     )
+    specs <- x$specs
+    if (is.list(specs) && !is.null(specs$favours)) {
+      override$favours <- specs$favours
+    }
     # Drop names we set explicitly so do.call does not see duplicates.
     if (length(dots)) {
-      dots <- dots[setdiff(names(dots), c(names(override), "show_annotations", "annotation_digits", "layout", "printplot", "quiet"))]
+      dots <- dots[setdiff(
+        names(dots),
+        c(names(override), "type", "outcome", "show_annotations", "annotation_digits", "layout", "printplot", "quiet")
+      )]
     }
     fp <- do.call(
       forestplot_render,
@@ -945,17 +1010,31 @@ forestplot_refit_typography <- function(x) {
     if (!is.null(attr(x, "annotations", exact = TRUE))) {
       attr(fp, "annotations") <- attr(x, "annotations", exact = TRUE)
     }
+    attr(fp, "forestplot_fit_render") <- render_args
+    attr(fp, "forestplot_fit_options") <- opts
   } else {
     snap <- attr(x, "forestplot_render", exact = TRUE)
     if (!is.list(snap)) {
+      return(x)
+    }
+    refit_type <- forestplot_refit_panel_type(x, snap = snap)
+    if (is.null(refit_type)) {
+      warning(
+        "Forest typography refit could not resolve `type`; keeping the existing plot.",
+        call. = FALSE
+      )
       return(x)
     }
     snap$base_size <- metrics$base_size
     snap$pointsize <- metrics$pointsize
     snap$panel.height <- metrics$panel.height
     snap$typography_auto <- TRUE
+    snap$type <- refit_type
     snap$printplot <- NULL
     snap$quiet <- NULL
+    if (is.list(x$specs) && !is.null(x$specs$favours)) {
+      snap$favours <- x$specs$favours
+    }
     fp <- do.call(forestplot_render, snap)
   }
 

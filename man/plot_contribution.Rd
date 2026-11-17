@@ -24,7 +24,7 @@ plot_contribution(
   colors = NULL,
   fills = NULL,
   xlab = NULL,
-  ylab = "Treatment effect",
+  ylab = "Effect",
   xlim = NULL,
   ylim = NULL,
   x_breaks = NULL,
@@ -60,13 +60,15 @@ Defaults to the names stored on \code{fit}.}
 
 \item{subgroup_labels, legend_math, colors, fills, ylab}{Plot styling.}
 
-\item{xlab}{Axis label; default \code{"Information fraction (IF) (\%)"}.}
+\item{xlab}{Axis label; default names the non-reference subgroup from
+\code{ifrac_var} (e.g. \code{"Information fraction (Older) (\%)"} for
+\code{IF_Older}).}
 
 \item{xlim, ylim, x_breaks, y_breaks}{Axis limits and breaks (\code{xlim} / \code{x_breaks}
 are on the \strong{percent} scale, 0–100).}
 
 \item{show_overall_line}{Logical; dashed \eqn{M(\pi)=\alpha+\theta\pi} line
-(legend \dQuote{All} when drawn).}
+(legend \dQuote{Combined} when drawn).}
 
 \item{ribbon_interval.type}{\code{"central"} or \code{"shortest"} credible interval
 for subgroup ribbon limits on the DIRECT mixture (default \code{"central"}).}

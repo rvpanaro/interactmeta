@@ -5,23 +5,27 @@ articles:
   desc: Estimands, assumptions, Bayesian and REML on the steroids example.
   contents:
   - cams
-- title: Export and QC of CAMS results
-  desc: tidy() exports and construction sensitivity tables.
+- title: After CAMS
+  desc: Inspect a CAMS fit on the steroids example (after vignette("cams")).
   contents:
-  - export-and-qc
-- title: Other example datasets
-  desc: age, edss, il6, and RESPIRE with brief forest plots.
+  - heterogeneity-after-cams
+  - trial-specific-effects-and-shrinkage
+  - traceplots
+  - single-subgroup-trials
+  - comparing-da-ad-swada
+- title: Example datasets
+  desc: steroids, age, edss, il6, and RESPIRE example tables.
   contents:
   - worked-examples
 
 redirects:
 - [articles/introduction-to-interact.html, articles/cams.html]
-- [articles/consistent-interactions.html, articles/export-and-qc.html]
+- [articles/consistent-interactions.html, articles/comparing-da-ad-swada.html]
+- [articles/export-and-qc.html, articles/cams.html]
 - [articles/convolution.html, articles/cams.html]
 - [articles/engine-comparison.html, articles/cams.html]
-- [articles/further.html, articles/export-and-qc.html]
-- [articles/single-subgroup-trials.html, articles/worked-examples.html]
-- [articles/trial-specific-effects-and-shrinkage.html, articles/cams.html]
+- [articles/diagnostics.html, articles/cams.html]
+- [articles/further.html, articles/heterogeneity-after-cams.html]
 
 template:
   bootstrap: 5

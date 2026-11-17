@@ -64,7 +64,7 @@ forestplot_render_interactmeta_panels <- function(panels,
     reference <- as.character(reference)[[1L]]
   }
   if (is.null(panel_roles)) {
-    panel_roles <- rep("subgroups", n)
+    panel_roles <- rep("modifiers", n)
   } else {
     panel_roles <- as.character(panel_roles)
     if (length(panel_roles) < n) {

@@ -1269,7 +1269,7 @@ construction_forestplot_from_fit <- function(fit,
         exponentiate = exponentiate,
         annotations = annotations,
         group = group,
-        type = if (identical(type, "subgroups")) "modifiers" else type,
+        type = type,
         fit_analysis = analysis
       ),
       dots

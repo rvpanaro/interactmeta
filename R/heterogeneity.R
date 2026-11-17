@@ -31,7 +31,7 @@
 #' heterogeneity(fit, component = "intercept")
 #' }
 #'
-#' @seealso [ifrac()], [cams()], [plot_heterogeneity()]
+#' @seealso [ifrac()], [cams()], [plot_heterogeneity()], `vignette("heterogeneity-after-cams")`
 #' @export
 heterogeneity <- function(fit,
                           component = c("all", "intercept", "slope"),
@@ -462,7 +462,7 @@ comparison_heterogeneity_summary <- function(draws, specs, prob = 0.95) {
 #' }
 #'
 #' @seealso [heterogeneity()], [bayesmeta::plot.bayesmeta],
-#'   [metafor::profile.rma], `vignette("cams")`
+#'   [metafor::profile.rma], `vignette("cams")`, `vignette("heterogeneity-after-cams")`
 #' @keywords internal
 plot_heterogeneity <- function(x,
                                which = c("both", "overall", "interaction", "combined"),
@@ -760,6 +760,71 @@ heterogeneity_plot_bayesmeta_tau_draw <- function(d, ylim = NULL) {
     expression("marginal posterior density")
   )
   graphics::axis(1)
+  graphics::box()
+  invisible(d$x)
+}
+
+#' Horizontal τ density for a right-hand margin (τ on y, density on x)
+#' @noRd
+heterogeneity_plot_bayesmeta_tau_draw_right <- function(d, xlim = NULL) {
+  xmax <- d$maxdens
+  if (is.null(xlim)) {
+    xlim <- c(0, xmax)
+  }
+  xdens <- function(x) {
+    xmax - x
+  }
+  ylim <- d$taurange
+  graphics::plot(
+    xlim,
+    ylim,
+    type = "n",
+    axes = FALSE,
+    xlab = "",
+    ylab = "",
+    main = ""
+  )
+  tau0 <- min(c(d$taurange[[1L]], 0))
+  tau1 <- max(d$tau)
+  graphics::polygon(
+    c(xmax, xdens(d$dens), xmax),
+    c(tau0, d$tau, tau1),
+    border = NA,
+    col = grDevices::grey(0.9)
+  )
+  if (!is.null(d$indi) && any(d$indi)) {
+    graphics::polygon(
+      c(xmax, xdens(d$dens[d$indi]), xmax),
+      c(d$lo, d$tau[d$indi], d$hi),
+      border = NA,
+      col = grDevices::grey(0.8)
+    )
+  }
+  if (is.finite(d$med) && is.finite(d$d_med)) {
+    graphics::lines(c(xmax, xdens(d$d_med)), rep(d$med, 2L), col = grDevices::grey(0.6))
+  }
+  graphics::lines(xdens(d$dens), d$tau, col = "black")
+  graphics::abline(v = xmax, h = 0, col = grDevices::grey(0.4))
+  if (!is.null(d$pdens)) {
+    graphics::lines(xdens(d$pdens), d$tau, col = "black", lty = "dashed")
+  }
+  xlab <- d$xlab
+  if (is.null(xlab)) {
+    xlab <- heterogeneity_tau_xlab("tau")
+  }
+  graphics::mtext(
+    side = 4,
+    line = graphics::par("mgp")[[2L]],
+    xlab,
+    las = 0
+  )
+  graphics::mtext(
+    side = 3,
+    line = 0.2,
+    expression("marginal posterior density"),
+    cex = graphics::par("cex") * 0.85
+  )
+  graphics::axis(4)
   graphics::box()
   invisible(d$x)
 }

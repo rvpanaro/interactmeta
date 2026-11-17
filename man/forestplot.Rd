@@ -37,6 +37,7 @@ forestplot(
   show_annotations = TRUE,
   annotation_digits = 2,
   favours = NULL,
+  outcome = c("unfavorable", "favorable"),
   show_ci_text = NULL,
   exponentiate = FALSE,
   col_right_heading = NULL,
@@ -56,7 +57,8 @@ forestplot(
   grouping = NULL,
   panel.height = NULL,
   estimates_only = FALSE,
-  type = c("modifiers", "interaction", "subgroups"),
+  type = c("modifiers", "interaction"),
+  modifier_panel = NULL,
   which_panel = NULL,
   ...
 )
@@ -107,7 +109,7 @@ in the active \code{type} block. Shrinkage is included by default for Bayesian
 fits only; frequentist (\code{REML} / \code{ML}) forests omit shrinkage rows.
 Set \code{include_shrinkage = FALSE} to omit them on Bayesian fits.
 For \code{type = "modifiers"}, \code{include_combined} controls a trailing
-\strong{All} section (\strong{Overall} / \strong{Prediction} for \code{\link[=combined]{combined()}} at
+\strong{Combined} section (\strong{Overall} / \strong{Prediction} for \code{\link[=combined]{combined()}} at
 the reporting IF), not the subgroup panels. Switching off overall or
 prediction keeps blank placeholder rows so the figure height and spacing
 stay close to the full plot.}
@@ -136,11 +138,14 @@ intervals.}
 \item{annotation_digits}{Decimal places in annotation text (default \code{2}).}
 
 \item{favours}{Optional length-2 character labels placed under the x-axis
-(left / right of the null). Default is \code{c("Control", "Experimental")}
-for \code{type = "modifiers"}. For \code{type = "interaction"}, the
-default names the reference and non-reference subgroups (same left/right
-roles), and the IF column header is \verb{IF (non-reference subgroup)}.
-Set to \code{FALSE} to suppress favours.}
+(left / right of the null). When \code{NULL} (default), labels follow
+\code{outcome}. Set to \code{FALSE} to suppress favours.}
+
+\item{outcome}{When \code{favours} is \code{NULL}: \code{"unfavorable"} (default)
+or \code{"favorable"}. Default favour labels for ratio-scale outcomes.
+Modifiers: unfavorable is Experimental left, Control right; favorable swaps.
+Interaction: unfavorable is non-reference (B) left, reference (A) right;
+favorable swaps. Explicit \code{favours} always win.}
 
 \item{show_ci_text}{Logical; show estimate and CI text. Default \code{TRUE}.}
 
@@ -174,12 +179,18 @@ summary diamonds) and omit the IF and study-size columns.}
 \itemize{
 \item \code{"modifiers"} (default): one section per modifier level (reference and
 non-reference), each with \strong{Overall} and \strong{Prediction} when enabled;
-optional trailing \strong{All} summaries when \code{include_combined = TRUE}
+optional trailing \strong{Combined} summaries when \code{include_combined = TRUE}
 \item \code{"interaction"}: Interaction block only (Overall + Prediction)
 }
 
 Other features (favours, annotations, \code{include_shrinkage}, …) apply
 within the selected type.}
+
+\item{modifier_panel}{For \code{type = "modifiers"}, optionally keep a single
+modifier-level panel (subgroup heading, e.g. the reference level) after
+stacking. \code{NULL} (default) keeps every modifier panel plus optional
+\strong{Combined}. Pass \code{"Combined"} for the trailing combined-population panel
+only.}
 
 \item{...}{Passed to \code{\link[=forestplot]{forestplot()}} (CAMS options and/or forestplot
 presentation args).}
@@ -217,7 +228,6 @@ on attach).
 By default (\code{type = "modifiers"}) the plot shows \strong{modifier-level} panels
 (each with \strong{Overall} and \strong{Prediction}), with overall-IF notes under the
 x-axis. Use \code{type = "interaction"} for the interaction block only.
-\code{type = "subgroups"} is deprecated (same as \code{"modifiers"}).
 }
 \section{Aesthetics vs content}{
 

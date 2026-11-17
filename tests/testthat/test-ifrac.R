@@ -8,8 +8,8 @@ test_that("documented ifrac() example matches named subgroup labels", {
 
   expect_equal(nrow(res), 4L)
   expect_equal(unique(as.character(res$reference)), "g1")
-  expect_true("ifrac_g2" %in% names(res))
-  expect_equal(res$ifrac_g2[[1L]], 0.2)
+  expect_true("IF_g2" %in% names(res))
+  expect_equal(res$IF_g2[[1L]], 0.2)
 })
 
 test_that("ifrac() returns numeric yi, vi, precision, and ifrac_* columns", {
@@ -43,7 +43,7 @@ test_that("ifrac() replaces escalc placeholder rows (yi = 0, vi = 8) with big_va
   e <- metafor::escalc(measure = "IRR", yi = dat$yi, vi = dat$vi, data = dat)
 
   res <- ifrac(e, reference = "Lower", contrast = NULL)
-  row <- res[res$study == dat$study[[1L]] & res$level == dat$level[[1L]], , drop = FALSE]
+  row <- res[res$study == dat$study[[1L]] & as.character(res$level) == as.character(dat$subgroup[[1L]]), , drop = FALSE]
   expect_equal(row$yi, 0)
   expect_equal(row$vi, 100^2)
 })
@@ -67,7 +67,7 @@ test_that("ifrac() accepts escalc / data.frame input", {
   expect_equal(as.character(res_df$level), as.character(res_vec$level))
   expect_equal(res_df$yi, res_vec$yi, tolerance = 1e-12)
   expect_equal(res_df$vi, res_vec$vi, tolerance = 1e-12)
-  expect_equal(res_df$ifrac_Higher, res_vec$ifrac_Higher, tolerance = 1e-12)
+  expect_equal(res_df$IF_Higher, res_vec$IF_Higher, tolerance = 1e-12)
 })
 
 test_that("ifrac() works with different subgroup types and uneven combinations", {
@@ -86,25 +86,25 @@ test_that("ifrac() works with different subgroup types and uneven combinations",
   expect_equal(row_imp$vi, 1e6)
 
   # information fractions exist for both subgroup labels (wide output)
-  expect_true(all(c("ifrac_g1", "ifrac_g2") %in% names(res_chr)))
+  expect_true(all(c("IF_g1", "IF_g2") %in% names(res_chr)))
 
   # within each trial, ifrac columns should sum to 1
   sums <- res_chr |>
-    dplyr::distinct(.data$study, .data$ifrac_g1, .data$ifrac_g2) |>
-    dplyr::mutate(sum_ifrac = .data$ifrac_g1 + .data$ifrac_g2)
+    dplyr::distinct(.data$study, .data$IF_g1, .data$IF_g2) |>
+    dplyr::mutate(sum_ifrac = .data$IF_g1 + .data$IF_g2)
   expect_true(all(abs(sums$sum_ifrac - 1) < 1e-12))
 
   # subgroup as factor should behave identically (column naming may differ in order)
   subgroup_fac <- factor(subgroup_chr, levels = c("g2", "g1"))
   res_fac <- ifrac(yi = yi, vi = vi, trial = trial, subgroup = subgroup_fac, big_var = 1e6, contrast = NULL)
-  expect_true(all(c("ifrac_g1", "ifrac_g2") %in% names(res_fac)))
+  expect_true(all(c("IF_g1", "IF_g2") %in% names(res_fac)))
 
   # compare fractions numerically (allow different column order)
   res_chr_frac <- res_chr |>
-    dplyr::distinct(.data$study, .data$ifrac_g1, .data$ifrac_g2) |>
+    dplyr::distinct(.data$study, .data$IF_g1, .data$IF_g2) |>
     dplyr::arrange(.data$study)
   res_fac_frac <- res_fac |>
-    dplyr::distinct(.data$study, .data$ifrac_g1, .data$ifrac_g2) |>
+    dplyr::distinct(.data$study, .data$IF_g1, .data$IF_g2) |>
     dplyr::arrange(.data$study)
   expect_equal(res_fac_frac, res_chr_frac)
 })
@@ -121,9 +121,9 @@ test_that("ifrac() aggregates repeated trial-by-subgroup rows via summed precisi
   # precision sums: g1 prec = 1/0.01 + 1/0.04 = 100 + 25 = 125; g2 prec = 25
   # so fractions should be 125/150 and 25/150
   fr <- res |>
-    dplyr::distinct(.data$study, .data$ifrac_g1, .data$ifrac_g2)
-  expect_equal(fr$ifrac_g1, 125 / 150, tolerance = 1e-12)
-  expect_equal(fr$ifrac_g2, 25 / 150, tolerance = 1e-12)
+    dplyr::distinct(.data$study, .data$IF_g1, .data$IF_g2)
+  expect_equal(fr$IF_g1, 125 / 150, tolerance = 1e-12)
+  expect_equal(fr$IF_g2, 25 / 150, tolerance = 1e-12)
 })
 
 test_that("ifrac() stacks contrast rows with g2-g1 style labels", {
@@ -134,9 +134,9 @@ test_that("ifrac() stacks contrast rows with g2-g1 style labels", {
 
   res <- ifrac(yi = yi, vi = vi, trial = trial, subgroup = subgroup, contrast = c("g1", "g2"), include_interaction = TRUE)
 
-  expect_true(all(c("ifrac_g1") %in% names(res)))
+  expect_true(all(c("IF_g1") %in% names(res)))
   expect_false(any(grepl("^ifrac2_", names(res))))
-  expect_false(any(is.na(res$ifrac_g1)))
+  expect_false(any(is.na(res$IF_g1)))
 
   expect_true("g1-g2" %in% res$level)
   expect_equal(nrow(res), 6)
@@ -148,10 +148,10 @@ test_that("ifrac() stacks contrast rows with g2-g1 style labels", {
   fr_a <- res[res$study == "A" & res$level == "g1-g2", , drop = FALSE]
   expect_equal(fr_a$precision, 100 + 25, tolerance = 1e-12)
   expect_false("ifrac" %in% names(res))
-  expect_equal(fr_a$ifrac_g1, 100 / 125, tolerance = 1e-12)
+  expect_equal(fr_a$IF_g1, 100 / 125, tolerance = 1e-12)
 
   row_g1 <- res[res$study == "A" & res$level == "g1", , drop = FALSE]
-  expect_equal(row_g1$ifrac_g1, 100 / 125, tolerance = 1e-12)
+  expect_equal(row_g1$IF_g1, 100 / 125, tolerance = 1e-12)
 })
 
 test_that("ifrac() omits overall rows by default", {
@@ -176,14 +176,14 @@ test_that("ifrac() can append overall rows with include_combined = TRUE", {
 
   expect_equal(nrow(res), 6L)
   expect_true(all(c("Combined") %in% res$level))
-  expect_true(all(c("ifrac_g2") %in% names(res)))
+  expect_true(all(c("IF_g2") %in% names(res)))
   expect_false(any(grepl("^ifrac2_", names(res))))
 
   row_a <- res[res$study == "A" & res$level == "Combined", , drop = FALSE]
   expect_equal(row_a$yi, (0.2 * 100 + 0.1 * 25) / 125, tolerance = 1e-12)
   expect_equal(row_a$vi, 1 / 125, tolerance = 1e-12)
   expect_equal(row_a$precision, 125, tolerance = 1e-12)
-  expect_equal(row_a$ifrac_g2, 25 / 125, tolerance = 1e-12)
+  expect_equal(row_a$IF_g2, 25 / 125, tolerance = 1e-12)
 })
 
 test_that("ifrac() can append overall and interaction rows together", {
@@ -215,7 +215,7 @@ test_that("ifrac() omits interaction rows by default", {
 
   expect_equal(nrow(res), 3)
   expect_false(any(grepl("-", res$level, fixed = TRUE)))
-  expect_true(all(c("ifrac_g2", "ifrac_g3") %in% names(res)))
+  expect_true(all(c("IF_g2", "IF_g3") %in% names(res)))
   expect_false(any(grepl("^ifrac2_", names(res))))
   expect_true(all(res$reference == "g1"))
   expect_s3_class(res$level, "factor")
@@ -242,8 +242,8 @@ test_that("edss defaults to Lower reference via factor levels", {
   res <- ifrac(e)
   expect_equal(unique(as.character(res$reference)), "Lower")
   expect_equal(levels(res$level)[[1]], "Lower")
-  expect_true("ifrac_Higher" %in% names(res))
-  expect_false("ifrac_Lower" %in% names(res))
+  expect_true("IF_Higher" %in% names(res))
+  expect_false("IF_Lower" %in% names(res))
 })
 
 test_that("ifrac() can append interaction rows with include_interaction = TRUE", {
@@ -254,10 +254,10 @@ test_that("ifrac() can append interaction rows with include_interaction = TRUE",
 
   res <- ifrac(yi = yi, vi = vi, trial = trial, subgroup = subgroup, include_interaction = TRUE)
 
-  expect_true(all(c("ifrac_g2", "ifrac_g3") %in% names(res)))
+  expect_true(all(c("IF_g2", "IF_g3") %in% names(res)))
   expect_false(any(grepl("^ifrac2_", names(res))))
-  expect_false(any(is.na(res$ifrac_g2)))
-  expect_false(any(is.na(res$ifrac_g3)))
+  expect_false(any(is.na(res$IF_g2)))
+  expect_false(any(is.na(res$IF_g3)))
 
   expect_true(all(c("g2-g1", "g3-g1") %in% res$level))
   expect_equal(nrow(res), 5)
@@ -266,13 +266,46 @@ test_that("ifrac() can append interaction rows with include_interaction = TRUE",
   expect_equal(row_g2g1$yi, 0.1 - 0.2)
   expect_equal(row_g2g1$vi, 0.04 + 0.01)
   expect_equal(row_g2g1$precision, 25 + 100, tolerance = 1e-12)
-  expect_equal(row_g2g1$ifrac_g2, 25 / (100 + 25 + 6.25), tolerance = 1e-12)
+  expect_equal(row_g2g1$IF_g2, 25 / (100 + 25 + 6.25), tolerance = 1e-12)
 
   row_g2 <- res[res$level == "g2", , drop = FALSE]
-  expect_equal(row_g2$ifrac_g2, 25 / (100 + 25 + 6.25), tolerance = 1e-12)
+  expect_equal(row_g2$IF_g2, 25 / (100 + 25 + 6.25), tolerance = 1e-12)
 
   row_g3 <- res[res$level == "g3", , drop = FALSE]
-  expect_equal(row_g3$ifrac_g3, 6.25 / (100 + 25 + 6.25), tolerance = 1e-12)
+  expect_equal(row_g3$IF_g3, 6.25 / (100 + 25 + 6.25), tolerance = 1e-12)
+})
+
+test_that("interaction design ignores hyphenated component labels", {
+  skip_if_not_installed("metafor")
+  es <- metafor::escalc(
+    measure = "OR",
+    ai = steroids$treat.events,
+    bi = steroids$treat.total - steroids$treat.events,
+    ci = steroids$cont.events,
+    di = steroids$cont.total - steroids$cont.events,
+    data = steroids
+  )
+  fit <- cams(es, reference = "Non-IMV", method = "REML", silent = 2)
+  des <- interactmeta:::comparison_interaction_design(fit)
+  expect_true(all(!des$interaction_levels %in% c("Non-IMV", "IMV")))
+  expect_match(des$interaction_levels, "IMV-Non-IMV")
+})
+
+test_that("hyphenated subgroup labels are not treated as contrast rows", {
+  expect_false(interactmeta:::is_ifrac_contrast_row("Non-IMV"))
+  expect_true(interactmeta:::is_ifrac_contrast_row("IMV-Non-IMV", component_labels = c("IMV", "Non-IMV")))
+  skip_if_not_installed("metafor")
+  es <- metafor::escalc(
+    measure = "OR",
+    ai = steroids$treat.events,
+    bi = steroids$treat.total - steroids$treat.events,
+    ci = steroids$cont.events,
+    di = steroids$cont.total - steroids$cont.events,
+    data = steroids
+  )
+  des <- ifrac(es, reference = "Non-IMV")
+  expect_equal(sort(unique(as.character(des$level))), c("IMV", "Non-IMV"))
+  expect_s3_class(cams(des, reference = "Non-IMV", method = "REML", silent = 2), "interactmeta")
 })
 
 test_that("ifrac() can use a reference subgroup for contrast=all", {

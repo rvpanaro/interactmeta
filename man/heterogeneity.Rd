@@ -51,5 +51,5 @@ heterogeneity(fit, component = "intercept")
 
 }
 \seealso{
-\code{\link[=ifrac]{ifrac()}}, \code{\link[=cams]{cams()}}, \code{\link[=plot_heterogeneity]{plot_heterogeneity()}}
+\code{\link[=ifrac]{ifrac()}}, \code{\link[=cams]{cams()}}, \code{\link[=plot_heterogeneity]{plot_heterogeneity()}}, \code{vignette("heterogeneity-after-cams")}
 }

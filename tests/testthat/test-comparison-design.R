@@ -16,7 +16,7 @@ test_that("prepare_ifrac_input() runs ifrac on escalc-like input", {
     big_var = 1e6,
     include_interaction = FALSE
   )
-  expect_true("ifrac_Older" %in% names(out))
+  expect_true("IF_Older" %in% names(out))
   expect_true("ifrac2_Older" %in% names(out))
 })
 
@@ -27,7 +27,7 @@ test_that("prepare_ifrac_input() passes through ifrac output", {
     yi = 0.1,
     vi = 0.01,
     reference = "Younger",
-    ifrac_Older = 0.5,
+    IF_Older = 0.5,
     ifrac2_Older = 0.5
   )
   out <- interactmeta:::prepare_ifrac_input(
@@ -40,7 +40,7 @@ test_that("prepare_ifrac_input() passes through ifrac output", {
     big_var = 1e6,
     include_interaction = FALSE
   )
-  expect_equal(out$ifrac_Older, 0.5)
+  expect_equal(out$IF_Older, 0.5)
 })
 
 test_that("resolve_comparison_design() builds formula for age-like ifrac output", {
@@ -50,13 +50,13 @@ test_that("resolve_comparison_design() builds formula for age-like ifrac output"
     yi = c(0.1, 0.2),
     vi = c(0.01, 0.02),
     reference = "Younger",
-    ifrac_Older = 0.3,
+    IF_Older = 0.3,
     ifrac2_Older = c(-0.3, 0.7)
   )
   d <- interactmeta:::resolve_comparison_design(dat, reference = "Younger", trial_var = "study", subgroup_var = "level")
-  expect_equal(d$ifrac_var, "ifrac_Older")
+  expect_equal(d$ifrac_var, "IF_Older")
   expect_equal(d$ifrac2_var, "ifrac2_Older")
-  expect_equal(d$effects, "ifrac_Older:level")
+  expect_equal(d$effects, "IF_Older:level")
   expect_equal(d$n_nonref, 1L)
   expect_true(grepl("ifrac_1", d$formula))
   expect_true(grepl("\\|\\| study", d$formula))
@@ -69,20 +69,20 @@ test_that("interactmeta_settings() reads comparison attribute", {
       vi = 0.01,
       subgroup = "Older",
       trial = "A",
-      ifrac_Older = 0.4
+      IF_Older = 0.4
     )),
     class = c("interactmeta", "list")
   )
   attr(fit, "interactmeta") <- list(
-    ifrac_var = "ifrac_Older",
+    ifrac_var = "IF_Older",
     ifrac2_var = "ifrac2_Older",
     trial_var = "study",
     subgroup_var = "level",
-    effects = "ifrac_Older:subgroup"
+    effects = "IF_Older:subgroup"
   )
   st <- interactmeta:::interactmeta_settings(fit)
-  expect_equal(st$ifrac_var, "ifrac_Older")
-  expect_equal(st$effects, "ifrac_Older:subgroup")
+  expect_equal(st$ifrac_var, "IF_Older")
+  expect_equal(st$effects, "IF_Older:subgroup")
 })
 
 test_that("comparison_model_formula() uses uncorrelated trial REs", {
@@ -104,7 +104,7 @@ test_that("cams() returns interactmeta with restored names", {
     yi = c(0.1, 0.2, 0.15, 0.25),
     vi = 0.01,
     reference = "Younger",
-    ifrac_Older = c(0.3, 0.3, 0.4, 0.4),
+    IF_Older = c(0.3, 0.3, 0.4, 0.4),
     ifrac2_Older = c(-0.3, 0.7, -0.4, 0.6)
   )
   fit <- cams(
@@ -115,7 +115,7 @@ test_that("cams() returns interactmeta with restored names", {
   expect_false(inherits(fit, "cam"))
   expect_equal(attr(fit, "interactmeta")$backend, "bayesmeta")
   expect_equal(as.character(fit$data$level), rep(c("Younger", "Older"), 2))
-  expect_true("b_ifrac_Older" %in% names(fit$support))
+  expect_true("b_IF_Older" %in% names(fit$support))
   expect_true("b_subgroupOlder" %in% names(fit$support) ||
                 "b_subgroupOlder" %in% gsub(" ", "", names(fit$support)))
   expect_equal(fit$data$yi, dat$yi)
@@ -129,7 +129,7 @@ test_that("cams() uses default seed for reproducible refits", {
     yi = c(0.1, 0.2, 0.15, 0.25),
     vi = 0.01,
     reference = "Younger",
-    ifrac_Older = c(0.3, 0.3, 0.4, 0.4),
+    IF_Older = c(0.3, 0.3, 0.4, 0.4),
     ifrac2_Older = c(-0.3, 0.7, -0.4, 0.6)
   )
   args <- list(
@@ -158,7 +158,7 @@ test_that("cams() rejects retired engine arguments", {
     yi = c(0.1, 0.2, 0.15, 0.25),
     vi = 0.01,
     reference = "Younger",
-    ifrac_Older = c(0.3, 0.3, 0.4, 0.4),
+    IF_Older = c(0.3, 0.3, 0.4, 0.4),
     ifrac2_Older = c(-0.3, 0.7, -0.4, 0.6)
   )
   expect_error(

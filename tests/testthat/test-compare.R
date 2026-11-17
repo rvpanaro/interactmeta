@@ -113,6 +113,35 @@ test_that("sensitivity() + compare() reproduces construction interaction table",
   expect_equal(as.character(ix$approach), c("DA", "AD", "SWADA", "CAMS"))
 })
 
+test_that("compare() exponentiate=TRUE puts CAMS on the same ratio scale as AD", {
+  skip_if_not_installed("metafor")
+  sens <- sensitivity(
+    respire_age,
+    reference = "<65",
+    subgroup = "subgroup",
+    method = "REML"
+  )
+  ix <- interactmeta::compare(
+    sens,
+    estimand = "interaction",
+    exponentiate = TRUE,
+    type = "Overall"
+  )
+  expect_s3_class(ix, "interactmeta_compare_interactions")
+  ad_est <- ix$estimate[as.character(ix$approach) == "AD"][[1L]]
+  cams_est <- ix$estimate[as.character(ix$approach) == "CAMS"][[1L]]
+  expect_equal(cams_est, ad_est, tolerance = 1e-6)
+  expect_gt(cams_est, 1)
+  cam <- sens$fits$cams
+  ix_int <- interactions(cam, type = "Overall", exponentiate = TRUE, summary = TRUE)
+  expect_true(isTRUE(ix_int$exponentiate))
+  expect_equal(
+    ix_int$summary$estimate[[1L]],
+    ad_est,
+    tolerance = 1e-6
+  )
+})
+
 test_that("mixed DA/SWADA/CAMS comparison objects remain plottable", {
   skip_if_not_installed("metafor")
   da_fit <- da(age, reference = "Younger")

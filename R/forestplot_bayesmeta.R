@@ -2,7 +2,7 @@
 #' Draw a bayesmeta / forestplot-backed forest on the active device
 #'
 #' CAMS forests always use [forestplot::forestplot()] so every `type`
-#' (`"subgroups"`, `"interaction"`) shares the same aesthetics:
+#' (`"modifiers"`, `"interaction"`) shares the same aesthetics:
 #' black study boxes; blue summary diamonds for every block;
 #' prediction bars; optional grey shrinkage overlays; and IF columns.
 #' (Standalone [as_bayesmeta()] objects can still be drawn with
@@ -17,7 +17,7 @@ forestplot_bayesmeta_draw <- function(x) {
   }
 
   n <- length(specs$panels)
-  roles <- as.character(specs$panel_roles %||% rep("subgroups", n))
+  roles <- as.character(specs$panel_roles %||% rep("modifiers", n))
   if (length(roles) < n) {
     roles <- rep_len(roles, n)
   }
@@ -89,7 +89,7 @@ forestplot_bayesmeta_panel_specs <- function(specs, i) {
     out$left_headings <- character()
   }
   out$panel_role <- {
-    roles <- specs$panel_roles %||% "subgroups"
+    roles <- specs$panel_roles %||% "modifiers"
     as.character(roles)[[min(i, length(roles))]]
   }
   out
@@ -263,7 +263,11 @@ forestplot_bayesmeta_print_stack_layout <- function(fps, row_weights, foot_lines
 #'
 #' [forestplot::forestplot()] calls [grid::grid.newpage()] when no device is
 #' open (`dev.cur() == 1`), which opens a visible empty window before we print.
-#' Construct on an invisible null PDF device in that case, then draw once.
+#' Construct on an invisible null PDF device, then draw once on the target device.
+#' When a file device is already open (e.g. \code{pdf()} for export),
+#' building on that device would draw a throwaway page before
+#' \code{forestplot_bayesmeta_print_with_footnotes()} clears with
+#' \code{grid.newpage()}.
 #' @noRd
 forestplot_bayesmeta_build_fp <- function(fp_args) {
   if (!is.list(fp_args)) {
@@ -271,25 +275,23 @@ forestplot_bayesmeta_build_fp <- function(fp_args) {
   }
   # We control paging in forestplot_bayesmeta_print_with_footnotes().
   fp_args$new_page <- FALSE
-  opened_null <- FALSE
-  # dev.cur() is a named integer; identical(..., 1L) is FALSE because of names.
-  if (!forestplot_has_graphics_device()) {
-    grDevices::pdf(NULL)
-    opened_null <- TRUE
-  }
+  previous_dev <- grDevices::dev.cur()
+  grDevices::pdf(NULL)
   on.exit(
     {
-      if (opened_null && forestplot_has_graphics_device()) {
-        try(grDevices::dev.off(), silent = TRUE)
+      try(grDevices::dev.off(), silent = TRUE)
+      if (is.finite(previous_dev) && previous_dev > 1L) {
+        try(grDevices::dev.set(previous_dev), silent = TRUE)
       }
     },
     add = TRUE
   )
   fp <- do.call(forestplot::forestplot, fp_args)
-  if (opened_null) {
-    grDevices::dev.off()
-    opened_null <- FALSE
+  try(grDevices::dev.off(), silent = TRUE)
+  if (is.finite(previous_dev) && previous_dev > 1L) {
+    grDevices::dev.set(previous_dev)
   }
+  on.exit(NULL)
   fp
 }
 
@@ -1010,6 +1012,28 @@ forestplot_ensure_nonsummary_row <- function(is_summary, mean_m) {
   is_summary
 }
 
+#' Forest graph-band width (mm) for the active PDF device
+#'
+#' Keeps quoted/shrinkage bands inside the device when printing at
+#' `\\columnwidth` or `\\textwidth` without clipping or a zoomed axis.
+#' @noRd
+forestplot_graphwidth_mm <- function(n_graph_bands, n_label_cols = 2L) {
+  n_graph_bands <- max(1L, as.integer(n_graph_bands)[1L])
+  n_label_cols <- max(2L, as.integer(n_label_cols)[1L])
+  reserve_in <- 1.25 + 0.35 * max(0L, n_label_cols - 2L)
+  dev_w <- if (forestplot_has_graphics_device()) {
+    as.numeric(grDevices::dev.size("in")[[1L]])
+  } else {
+    NA_real_
+  }
+  if (!is.finite(dev_w) || dev_w <= 0) {
+    return(55)
+  }
+  avail_mm <- max(36, (dev_w - reserve_in) * 25.4)
+  per <- avail_mm / n_graph_bands
+  max(26, min(55, per))
+}
+
 #' Build forestplot::forestplot args for one or more CAMS blocks
 #' @noRd
 forestplot_bayesmeta_forestplot_args <- function(blocks, specs) {
@@ -1324,6 +1348,12 @@ forestplot_bayesmeta_forestplot_args <- function(blocks, specs) {
   lower_m <- do.call(rbind, lower_list)
   upper_m <- do.call(rbind, upper_list)
 
+  n_graph_bands <- if (has_any_shrinkage && is.matrix(mean_m)) {
+    max(1L, as.integer(ncol(mean_m))[1L])
+  } else {
+    1L
+  }
+
   if (!has_any_shrinkage) {
     mean_m <- mean_m[, 1L, drop = TRUE]
     lower_m <- lower_m[, 1L, drop = TRUE]
@@ -1380,7 +1410,7 @@ forestplot_bayesmeta_forestplot_args <- function(blocks, specs) {
 
   xlab <- specs$xlab[[1L]]
   if (is.null(xlab) || identical(xlab, FALSE)) {
-    role <- specs$panel_role %||% "subgroups"
+    role <- specs$panel_role %||% "modifiers"
     xlab <- forestplot_panel_xlab(role, exponentiate = exponentiate, xlab = NULL)
   } else {
     xlab <- as.character(xlab)[[1L]]
@@ -1404,9 +1434,10 @@ forestplot_bayesmeta_forestplot_args <- function(blocks, specs) {
     xlab = xlab,
     # Forest sits before the Effect column (labels | forest | effect text).
     graph.pos = effect_col,
-    # Fixed forest-band width so IF / N / Effect toggles do not reflow the
-    # graph column when options change.
-    graphwidth = grid::unit(55, "mm"),
+    graphwidth = grid::unit(
+      forestplot_graphwidth_mm(n_graph_bands, n_label_cols = n_lab),
+      "mm"
+    ),
     txt_gp = forestplot::fpTxtGp(
       label = grid::gpar(
         cex = max(0.55, (specs$base_size %||% 9) / 12),

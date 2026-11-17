@@ -20,5 +20,5 @@ Draw-level identity checked:
 \deqn{\widetilde y_{A,j}=\widetilde m_j-\pi_j\widetilde g_j.}
 }
 \seealso{
-\code{\link[=shrinkage]{shrinkage()}}, \code{\link[=shrinkage_components]{shrinkage_components()}}
+\code{\link[=shrinkage]{shrinkage()}}, \code{\link[=shrinkage_components]{shrinkage_components()}}, \code{vignette("trial-specific-effects-and-shrinkage")}
 }
