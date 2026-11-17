@@ -9,6 +9,7 @@
 
 [![R-CMD-check](https://github.com/rvpanaro/interactmeta/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/rvpanaro/interactmeta/actions/workflows/R-CMD-check.yaml)
 [![pkgdown](https://github.com/rvpanaro/interactmeta/actions/workflows/pkgdown.yaml/badge.svg)](https://github.com/rvpanaro/interactmeta/actions/workflows/pkgdown.yaml)
+[![Codecov test coverage](https://codecov.io/gh/rvpanaro/interactmeta/branch/master/graph/badge.svg)](https://codecov.io/gh/rvpanaro/interactmeta)
 <!-- badges: end -->
 
 **interactmeta** implements **contribution-adjusted meta-analysis
