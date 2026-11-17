@@ -1,5 +1,11 @@
 # interactmeta
 
+<p class="badges">
+<a href="https://github.com/rvpanaro/interactmeta/actions/workflows/R-CMD-check.yaml"><img src="https://github.com/rvpanaro/interactmeta/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check"></a>
+<a href="https://github.com/rvpanaro/interactmeta/actions/workflows/pkgdown.yaml"><img src="https://github.com/rvpanaro/interactmeta/actions/workflows/pkgdown.yaml/badge.svg" alt="pkgdown"></a>
+<a href="https://codecov.io/gh/rvpanaro/interactmeta"><img src="https://codecov.io/gh/rvpanaro/interactmeta/branch/master/graph/badge.svg" alt="Codecov"></a>
+</p>
+
 **Contribution-adjusted meta-analysis (CAMS)** for treatment effect modification
 from modifier-level aggregate data ([Panaro, Röver & Friede 2025](https://arxiv.org/abs/2512.18785)).
 

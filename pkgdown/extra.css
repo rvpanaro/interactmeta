@@ -1,4 +1,12 @@
-/* pkgdown article pages — readable product-style docs. */
+/* pkgdown home + article pages. */
+
+body.template-home .badges {
+  margin: 0.75rem 0 1.25rem;
+}
+
+body.template-home .badges a {
+  margin-right: 0.35rem;
+}
 
 body.template-article main p,
 body.template-article main li,

@@ -1,8 +1,6 @@
-# interactmeta (development)
+# interactmeta 0.1.0
 
-## interactmeta 0.1.0
-
-### New features
+## New features
 
 - **`tidy()`** method for **`interactmeta`** fits: one long export table across
   interaction, modifier, combined, and heterogeneity estimands.
@@ -10,7 +8,7 @@
   forest plots.
 - **`sensitivity()`** and **`compare()`** for construction sensitivity analyses.
 
-### Performance
+## Performance
 
 - **`cams()`** defaults to **`precompute = FALSE`** and **`lazy_latent = TRUE`**:
   fit returns after the bayesmeta blocks and DIRECT support, without warming
@@ -25,7 +23,7 @@
   blocks at fit time with the same mixture product as on-demand shrinkage (no
   per-trial **`bayesmeta::convolve()`** at fit).
 
-### Documentation
+## Documentation
 
 - **`vignette("comparing-da-ad-swada")`** — DA, AD, SWADA vs CAMS after
   **`vignette("cams")`** (`respire_age`, `sensitivity()`, `compare()`).
@@ -34,7 +32,7 @@
   (after **`vignette("cams")`**). Old `diagnostics.html` and `traceplots.html`
   redirect on the site.
 
-### Breaking changes
+## Breaking changes
 
 - **`traceplot(fit, type = "modifier")`** removed (use `type = "interaction"` or
   `"combined"`).
@@ -48,6 +46,6 @@
   inherit **`prob`**, **`ifrac`**, **`contrast_sep`**, and **`exponentiate`**
   from **`fit$reporting`** when those arguments are omitted (`NULL`).
 
-### Internal
+## Internal
 
 - **`interactmeta_marginal()`** canonical marginal dispatch for reporting code paths.
