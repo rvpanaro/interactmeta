@@ -20,22 +20,27 @@ knitr::opts_chunk$set(
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/rvpanaro/interactmeta/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/rvpanaro/interactmeta/actions/workflows/R-CMD-check.yaml)
 [![pkgdown](https://github.com/rvpanaro/interactmeta/actions/workflows/pkgdown.yaml/badge.svg)](https://github.com/rvpanaro/interactmeta/actions/workflows/pkgdown.yaml)
-[![Codecov test coverage](https://codecov.io/gh/rvpanaro/interactmeta/branch/master/graph/badge.svg)](https://codecov.io/gh/rvpanaro/interactmeta)
+[![Codecov](https://codecov.io/gh/rvpanaro/interactmeta/branch/master/graph/badge.svg)](https://codecov.io/gh/rvpanaro/interactmeta)
 <!-- badges: end -->
 
-**interactmeta** implements **contribution-adjusted meta-analysis
-(CAMS)** for treatment effect modification from
-modifier-level aggregate data (Panaro, Röver & Friede 2025):
-[*Consistent Bayesian meta-analysis on subgroup specific effects and interactions*](https://arxiv.org/abs/2512.18785).
+**Contribution-adjusted meta-analysis (CAMS)** for treatment effect modification from
+modifier-level aggregate data — [Panaro, Röver & Friede (2025)](https://arxiv.org/abs/2512.18785).
 
-`cams()` fits contribution-adjusted meta-analysis (CAMS) from
-modifier-level aggregate data. `interactions()`, `modifiers()`, and
-`combined()` report the main estimands; `forestplot()` and
-`plot()` and `tidy()` visualize and export a fitted model.
+- **`cams()`** — fit CAMS from paired subgroup summaries (Bayesian default; REML/ML via `metafor`)
+- **`interactions()`**, **`modifiers()`**, **`combined()`** — estimands on a fitted model
+- **`forestplot()`**, **`plot()`**, **`tidy()`** — plots and export tables
+- **`da()`**, **`ad()`**, **`swada()`**, **`conventional()`** — DA / AD constructions and SWADA consistency
 
-| Start here | More |
-|------------|------|
-| `vignette("cams")` — **Getting started** (estimands, assumptions, Bayesian & REML on `steroids`) | After CAMS: `heterogeneity-after-cams`, `comparing-da-ad-swada`; `vignette("worked-examples")` — example tables |
+**Docs (pkgdown):** <https://rvpanaro.github.io/interactmeta/>
+
+| Article | What it covers |
+| --- | --- |
+| [Getting started with CAMS](https://rvpanaro.github.io/interactmeta/articles/cams.html) | Estimands and workflow on `age` (Bayesian) and `steroids` (REML) |
+| [Heterogeneity after CAMS](https://rvpanaro.github.io/interactmeta/articles/heterogeneity-after-cams.html) | \(\tau\) / \(\tau_\gamma\), heterogeneity plots, traceplots |
+| [DA, AD, and SWADA vs CAMS](https://rvpanaro.github.io/interactmeta/articles/comparing-da-ad-swada.html) | Constructions alongside the main CAMS analysis |
+| [Example datasets](https://rvpanaro.github.io/interactmeta/articles/worked-examples.html) | `steroids`, `age`, RESPIRE, and related tables |
+
+[Function reference](https://rvpanaro.github.io/interactmeta/reference/index.html) · [News](https://rvpanaro.github.io/interactmeta/news/index.html)
 
 ## Installation
 
@@ -44,13 +49,9 @@ modifier-level aggregate data. `interactions()`, `modifiers()`, and
 remotes::install_github("rvpanaro/interactmeta")
 ```
 
-Documentation: <https://rvpanaro.github.io/interactmeta/>
-
-CAMS supports **Bayesian** (default) and **frequentist** inference
-(`method = "REML"`). See the getting-started vignette for the full
-workflow.
-
 ## Example
+
+Steroids trials, invasive vs non-invasive ventilation as modifier (`REML` for a quick frequentist fit):
 
 ``` r
 library(interactmeta)
@@ -66,6 +67,7 @@ es <- escalc(
 )
 both <- c("CAPE COVID", "COVID STEROID", "REMAP-CAP", "Steroids-SARI")
 fit <- cams(es[es$study %in% both, ], reference = "Non-IMV", method = "REML")
+
 interactions(fit, exponentiate = TRUE)
 modifiers(fit, exponentiate = TRUE)
 forestplot(fit, exponentiate = TRUE)
