@@ -12,9 +12,7 @@ conventional(
   subgroup = "level",
   yi = "yi",
   vi = "vi",
-  engine = c("metafor", "bayesmeta"),
   method = NULL,
-  approach = NULL,
   tau.prior = NULL,
   mu.prior = NULL,
   ...
