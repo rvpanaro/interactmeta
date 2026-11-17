@@ -31,3 +31,20 @@ test_that("constructions reject CAMS-only marginal arguments", {
   expect_error(modifiers(da_fit, at = 0.5), "CAMS")
   expect_error(shrinkage(da_fit), "CAMS")
 })
+
+test_that("sensitivity() and compare(sens) fit four constructions", {
+  skip_if_not_installed("metafor")
+  sens <- sensitivity(
+    respire_age,
+    reference = "<65",
+    method = "REML",
+    silent = 2
+  )
+  expect_s3_class(sens, "interactmeta_sensitivity")
+  expect_setequal(names(sens$fits), c("da", "ad", "swada", "cams"))
+  tab <- compare(sens, estimand = "interaction", type = "Overall")
+  expect_s3_class(tab, "interactmeta_compare_interactions")
+  expect_equal(nrow(tab), 4L)
+  mod <- compare(sens, estimand = "modifiers", exponentiate = FALSE)
+  expect_s3_class(mod, "interactmeta_compare_subgroups")
+})

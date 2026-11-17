@@ -32,13 +32,13 @@ Rscript -e 'pkgload::load_all(); testthat::test_dir("tests/testthat")'
 | `test-battery-effects.R` | `modifiers`, `interactions`, `combined`, `heterogeneity`, `shrinkage` |
 | `test-battery-constructions.R` | `da`, `ad`, `swada`, `conventional` (REML) |
 | `test-battery-reporting.R` | `print`, `summary`, `tidy` |
-| `test-battery-compare.R` | `compare`, `compare_weights`, capability matrix |
+| `test-battery-compare.R` | `compare`, `compare_weights`, `sensitivity()`, capability matrix |
 | `test-battery-data.R` | Datasets and `log_hr_from_ci` / `hr_ci_from_log` |
-| `test-battery-graphics.R` | `forestplot`, `plot`, palette (`slow()` for one render test) |
+| `test-battery-graphics.R` | `forestplot`, `forestplot_draw`, `traceplot`, `compare_forestplots`, plots (`slow()` tier) |
 
 ## Slow tier
 
-One graphics test is skipped unless you opt in to full forestplot render coverage:
+Several graphics / integration tests are skipped unless you opt in (`slow()` helper):
 
 ```bash
 INTERACT_SLOW_TESTS=true Rscript -e 'pkgload::load_all(); testthat::test_dir("tests/testthat")'

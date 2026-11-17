@@ -20,6 +20,13 @@ slow <- function() {
   }
 }
 
+#' Run graphics on a null PDF device (coverage for draw methods).
+with_null_pdf <- function(expr) {
+  grDevices::pdf(NULL)
+  on.exit(grDevices::dev.off(), add = TRUE)
+  force(expr)
+}
+
 .fixture_cache <- new.env(parent = emptyenv())
 
 fixture_cam_tiny <- function(

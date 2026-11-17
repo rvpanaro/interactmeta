@@ -486,43 +486,18 @@ forestplot_height <- function(x, width = 9.5, width_height = NULL) {
 #' @keywords internal
 #' @export
 forestplot_draw <- function(x) {
-  if (forestplot_is_metafor_engine(x)) {
-    x <- forestplot_refit_typography(x)
-    if (forestplot_has_graphics_device()) {
-      grDevices::dev.hold()
-      on.exit(grDevices::dev.flush(), add = TRUE)
-    }
-    forestplot_metafor_draw(x)
-    return(invisible(x))
+  if (!forestplot_is_metafor_engine(x)) {
+    stop(
+      "`forestplot_draw()` expects an `interactmeta_forestplot` from `forestplot()`.",
+      call. = FALSE
+    )
   }
-
-  # Legacy ggplot / grid objects (if any)
   x <- forestplot_refit_typography(x)
-  grob <- forestplot_as_grob(x)
-  dims <- forestplot_grob_inches(grob)
-  if (!all(is.finite(unlist(dims))) || dims$width <= 0 || dims$height <= 0) {
-    stop("Forest plot has non-finite grob dimensions.", call. = FALSE)
+  if (forestplot_has_graphics_device()) {
+    grDevices::dev.hold()
+    on.exit(grDevices::dev.flush(), add = TRUE)
   }
-
-  grid::grid.newpage()
-  dev_size <- grDevices::dev.size("in")
-  scale <- min(dev_size[1] / dims$width, dev_size[2] / dims$height)
-  w_npc <- (dims$width * scale) / dev_size[1]
-  h_npc <- (dims$height * scale) / dev_size[2]
-
-  x_left <- (1 - w_npc) / 2
-  y_bottom <- (1 - h_npc) / 2
-
-  vp <- grid::viewport(
-    x = x_left,
-    y = y_bottom,
-    width = w_npc,
-    height = h_npc,
-    just = c("left", "bottom")
-  )
-  grid::pushViewport(vp)
-  on.exit(grid::popViewport(), add = TRUE)
-  grid::grid.draw(grob)
+  forestplot_metafor_draw(x)
   invisible(x)
 }
 
@@ -537,37 +512,6 @@ print.interactmeta_forestplot <- function(x, ...) {
 #' @noRd
 forestplot_is_fitted <- function(fp) {
   !is.null(attr(fp, "forestplot_fit_render", exact = TRUE))
-}
-
-#' @noRd
-forestplot_as_grob <- function(x) {
-  if (forestplot_is_metafor_engine(x)) {
-    stop(
-      "metafor-backed forest plots are drawn with `forestplot_draw()` / ",
-      "`print()` (base graphics), not as grid grobs.",
-      call. = FALSE
-    )
-  }
-  if (inherits(x, "grob")) {
-    return(x)
-  }
-  if (inherits(x, "ggplot")) {
-    return(ggplot2::ggplotGrob(x))
-  }
-  if (inherits(x, "patchwork")) {
-    return(patchwork::patchworkGrob(x))
-  }
-  if (is.list(x) && !is.null(x$figure) && inherits(x$figure, "grob")) {
-    return(x$figure)
-  }
-  if (is.list(x) && !is.null(x$plot) && inherits(x$plot, "ggplot")) {
-    gt <- ggplot2::ggplotGrob(x$plot)
-    return(forestplot_set_panel_height(gt, attr(x, "panel.height", exact = TRUE)))
-  }
-  stop(
-    "`x` must be a forest plot object, ggplot, patchwork, or grid grob.",
-    call. = FALSE
-  )
 }
 
 #' Default width-to-height ratio for recommended forest export size
@@ -593,66 +537,64 @@ forestplot_fit_width_to_height <- function(width, height, width_height = NULL) {
 #' Figure size in inches for forestplot_height()
 #' @noRd
 forestplot_figure_inches <- function(x, width_height = NULL) {
-  if (forestplot_is_metafor_engine(x)) {
-    n_rows <- forestplot_n_layout_rows(x)
-    n_panels <- forestplot_n_panels(x)
-    n_footnotes <- forestplot_n_footnote_lines(x)
-    has_favours <- isTRUE(attr(x, "has_favours", exact = TRUE)) ||
-      (!is.null(x$specs$favours) && length(x$specs$favours) >= 2L)
-    # Wide enough for study labels + forest + Effect text; leave room so
-    # wrapped footnotes are not clipped on the right.
-    width <- if (n_panels <= 1L) {
-      12.5
-    } else {
-      5.8 * n_panels + 1.6
-    }
-    # Content rows (studies + diamonds + subgroup headers + table header):
-    #   0.28 in each. Footnote lines sit in a tight band below the axis: 0.14 in
-    #   each. Chrome covers axis ticks, xlab, and favours (~2.0–2.3 in).
-    row_pitch <- 0.28
-    foot_pitch <- 0.14
-    # Reserve favours chrome even when favours are off so recommended height
-    # stays stable across `favours` / `type` toggles.
-    force(has_favours)
-    chrome <- 2.3
-    # +1 row of slack so the last Combined / Prediction diamond is not clipped.
-    height <- row_pitch * (n_rows + 1L) + foot_pitch * n_footnotes + chrome
-    height <- max(3.8, min(28, height))
-    formula <- sprintf(
-      "height = 0.28*(%d+1) + 0.14*%d + %.1f = %.2f",
-      n_rows, n_footnotes, chrome, height
+  if (!forestplot_is_metafor_engine(x)) {
+    stop(
+      "`forestplot_height()` expects an `interactmeta_forestplot` from `forestplot()`.",
+      call. = FALSE
     )
-    width0 <- width
-    width <- forestplot_fit_width_to_height(
-      width = width,
-      height = height,
-      width_height = width_height
-    )
-    if (is.finite(width) && is.finite(width0) && width > width0 + 1e-9) {
-      wh <- width_height %||% forestplot_default_width_height_ratio()
-      formula <- paste0(
-        formula,
-        sprintf(
-          "; width = max(%.2f, %.2g*%.2f) = %.2f",
-          width0, wh, height, width
-        )
-      )
-    }
-    return(list(
-      width = width,
-      height = height,
-      n_rows = n_rows,
-      n_footnotes = n_footnotes,
-      n_chrome_in = chrome,
-      formula = formula
-    ))
   }
-  out <- forestplot_grob_inches(forestplot_as_grob(x))
-  out$n_rows <- NA_integer_
-  out$n_footnotes <- 0L
-  out$n_chrome_in <- NA_real_
-  out$formula <- NA_character_
-  out
+  n_rows <- forestplot_n_layout_rows(x)
+  n_panels <- forestplot_n_panels(x)
+  n_footnotes <- forestplot_n_footnote_lines(x)
+  has_favours <- isTRUE(attr(x, "has_favours", exact = TRUE)) ||
+    (!is.null(x$specs$favours) && length(x$specs$favours) >= 2L)
+  # Wide enough for study labels + forest + Effect text; leave room so
+  # wrapped footnotes are not clipped on the right.
+  width <- if (n_panels <= 1L) {
+    12.5
+  } else {
+    5.8 * n_panels + 1.6
+  }
+  # Content rows (studies + diamonds + subgroup headers + table header):
+  #   0.28 in each. Footnote lines sit in a tight band below the axis: 0.14 in
+  #   each. Chrome covers axis ticks, xlab, and favours (~2.0–2.3 in).
+  row_pitch <- 0.28
+  foot_pitch <- 0.14
+  # Reserve favours chrome even when favours are off so recommended height
+  # stays stable across `favours` / `type` toggles.
+  force(has_favours)
+  chrome <- 2.3
+  # +1 row of slack so the last Combined / Prediction diamond is not clipped.
+  height <- row_pitch * (n_rows + 1L) + foot_pitch * n_footnotes + chrome
+  height <- max(3.8, min(28, height))
+  formula <- sprintf(
+    "height = 0.28*(%d+1) + 0.14*%d + %.1f = %.2f",
+    n_rows, n_footnotes, chrome, height
+  )
+  width0 <- width
+  width <- forestplot_fit_width_to_height(
+    width = width,
+    height = height,
+    width_height = width_height
+  )
+  if (is.finite(width) && is.finite(width0) && width > width0 + 1e-9) {
+    wh <- width_height %||% forestplot_default_width_height_ratio()
+    formula <- paste0(
+      formula,
+      sprintf(
+        "; width = max(%.2f, %.2g*%.2f) = %.2f",
+        width0, wh, height, width
+      )
+    )
+  }
+  list(
+    width = width,
+    height = height,
+    n_rows = n_rows,
+    n_footnotes = n_footnotes,
+    n_chrome_in = chrome,
+    formula = formula
+  )
 }
 
 #' Number of wrapped footnote lines for height sizing
@@ -735,35 +677,6 @@ forestplot_n_layout_rows_one <- function(panel, row_labels) {
   }
   # +1 table header row
   as.integer(n + n_headers + 1L)
-}
-
-#' Force absolute height of ggplot panel cell(s) in a gtable
-#' @noRd
-forestplot_set_panel_height <- function(gt, panel.height) {
-  if (is.null(panel.height) || !inherits(gt, "gtable")) {
-    return(gt)
-  }
-  h <- if (inherits(panel.height, "unit")) {
-    panel.height
-  } else if (is.numeric(panel.height) && length(panel.height) == 1L && is.finite(panel.height)) {
-    grid::unit(panel.height, "mm")
-  } else {
-    return(gt)
-  }
-  panel_rows <- unique(gt$layout$t[grepl("^panel", gt$layout$name)])
-  for (r in panel_rows) {
-    gt$heights[r] <- h
-  }
-  gt
-}
-
-#' @noRd
-forestplot_grob_inches <- function(x) {
-  grob <- if (inherits(x, "grob")) x else forestplot_as_grob(x)
-  list(
-    width = grid::convertWidth(grid::grobWidth(grob), "in", valueOnly = TRUE),
-    height = grid::convertHeight(grid::grobHeight(grob), "in", valueOnly = TRUE)
-  )
 }
 
 #' Active (or fallback) device size in inches
