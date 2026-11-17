@@ -71,7 +71,7 @@ des_age[des_age$study == "ADVANCE",
 
 `contrast = NULL` keeps subgroup rows only (wide `IF_*` columns).
 `include_interaction = TRUE` appends within-trial contrast rows; `contrast =
-c("Older", "Younger")` targets one contrast. `?ifrac` documents `big_var`,
+c("Older", "Younger")` targets one contrast. [`?ifrac`] documents `big_var`,
 `contrast_sep`, and `include_combined`.
 
 For ADVANCE, `IF_Older` is approximately $0.268$. The Bayesian CAMS fit below
