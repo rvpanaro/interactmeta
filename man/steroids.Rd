@@ -30,11 +30,12 @@ COVID-19: a meta-analysis. \emph{JAMA}, 324(13), 1330--1341.
 data(steroids)
 }
 \description{
-Event counts by trial, ventilation subgroup, and treatment from the WHO REACT
-prospective meta-analysis of systemic corticosteroids in critically ill
+Event counts by trial, ventilation subgroup, and treatment from the World
+Health Organization (WHO) Rapid Evidence Appraisal for COVID-19 Therapies
+(REACT) prospective meta-analysis of systemic corticosteroids in critically ill
 patients with COVID-19. Some trials report only one ventilation subgroup
 (\code{n = 0} patients in the other subgroup); drop those empty rows before \code{\link[=escalc]{escalc()}} and
 let \code{\link[=ifrac]{ifrac()}} / \code{\link[=cams]{cams()}} complete unreported cells with a placeholder design row.
-See \code{vignette("cams")}, \code{vignette("single-subgroup-trials")}, and \code{vignette("worked-examples")}.
+See \code{vignette("cams")} and \code{vignette("worked-examples")}.
 }
 \keyword{datasets}

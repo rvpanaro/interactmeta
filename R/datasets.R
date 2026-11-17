@@ -69,8 +69,7 @@
 #' for COVID-19. Some trials report only one corticosteroid subgroup
 #' (`n = 0` patients in the other subgroup); drop those empty rows before [escalc()] and
 #' let [ifrac()] / [cams()] complete unreported cells with a placeholder design row.
-#' See `vignette("worked-examples")` and `vignette("single-subgroup-trials")` (same pattern on
-#' `steroids`).
+#' See `vignette("worked-examples")` and `vignette("cams")` (same pattern on `steroids`).
 #'
 #' @format A data frame with 30 rows and 7 variables:
 #' \describe{
@@ -239,7 +238,7 @@ hr_ci_from_log <- function(yi, sei, ci_level) {
 #' patients with COVID-19. Some trials report only one ventilation subgroup
 #' (`n = 0` patients in the other subgroup); drop those empty rows before [escalc()] and
 #' let [ifrac()] / [cams()] complete unreported cells with a placeholder design row.
-#' See `vignette("cams")`, `vignette("single-subgroup-trials")`, and `vignette("worked-examples")`.
+#' See `vignette("cams")` and `vignette("worked-examples")`.
 #'
 #' @format A data frame with 14 rows and 8 variables:
 #' \describe{

@@ -9,9 +9,6 @@ articles:
   desc: Inspect a CAMS fit on the steroids example (after vignette("cams")).
   contents:
   - "heterogeneity-after-cams"
-  - "trial-specific-effects-and-shrinkage"
-  - traceplots
-  - "single-subgroup-trials"
   - "comparing-da-ad-swada"
 - title: Example datasets
   desc: steroids, age, edss, il6, and RESPIRE example tables.
@@ -26,6 +23,9 @@ redirects:
 - [articles/engine-comparison.html, articles/cams.html]
 - [articles/diagnostics.html, articles/cams.html]
 - [articles/further.html, articles/heterogeneity-after-cams.html]
+- [articles/single-subgroup-trials.html, articles/cams.html]
+- [articles/trial-specific-effects-and-shrinkage.html, articles/cams.html]
+- [articles/traceplots.html, articles/heterogeneity-after-cams.html]
 
 template:
   bootstrap: 5

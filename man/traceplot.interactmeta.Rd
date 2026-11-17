@@ -74,5 +74,5 @@ traceplot(fit, type = "combined", prior = TRUE)
 }
 \seealso{
 \code{\link[=forestplot]{forestplot()}}, \code{\link[bayesmeta:traceplot]{bayesmeta::traceplot()}}, \code{\link[=plot_heterogeneity]{plot_heterogeneity()}},
-\code{\link[=native_fit]{native_fit()}}, \code{vignette("cams")}, \code{vignette("traceplots")}
+\code{\link[=native_fit]{native_fit()}}, \code{vignette("cams")}, \code{vignette("heterogeneity-after-cams")}
 }

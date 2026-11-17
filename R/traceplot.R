@@ -59,7 +59,7 @@ check_bayesmeta <- function() {
 #' }
 #'
 #' @seealso [forestplot()], [bayesmeta::traceplot()], [plot_heterogeneity()],
-#'   [native_fit()], `vignette("cams")`, `vignette("traceplots")`
+#'   [native_fit()], `vignette("cams")`, `vignette("heterogeneity-after-cams")`
 #' @export
 #' @exportS3Method bayesmeta::traceplot interactmeta
 traceplot.interactmeta <- function(x,

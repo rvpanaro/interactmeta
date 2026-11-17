@@ -53,10 +53,7 @@ trial (see \code{vignette("cams")}, the \strong{After CAMS} articles below, and
 
 \describe{
 \item{Getting started}{\code{vignette("cams")} — estimands, assumptions, Bayesian and REML on the IMV/Non-IMV \code{steroids} example.}
-\item{Heterogeneity}{\code{vignette("heterogeneity-after-cams")} — tau marginals and profile plots (after \code{vignette("cams")}).}
-\item{Shrinkage}{\code{vignette("trial-specific-effects-and-shrinkage")} — grey forest markers and \code{shrinkage()}.}
-\item{Trace plots}{\code{vignette("traceplots")} — Bayesian shrinkage-vs-tau panels.}
-\item{Single-subgroup trials}{\code{vignette("single-subgroup-trials")} — mixed tables and reporting IF.}
+\item{Heterogeneity and traceplots}{\code{vignette("heterogeneity-after-cams")} — tau marginals, profile plots, and Bayesian \code{traceplot()} (after \code{vignette("cams")}).}
 \item{DA / AD / SWADA}{\code{vignette("comparing-da-ad-swada")} — constructions vs CAMS (after \code{vignette("cams")}).}
 \item{Example datasets}{\code{vignette("worked-examples")} — \code{steroids}, \code{age}, \code{edss}, \code{il6}, and RESPIRE tables (including incomplete-subgroup patterns).}
 }
@@ -146,9 +143,6 @@ A bivariate approach to meta-analysis. \emph{Statistics in Medicine},
 \code{\link[=da]{da()}}, \code{\link[=ad]{ad()}},
 \code{\link[=swada]{swada()}}, \code{vignette("cams", package = "interactmeta")},
 \code{vignette("heterogeneity-after-cams", package = "interactmeta")},
-\code{vignette("trial-specific-effects-and-shrinkage", package = "interactmeta")},
-\code{vignette("traceplots", package = "interactmeta")},
-\code{vignette("single-subgroup-trials", package = "interactmeta")},
 \code{vignette("worked-examples", package = "interactmeta")}
 }
 \author{
@@ -162,7 +156,6 @@ Authors:
 Other contributors:
 \itemize{
   \item Christian Röver (\href{https://orcid.org/0000-0002-6911-698X}{ORCID}) [thesis advisor]
-  \item Tim Friede (\href{https://orcid.org/0000-0001-5347-7441}{ORCID}) [thesis advisor]
 }
 
 }

@@ -29,12 +29,82 @@ knitr::opts_chunk$set(
 )
 ```
 
-## Example: Effect of Corticosteroids on Mortality by Invasive Ventilation Status (IMV vs. Non-IMV)
+This vignette follows the software-paper illustrations [@panaro2025cams]:
+first **immunotherapy-by-age** on `age`, then **REACT corticosteroids** on
+`steroids`, including trial-level shrinkage and incomplete subgroup designs.
 
-The `steroids` table contains mortality data from trials included in a meta-analysis provided by the World Health Organization (WHO) Rapid Evidence Appraisal for COVID-19 Therapies (REACT) Working Group [@stern2020react]. This meta-analysis combined 7 randomized trials evaluating systemic corticosteroids in critically ill patients with COVID-19. It is the running example for **contribution-adjusted meta-analysis (CAMS)** in [@panaro2025cams] and for imbalance among **difference of averages (DA)**, **average difference (AD)**, and **same weighting across different analyses (SWADA)** in [@panaro2026subgroup]. 
+## Immunotherapy by age (`age`)
 
-```{r data, warning=FALSE, message=FALSE}
+The `age` table is from a review of disease-modifying immunotherapies in
+relapsing–remitting multiple sclerosis [@heesen2024]: do treatments reduce
+relapses equally in **Younger** and **Older** patients when only aggregate
+subgroup summaries are available? Published tables quote incidence rate ratios;
+values below one favour immunotherapy. Trial **ADVANCE** anchors the shrinkage figures in the paper (`?shrinkage`).
+
+```{r age-advance, warning=FALSE}
 library(interactmeta)
+
+age[age$study == "ADVANCE", c("study", "subgroup", "yi", "vi")]
+```
+
+With reference **Younger**, `ifrac()` adds `IF_Older` $=\pi_j$ on each row
+[@panaro2025cams].
+
+```{r age-ifrac}
+des_age <- ifrac(age, reference = "Younger")
+
+des_age[des_age$study == "ADVANCE",
+        c("study", "level", "yi", "vi", "IF_Older")]
+```
+
+For ADVANCE, `IF_Older` is approximately $0.268$. The Bayesian CAMS fit below
+uses half-normal priors on $\tau$ and $\tau_\gamma$ as in the paper
+[@panaro2026priors] (not the package's improper defaults).
+
+```{r fit-age, cache = TRUE}
+fit_age <- cams(
+  des_age,
+  reference = "Younger",
+  tau.prior = function(tau) bayesmeta::dhalfnormal(tau, scale = 0.5),
+  tau.interaction.prior = function(tau_gamma)
+    bayesmeta::dhalfnormal(tau_gamma, scale = 0.1)
+)
+
+print(fit_age)
+```
+
+```{r age-contribution, fig.width = 8, fig.height = 4.5, cache = TRUE}
+plot(fit_age, type = "contribution", exponentiate = TRUE)
+```
+
+The horizontal axis is the IF assigned to **Older** patients (precision-based,
+not enrolment share). Pooled modifier and combined estimates use the
+interaction-weighted reporting fraction by default (`ifrac(fit_age)`).
+
+```{r age-forest, fig.width = 7, fig.height = 5, cache = TRUE}
+forestplot(fit_age, type = "modifiers", exponentiate = TRUE)
+forestplot(fit_age, type = "interaction", exponentiate = TRUE)
+```
+
+Grey diamonds on the modifier forest are trial-level CAMS shrinkage at each
+$\pi_j$ (`shrinkage(fit_age, type = "modifiers")`).
+
+| Quantity | Function | Uses reporting IF? |
+|-------------------|-------------------|----------------------------------|
+| Interaction $\gamma$ | `interactions()` | No |
+| Modifier effects | `modifiers()` | Yes |
+| Combined effect | `combined()` | Yes |
+| Trial $\pi_j$ | `ifrac()` (in design) | Design |
+
+## REACT corticosteroids (`steroids`)
+
+The `steroids` table is from the WHO REACT meta-analysis of systemic
+corticosteroids for COVID-19 mortality [@stern2020react]. Subgroups are **IMV**
+and **Non-IMV**; some trials report only one ventilation stratum (not missing
+data).
+Values below one on the exponentiated scale favour corticosteroids.
+
+```{r steroids-escalc, warning=FALSE, message=FALSE}
 library(metafor)
 
 steroids_es <- escalc(
@@ -43,56 +113,30 @@ steroids_es <- escalc(
   ci = cont.events, di = cont.total - cont.events,
   data = steroids
 )
-
-head(steroids_es)
+des <- ifrac(steroids_es, reference = "Non-IMV")
 ```
 
-Subgroups are `IMV` (invasive mechanical ventilation) and `Non-IMV` (not on IMV). Each row is one modifier estimate; `yi` and `vi` ($\sigma^2$) come from `escalc()` [@viechtbauer2010]. Some trials report only one modifier stratum (single-subgroup trials, not “missing data”); see [`vignette("single-subgroup-trials")`](single-subgroup-trials.html). The model is defined on pairs $(y_{Aj},y_{Bj})$; `ifrac()` can append an implementation row with $y=0$ and large $\sigma^2$ via `big_var` so mixed tables fit in bayesmeta / metafor (`?ifrac`).
+For IMV-only trials, `ifrac()` adds a high-variance placeholder
+(`big_var`, default $10^4$ on the log scale). For **RECOVERY**, the reported IMV
+row is retained and Non-IMV is filled with `yi = 0`, `vi = 10000`.
 
-For a trial $j$, $\pi_j=\sigma_{IMVj}^{-2}/(\sigma_{Non-IMVj}^{-2}+\sigma_{IMVj}^{-2})$ is the relative trial-specific precision of the IMV endpoint [@panaro2025cams]. We construct information fractions (IF) with `ifrac()` with `reference = "Non-IMV"`. 
-
-```{r data2, warning=FALSE, message=FALSE}
-des <- interactmeta::ifrac(steroids_es, reference = "Non-IMV")
-
-des$ifrac_IMV
+```{r recovery-placeholder}
+des[des$study == "RECOVERY", c("study", "level", "yi", "vi")]
 ```
 
-CAMS computes estimates for trial-specific interactions $g_j=y_{Bj}-y_{Aj}$ and combined effects $m_j=(1-\pi_j)y_{Aj}+\pi_j y_{Bj}$. The argument behind this approach is that the joint subgroup-specific likelihood factorizes into a random-effects meta-analysis of $\{g_j\}$ (interactions) and a random-effects meta-regression of $\{m_j\}$ on $\pi_j$ (overall / combined coordinates) [@panaro2025cams], distinct from a one-stage within-trial reparameterisation [@godolphin2023]. Heterogeneity $\tau$ and $\tau_\gamma$ are also separate; see `heterogeneity()` and [`vignette("heterogeneity-after-cams")`](heterogeneity-after-cams.html) for summaries and profile plots.
-
-### Bayesian engine
-
-With `method = "Bayesian"`, inference on each CAMS block is **bayesmeta DIRECT** (`bmr()` on the overall meta-regression, `bayesmeta()` on interactions) [@rover2017direct; @rover2020]. **interactmeta** does not define a separate quadrature grid: `fit$support` is the **product** of the two bayesmeta support tables (weights multiply), and population curves evaluate CAMS formulas on those rows with **fixed** trial IFs $\pi_j$ or a chosen reporting IF. Trial-level shrinkage and forest greys use bayesmeta trial marginals for $\widetilde m_j$ and $\widetilde g_j$ at each trial's own $\pi_j$ (`?cams`, `?shrinkage`).
-
-Default half-normal scales on $\tau$ and $\tau_\gamma$ match the empirical prior work in [@panaro2026priors] (building on [@rover2021wip]).
-
-```{r fit-bayes, cache = TRUE}
-fit_bayes <- interactmeta::cams(
-  des,
-  reference = "Non-IMV",
-  tau.prior = function(tau) bayesmeta::dhalfnormal(tau, scale = 0.5),
-  tau.interaction.prior = function(tau) bayesmeta::dhalfnormal(tau, scale = 0.1)
-)
-
-plot(fit_bayes, ylim = c(-3,3))
-```
-
-After fitting `cams()`, the figure displays the trial–subgroup observations as bubbles, with bubble sizes reflecting their precision and vertical error bars indicating uncertainty. The solid blue (IMV) and red (Non-IMV) lines represent the fitted modifier effects, with shaded bands indicating their uncertainty. The constant vertical distance between these lines represents the interaction effect, while the gray dashed line shows the combined mean effect. By default, pooled modifier and combined estimates are evaluated at the interaction-weighted information fraction returned by `ifrac(fit)` [@panaro2025cams].
-
-## Bayesian and frequentist inference
-
-The same CAMS model is refit below using restricted maximum likelihood (REML; `method = "REML"`). Trial IFs and design columns from `ifrac()` are recomputed inside `cams()`; passing the `steroids_es` or `des` object is enough.
+CAMS separates within-trial interactions $g_j$ and combined coordinates $m_j$
+[@panaro2025cams]. Heterogeneity $\tau$ and $\tau_\gamma$ are separate blocks;
+see [`vignette("heterogeneity-after-cams")`](heterogeneity-after-cams.html).
 
 ```{r fit-reml, cache = TRUE}
-fit_reml <- interactmeta::cams(des, reference = "Non-IMV", method = "REML")
+fit_reml <- cams(des, reference = "Non-IMV", method = "REML")
 ```
-
-Bayesian runs use bayesmeta credible intervals; REML runs use Wald intervals from the stored metafor fit [@viechtbauer2010]. Interval types differ; point estimates target the same functions.
 
 ```{r summary}
 print(fit_reml)
 ```
 
-The printed estimates are evaluated at the interaction-weighted information fraction returned by `ifrac(fit_reml, ifrac = "interaction")`. The `type = "Overall"` option provides population-average estimates, while `type = "Prediction"` additionally accounts for between-trial heterogeneity when predicting effects in a new study. 
+At the default **interaction-weighted** reporting IF:
 
 ```{r estimands-reml-1}
 interactions(fit_reml, type = "Overall", exponentiate = TRUE)
@@ -110,37 +154,41 @@ combined(fit_reml, type = "Overall", exponentiate = TRUE)
 ifrac(fit_reml, ifrac = "interaction")
 ```
 
-| Quantity | Function | Uses reporting IF? |
-|-------------------|-------------------|----------------------------------|
-| Interaction effect $\gamma$ | `interactions()` | No |
-| Modifier effects $\mu_A(\pi)$, $\mu_B(\pi)$ | `modifiers()` | Yes |
-| Combined effect $M(\pi)$ | `combined()` | Yes |
-| Trial IFs $\pi_j$ | `ifrac()` (optional pre-fit) | Recomputed in `cams()` |
+REML estimates of $\tau$ and $\tau_\gamma$ can be zero on this example, so
+prediction intervals may coincide with pooled confidence intervals; that does
+not establish absence of heterogeneity in general.
 
-The reference modifier (here Non-IMV before IMV) sets the sign of $\gamma$. On the log scale, `yi` is the effect and `vi` stores $\sigma^2$; use `exponentiate = TRUE` for ratio scales.
-
-## Forest plots
-
-`forestplot()` displays trial-level estimates (`yi`) as squares, shrinkage estimates from `shrinkage()` as gray diamonds (Bayesian fits; see [`vignette("trial-specific-effects-and-shrinkage")`](trial-specific-effects-and-shrinkage.html)), and Overall and Prediction summaries in navy, evaluated at the interaction-weighted information fraction. The IF column reports the trial-specific information fraction for the non-reference subgroup (here IMV). By default, the plot shows subgroup-specific modifier effects. Alternatively, `type = "interaction"` displays the between-subgroup interaction effects, while `type = "modifiers"` is the default. These alternatives allow the same model to be examined from different perspectives.
-
-```{r forest, fig.width=7, fig.height=5}
+```{r forest, fig.width = 7, fig.height = 5}
 forestplot(
   fit_reml,
+  type = "modifiers",
   exponentiate = TRUE,
   favours = c("Lower mortality", "Higher mortality")
 )
-# Alternative view
-forestplot(fit_reml, type = "interaction", exponentiate = TRUE)
 ```
 
-## Next: comparing other constructions
+Trial-level $\pi_j$ and the pooled interaction are unchanged when the **reporting
+IF** changes. Evaluating modifiers and forests at the **overall-effect-weighted**
+fraction moves pooled summaries along the same fitted curves:
 
-CAMS is the package's primary model. On the same subgroup table,
-**DA** and **AD** are two standard ways to summarize the interaction
-(difference of pooled subgroup effects vs. pooled within-trial contrasts);
-they need not agree when study weights differ [@panaro2026subgroup;
-@stern2020react]. **DA**, **AD**, and **SWADA** are constructions for
-benchmarking (`sensitivity()`, `compare()`), not alternative CAMS
-likelihoods. See [`vignette("comparing-da-ad-swada")`](comparing-da-ad-swada.html).
+```{r ifrac-overall}
+ifrac(fit_reml, ifrac = "overall")
+modifiers(fit_reml, ifrac = "overall", exponentiate = TRUE, type = "Overall")
+combined(fit_reml, ifrac = "overall", exponentiate = TRUE, type = "Overall")
+```
 
-## References
+```{r forest-overall, fig.width = 7, fig.height = 5}
+forestplot(
+  fit_reml,
+  type = "modifiers",
+  ifrac = "overall",
+  exponentiate = TRUE,
+  favours = c("Lower mortality", "Higher mortality")
+)
+```
+
+## Next steps
+
+**DA**, **AD**, and **SWADA** on the same `des` object are in
+[`vignette("comparing-da-ad-swada")`](comparing-da-ad-swada.html). More tables:
+[`vignette("worked-examples")`](worked-examples.html).

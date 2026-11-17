@@ -14,12 +14,6 @@ Authors@R: c(
       family = "R\u00f6ver",
       role = "ths",
       comment = c(ORCID = "0000-0002-6911-698X")
-    ),
-    person(
-      given = "Tim",
-      family = "Friede",
-      role = "ths",
-      comment = c(ORCID = "0000-0001-5347-7441")
     ))
 Description: Contribution-adjusted meta-analysis (CAMS) for
     treatment effect modification from modifier-level aggregate data

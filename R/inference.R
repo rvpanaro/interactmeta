@@ -870,7 +870,7 @@ interactmeta_abort_non_cams <- function(object, feature) {
 #' @return For Bayesian CAMS, the list with `$overall`, `$interaction`, and
 #'   `$trial_blocks`. For frequentist CAMS, `fit$metafor`. For DA / AD /
 #'   SWADA / conventional, the stored `$fits` list. `NULL` if none is stored.
-#' @seealso [traceplot.interactmeta()], `vignette("cams")`, `vignette("traceplots")`
+#' @seealso [traceplot.interactmeta()], `vignette("cams")`, `vignette("heterogeneity-after-cams")`
 #' @keywords internal
 #' @export
 native_fit <- function(fit) {

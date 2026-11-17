@@ -20,18 +20,18 @@ editor_options:
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 ```
 
-interactmeta ships the example tables below as package data. Each section summarizes setting, subgroups, and the effect scale, and shows a few rows. Object names match `data()`. Step-by-step CAMS on `steroids` is in [`vignette("cams")`](cams.html); follow-up topics are in [`vignette("heterogeneity-after-cams")`](heterogeneity-after-cams.html), [`vignette("trial-specific-effects-and-shrinkage")`](trial-specific-effects-and-shrinkage.html), and [`vignette("single-subgroup-trials")`](single-subgroup-trials.html). After the CAMS checkpoint, compare **DA**, **AD**, **SWADA**, and **CAMS** in [`vignette("comparing-da-ad-swada")`](comparing-da-ad-swada.html).
+interactmeta ships the example tables below as package data. Each section summarizes setting, subgroups, and the effect scale, and shows a few rows. Object names match `data()`. The software-paper walk-through starts with `age` and `steroids` in [`vignette("cams")`](cams.html); ADVANCE shrinkage is in [`vignette("cams")`](cams.html) (`?shrinkage`); mixed IMV/NIV tables there too; DA / AD / SWADA in [`vignette("comparing-da-ad-swada")`](comparing-da-ad-swada.html).
 
 ## COVID-19 Corticosteroids: `steroids` and IL-6 antagonists: `il6`
 
-World Health Organization (WHO) Rapid Evidence Appraisal for COVID-19 Therapies (REACT) prospective meta-analysis of systemic corticosteroids in critically ill patients with COVID-19 [@stern2020react]. Ventilation modifiers are IMV (invasive mechanical ventilation) and Non-IMV. Some trials report only one subgroup (`n = 0` means no patients in the other stratum). The getting-started walk-through in [`vignette("cams")`](cams.html) uses this table as in [@panaro2025cams]; imbalance among **DA**, **AD**, and **SWADA** on the same counts is worked through in [@panaro2026subgroup]. Single-subgroup behaviour on the same CAMS fit is in [`vignette("single-subgroup-trials")`](single-subgroup-trials.html).
+World Health Organization (WHO) Rapid Evidence Appraisal for COVID-19 Therapies (REACT) prospective meta-analysis of systemic corticosteroids in critically ill patients with COVID-19 [@stern2020react]. Ventilation modifiers are IMV (invasive mechanical ventilation) and Non-IMV. Some trials report only one subgroup (`n = 0` means no patients in the other stratum). [`vignette("cams")`](cams.html) and [`vignette("comparing-da-ad-swada")`](comparing-da-ad-swada.html) use this table as in [@panaro2025cams; @panaro2026subgroup].
 
 ```{r steroids}
 data(steroids, package = "interactmeta")
 head(steroids)
 ```
 
-Hospitalised COVID-19 mortality by concomitant corticosteroids (yes / no) [@stern2021il6]. As for `steroids` above, some trials contribute only one subgroup (`n = 0` means no patients in the other stratum, not zero events). Drop those empty rows before `escalc()`; `ifrac()` can append a large-variance placeholder so CAMS can fit a mixed table (`?ifrac`; see [`vignette("single-subgroup-trials")`](single-subgroup-trials.html)).
+Hospitalised COVID-19 mortality by concomitant corticosteroids (yes / no) [@stern2021il6]. As for `steroids` above, some trials contribute only one subgroup (`n = 0` means no patients in the other stratum, not zero events). Drop those empty rows before `escalc()`; `ifrac()` can append a large-variance placeholder so CAMS can fit a mixed table (`?ifrac`; see [`vignette("cams")`](cams.html)).
 
 ```{r il6}
 data(il6, package = "interactmeta")
@@ -40,7 +40,7 @@ head(il6)
 
 ## Multiple sclerosis: `age` and `edss`
 
-From a systematic review of relapsing–remitting MS immunotherapies [@heesen2024] (also used in [@panaro2025cams]), several trials report treatment effects in Younger and Older patient strata; the endpoint is relapse rate (incidence rate ratio on the `yi` scale). Numeric age cut-offs from the review are not stored in the object. Published log rate ratios are already in `yi` with $\sigma^2$ in `vi`. CONFIRM arms are split as `CONFIRM-B` and `CONFIRM-C`.
+From a systematic review of relapsing–remitting MS immunotherapies [@heesen2024] (primary example in [`vignette("cams")`](cams.html) and [@panaro2025cams]), several trials report treatment effects in Younger and Older patient strata; the endpoint is relapse rate (incidence rate ratio on the `yi` scale). Numeric age cut-offs from the review are not stored in the object. Published log rate ratios are already in `yi` with $\sigma^2$ in `vi`. CONFIRM arms are split as `CONFIRM-B` and `CONFIRM-C`.
 
 ```{r age}
 data(age, package = "interactmeta")
@@ -56,7 +56,7 @@ head(edss)
 
 ## RESPIRE: `respire_age` and `respire_sex`
 
-RESPIRE 1 and 2 (bronchiectasis; time to exacerbation). `respire_age` uses `<65` vs `>=65`; `respire_sex` uses Female vs Male. Both tables are complete (every trial has two rows). Log HRs and $\sigma^2$ (`vi`) are precomputed from published intervals (respect each trial’s `ci_level` when converting from tables). `respire_age` is the contrast table in [@panaro2026subgroup]; see [`vignette("comparing-da-ad-swada")`](comparing-da-ad-swada.html) for `sensitivity()` and `compare()` on it.
+RESPIRE 1 and 2 (bronchiectasis; time to exacerbation). `respire_age` uses `<65` vs `>=65`; `respire_sex` uses Female vs Male. Both tables are complete (every trial has two rows). Log HRs and $\sigma^2$ (`vi`) are precomputed from published intervals (respect each trial’s `ci_level` when converting from tables). `respire_age` is a complete-table contrast in [@panaro2026subgroup]; see [`vignette("comparing-da-ad-swada")`](comparing-da-ad-swada.html) (secondary illustration).
 
 ```{r respire_age}
 data(respire_age, package = "interactmeta")

@@ -1,5 +1,5 @@
 ---
-title: "Heterogeneity after CAMS"
+title: "Heterogeneity and traceplots after CAMS"
 bibliography: references.bib
 link-citations: true
 output:
@@ -8,7 +8,7 @@ output:
       - !expr system.file("rmarkdown/templates/html_vignette/resources/vignette.css", package = "rmarkdown")
       - vignette.css
 vignette: >
-  %\VignetteIndexEntry{Heterogeneity after CAMS}
+  %\VignetteIndexEntry{Heterogeneity and traceplots after CAMS}
   %\VignetteEncoding{UTF-8}
   %\VignetteEngine{knitr::rmarkdown}
 editor_options:
@@ -29,14 +29,55 @@ knitr::opts_chunk$set(
 )
 ```
 
-This article follows [`vignette("cams")`](cams.html) on the `steroids`
-example. CAMS treats **combined-effect** heterogeneity ($\tau$) and
-**interaction** heterogeneity ($\tau_\gamma$) as separate blocks. Use
-`heterogeneity()` for tabular summaries and `plot(fit, type = "heterogeneity")`
-for marginal and profile views.
+This article follows [`vignette("cams")`](cams.html). CAMS treats combined-effect
+heterogeneity $\tau$ and interaction heterogeneity $\tau_\gamma$ as separate
+blocks. `heterogeneity()` tabulates them; `plot(fit, type = "heterogeneity")`
+draws Bayesian marginals or frequentist profile views. `traceplot()` applies only
+to Bayesian fits (bayesmeta shrinkage-vs-$\tau$ panels for the interaction and
+combined blocks).
 
 ```{r setup, cache = TRUE}
 library(interactmeta)
+
+des_age <- ifrac(age, reference = "Younger")
+fit_age <- cams(
+  des_age,
+  reference = "Younger",
+  tau.prior = function(tau) bayesmeta::dhalfnormal(tau, scale = 0.5),
+  tau.interaction.prior = function(tau_gamma)
+    bayesmeta::dhalfnormal(tau_gamma, scale = 0.1)
+)
+```
+
+## Bayesian heterogeneity and traceplots (`age`)
+
+```{r het-table}
+heterogeneity(fit_age)
+summary(fit_age)$heterogeneity$summary
+```
+
+```{r het-plot, fig.width = 7, fig.height = 4}
+plot(fit_age, type = "heterogeneity")
+```
+
+## Traceplots (`age`)
+
+```{r trace-int, fig.width = 7, fig.height = 4}
+traceplot(fit_age, type = "interaction")
+```
+
+```{r trace-comb, fig.width = 7, fig.height = 4}
+traceplot(fit_age, type = "combined")
+```
+
+## Frequentist heterogeneity plot (`steroids`)
+
+The REACT `steroids` REML fit from [`vignette("cams")`](cams.html) often
+estimates $\tau$ and $\tau_\gamma$ at zero; the heterogeneity panel then
+reflects the fitted metafor random-effects structure rather than an
+informative profile.
+
+```{r reml-setup, cache = TRUE}
 library(metafor)
 
 steroids_es <- escalc(
@@ -45,28 +86,17 @@ steroids_es <- escalc(
   ci = cont.events, di = cont.total - cont.events,
   data = steroids
 )
-des <- ifrac(steroids_es, reference = "Non-IMV")
-fit <- cams(des, reference = "Non-IMV", method = "REML")
+des_st <- ifrac(steroids_es, reference = "Non-IMV")
+fit_reml <- cams(des_st, reference = "Non-IMV", method = "REML")
 ```
 
-## Summaries
-
-`heterogeneity()` returns one row per random-effects scale (combined and
-interaction). The printed `summary()` also surfaces these quantities.
-
-```{r het-table}
-heterogeneity(fit)
-summary(fit)$heterogeneity$summary
+```{r het-reml-table}
+heterogeneity(fit_reml)
 ```
 
-## Plots
-
-The heterogeneity panel shows posterior or REML marginals for $\tau$ and
-$\tau_\gamma$, depending on the engine.
-
-```{r het-plot, fig.width = 7, fig.height = 4}
-plot(fit, type = "heterogeneity")
+```{r het-reml-plot, fig.width = 7, fig.height = 4}
+plot(fit_reml, type = "heterogeneity")
 ```
 
-On frequentist fits, profile-style slices follow **metafor** conventions
-(`?plot_heterogeneity`).
+See `?plot_heterogeneity` for profile options on frequentist fits.
+`traceplot()` requires a Bayesian fit with stored native bayesmeta objects.

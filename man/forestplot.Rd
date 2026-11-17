@@ -138,14 +138,16 @@ intervals.}
 \item{annotation_digits}{Decimal places in annotation text (default \code{2}).}
 
 \item{favours}{Optional length-2 character labels placed under the x-axis
-(left / right of the null). When \code{NULL} (default), labels follow
-\code{outcome}. Set to \code{FALSE} to suppress favours.}
+(left / right of the null). When \code{NULL} (default), labels follow \code{outcome}
+(see below). Set to \code{FALSE} to suppress favours.}
 
-\item{outcome}{When \code{favours} is \code{NULL}: \code{"unfavorable"} (default)
-or \code{"favorable"}. Default favour labels for ratio-scale outcomes.
-Modifiers: unfavorable is Experimental left, Control right; favorable swaps.
-Interaction: unfavorable is non-reference (B) left, reference (A) right;
-favorable swaps. Explicit \code{favours} always win.}
+\item{outcome}{For default favours when \code{favours} is \code{NULL}: \code{"unfavorable"}
+(default) or \code{"favorable"}. Controls which side of the null names
+treatment benefit direction for ratio-scale outcomes. Modifiers: unfavorable
+is Experimental left, Control right; favorable swaps them. Interaction:
+unfavorable is non-reference (B) left, reference (A) right; favorable
+swaps them. The IF column header for interaction forests remains
+\verb{IF (non-reference subgroup)}.}
 
 \item{show_ci_text}{Logical; show estimate and CI text. Default \code{TRUE}.}
 

@@ -29,10 +29,10 @@
 
 - **`vignette("comparing-da-ad-swada")`** — DA, AD, SWADA vs CAMS after
   **`vignette("cams")`** (`respire_age`, `sensitivity()`, `compare()`).
-- Split **`vignette("diagnostics")`** into four articles (pkgdown **After CAMS**):
-  **`heterogeneity-after-cams`**, **`trial-specific-effects-and-shrinkage`**,
-  **`traceplots`**, **`single-subgroup-trials`** (each refits `steroids` like
-  **`vignette("cams")`**). Old `diagnostics.html` redirects to `cams.html`.
+- **`vignette("heterogeneity-after-cams")`** — $\tau$ / $\tau_\gamma$
+  summaries, heterogeneity plots, and Bayesian `traceplot()` on the `age` fit
+  (after **`vignette("cams")`**). Old `diagnostics.html` and `traceplots.html`
+  redirect on the site.
 
 ### Breaking changes
 

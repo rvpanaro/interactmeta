@@ -24,7 +24,7 @@ modifier-level aggregate data. `interactions()`, `modifiers()`, and
 
 | Start here | More |
 |----|----|
-| `vignette("cams")` — **Getting started** (estimands, assumptions, Bayesian & REML on `steroids`) | After CAMS: `heterogeneity-after-cams`, `trial-specific-effects-and-shrinkage`, `traceplots`, `single-subgroup-trials`; `vignette("worked-examples")` — example tables |
+| `vignette("cams")` — **Getting started** (estimands, assumptions, Bayesian & REML on `steroids`) | After CAMS: `heterogeneity-after-cams`, `comparing-da-ad-swada`; `vignette("worked-examples")` — example tables |
 
 ## Installation
 

@@ -24,6 +24,6 @@ Plot them with the native \code{bayesmeta} methods
 analogue is \verb{$metafor}.
 }
 \seealso{
-\code{\link[=traceplot.interactmeta]{traceplot.interactmeta()}}, \code{vignette("cams")}, \code{vignette("traceplots")}
+\code{\link[=traceplot.interactmeta]{traceplot.interactmeta()}}, \code{vignette("cams")}, \code{vignette("heterogeneity-after-cams")}
 }
 \keyword{internal}

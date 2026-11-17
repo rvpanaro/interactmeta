@@ -29,12 +29,12 @@ a meta-analysis. \emph{JAMA}, 326(6), 499--518.
 data(il6)
 }
 \description{
-Event counts by trial and corticosteroid subgroup from the WHO REACT
+Event counts by trial and corticosteroid subgroup from the World Health
+Organization (WHO) Rapid Evidence Appraisal for COVID-19 Therapies (REACT)
 prospective meta-analysis of IL-6 antagonists in patients hospitalized
 for COVID-19. Some trials report only one corticosteroid subgroup
 (\code{n = 0} patients in the other subgroup); drop those empty rows before \code{\link[=escalc]{escalc()}} and
 let \code{\link[=ifrac]{ifrac()}} / \code{\link[=cams]{cams()}} complete unreported cells with a placeholder design row.
-See \code{vignette("worked-examples")} and \code{vignette("single-subgroup-trials")} (same pattern on
-\code{steroids}).
+See \code{vignette("worked-examples")} and \code{vignette("cams")} (same pattern on \code{steroids}).
 }
 \keyword{datasets}

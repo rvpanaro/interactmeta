@@ -247,9 +247,7 @@
 #' \emph{Research Synthesis Methods}, 12(4), 448--474.
 #' \url{https://doi.org/10.1002/jrsm.1475}
 #' @seealso [conventional()], [da()], [ad()], [swada()], [forestplot()],
-#'   `vignette("cams")`, `vignette("heterogeneity-after-cams")`,
-#'   `vignette("trial-specific-effects-and-shrinkage")`,
-#'   `vignette("single-subgroup-trials")`
+#'   `vignette("cams")`, `vignette("heterogeneity-after-cams")`
 #' @name cams
 #' @export
 cams <- function(x,

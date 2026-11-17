@@ -60,9 +60,8 @@ Defaults to the names stored on \code{fit}.}
 
 \item{subgroup_labels, legend_math, colors, fills, ylab}{Plot styling.}
 
-\item{xlab}{Axis label; default names the non-reference subgroup from
-\code{ifrac_var} (e.g. \code{"Information fraction (Older) (\%)"} for
-\code{IF_Older}).}
+\item{xlab}{Axis label; default uses the non-reference subgroup implied by
+\code{ifrac_var} (e.g. \code{"Information fraction (Older) (\%)"} for \code{IF_Older}).}
 
 \item{xlim, ylim, x_breaks, y_breaks}{Axis limits and breaks (\code{xlim} / \code{x_breaks}
 are on the \strong{percent} scale, 0–100).}

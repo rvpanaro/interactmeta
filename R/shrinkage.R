@@ -266,7 +266,7 @@ comparison_shrinkage_resolve_type <- function(type = c("modifiers", "interaction
 #' @param fit A [`interactmeta`].
 #' @param ... Passed to [shrinkage_components()] (`max_support`, `ifrac`, …).
 #' @return A data frame with one row per trial.
-#' @seealso [shrinkage()], [shrinkage_components()], `vignette("trial-specific-effects-and-shrinkage")`
+#' @seealso [shrinkage()], [shrinkage_components()], `vignette("cams")`
 #' @export
 shrinkage_diagnostics <- function(fit, ...) {
   cmp <- shrinkage_components(fit, ...)

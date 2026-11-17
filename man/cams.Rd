@@ -64,10 +64,9 @@ both orthogonal frequentist blocks (e.g. \code{"REML"}, \code{"ML"}, \code{"DL"}
 (overall) and \eqn{\tau_g} (interaction), passed to bayesmeta.
 Defaults when both are omitted match bayesmeta: improper
 \code{"uniform"} on both blocks (see \strong{Priors}). \code{"uniform"} and \code{"sqrt"}
-are the improper bayesmeta densities. For half-normal or half-Cauchy
-heterogeneity priors, prefer \code{\link[=cam_prior]{cam_prior()}}, e.g.
-\code{cam_prior("half-normal", scale = 0.5)}, or supply any bayesmeta-compatible
-density function.
+are the improper bayesmeta densities. A half-normal or half-Cauchy is a
+density, for example
+\code{function(tau) bayesmeta::dhalfnormal(tau, scale = 0.5)}.
 If \code{tau.interaction.prior = NULL} and the user supplied \code{tau.prior},
 the interaction prior inherits \code{tau.prior}.}
 
@@ -310,7 +309,5 @@ heterogeneity parameter in Bayesian random-effects meta-analysis.
 }
 \seealso{
 \code{\link[=conventional]{conventional()}}, \code{\link[=da]{da()}}, \code{\link[=ad]{ad()}}, \code{\link[=swada]{swada()}}, \code{\link[=forestplot]{forestplot()}},
-\code{vignette("cams")}, \code{vignette("heterogeneity-after-cams")},
-\code{vignette("trial-specific-effects-and-shrinkage")},
-\code{vignette("single-subgroup-trials")}
+\code{vignette("cams")}, \code{vignette("heterogeneity-after-cams")}
 }

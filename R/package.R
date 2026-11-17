@@ -43,10 +43,7 @@
 #' @section Documentation:
 #' \describe{
 #'   \item{Getting started}{`vignette("cams")` — estimands, assumptions, Bayesian and REML on the IMV/Non-IMV `steroids` example.}
-#'   \item{Heterogeneity}{`vignette("heterogeneity-after-cams")` — tau marginals and profile plots (after `vignette("cams")`).}
-#'   \item{Shrinkage}{`vignette("trial-specific-effects-and-shrinkage")` — grey forest markers and `shrinkage()`.}
-#'   \item{Trace plots}{`vignette("traceplots")` — Bayesian shrinkage-vs-tau panels.}
-#'   \item{Single-subgroup trials}{`vignette("single-subgroup-trials")` — mixed tables and reporting IF.}
+#'   \item{Heterogeneity and traceplots}{`vignette("heterogeneity-after-cams")` — tau marginals, profile plots, and Bayesian `traceplot()` (after `vignette("cams")`).}
 #'   \item{DA / AD / SWADA}{`vignette("comparing-da-ad-swada")` — constructions vs CAMS (after `vignette("cams")`).}
 #'   \item{Example datasets}{`vignette("worked-examples")` — `steroids`, `age`, `edss`, `il6`, and RESPIRE tables (including incomplete-subgroup patterns).}
 #' }
@@ -128,9 +125,6 @@
 #'   [da()], [ad()],
 #'   [swada()], `vignette("cams", package = "interactmeta")`,
 #'   `vignette("heterogeneity-after-cams", package = "interactmeta")`,
-#'   `vignette("trial-specific-effects-and-shrinkage", package = "interactmeta")`,
-#'   `vignette("traceplots", package = "interactmeta")`,
-#'   `vignette("single-subgroup-trials", package = "interactmeta")`,
 #'   `vignette("worked-examples", package = "interactmeta")`
 #'
 #' @aliases interactmeta-package interactmeta
