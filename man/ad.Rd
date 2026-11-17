@@ -28,9 +28,9 @@ The default column remains \code{"subgroup"}.}
 
 \item{trial, subgroup, yi, vi}{Column names.}
 
-\item{method}{Inferential method. \code{NULL} (default) is \code{"REML"} for metafor
-and \code{"bayes"} for bayesmeta. metafor also accepts \code{"ML"}. If \code{engine} is
-omitted, \code{"bayes"} uses bayesmeta and \code{"REML"} / \code{"ML"} use metafor.}
+\item{method}{Inferential method: \code{"Bayesian"} or \code{"REML"} (default depends
+on construction). \code{"ML"} is supported for metafor. Bayesian fits use
+\strong{bayesmeta}; frequentist fits use \strong{metafor}.}
 
 \item{tau.prior, mu.prior}{Bayesian priors when \code{engine = "bayesmeta"}
 (defaults: improper uniform on \eqn{\tau}, matching bayesmeta;

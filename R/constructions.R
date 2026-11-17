@@ -213,15 +213,9 @@ interactmeta_ad_from_pairs <- function(pairs, method, rma_args, call) {
 #' @param data A data frame with `trial`, `subgroup`, `yi`, and `vi`.
 #' @param reference Reference subgroup label.
 #' @param trial,subgroup,yi,vi Column names.
-#' @param engine Computational backend. `"metafor"` (default) or `"bayesmeta"`.
-#'   CAMS backends are not DA backends. `"bayes"` is accepted as a synonym of
-#'   `"bayesmeta"`.
-#' @param approach Inferential approach. `"bayes"` uses `engine = "bayesmeta"`
-#'   when `engine` is omitted; `"frequentist"`, `"REML"`, or `"ML"` use
-#'   `engine = "metafor"`. `NULL` (default) follows `engine` / `method`.
-#' @param method Inferential method. `NULL` (default) is `"REML"` for metafor
-#'   and `"bayes"` for bayesmeta. metafor also accepts `"ML"`. If `engine` is
-#'   omitted, `"bayes"` uses bayesmeta and `"REML"` / `"ML"` use metafor.
+#' @param method Inferential method: `"Bayesian"` or `"REML"` (default depends
+#'   on construction). `"ML"` is supported for metafor. Bayesian fits use
+#'   **bayesmeta**; frequentist fits use **metafor**.
 #' @param tau.prior,mu.prior Bayesian priors when `engine = "bayesmeta"`
 #'   (defaults: improper uniform on \eqn{\tau}, matching bayesmeta;
 #'   \eqn{N(0,10)} on \eqn{\mu}. AD uses the same tau default as CAMS
@@ -1376,12 +1370,8 @@ interactmeta_ad_from_pairs_bayesmeta <- function(pairs,
 #' @param modifier Column of the two levels. Overrides `subgroup` when set.
 #'   The default column remains `"subgroup"`.
 #' @param weights Weighting scheme. Currently `"interaction"` (recommended).
-#' @param engine Computational backend. Currently `"metafor"` only. Bayesian
-#'   SWADA is not implemented; Bayesian inference does not add CAMS IF
-#'   functionality.
-#' @param approach Inferential approach. SWADA is frequentist only; `"bayes"`
-#'   is an error.
 #' @param method Estimator for the interaction RE-MA (`"REML"` default, or `"ML"`).
+#'   SWADA is frequentist only (metafor).
 #' @param ... Passed to [ad()] / [metafor::rma()] for the interaction fit.
 #' @return An object of class `"interactmeta_swada"`.
 #' @references

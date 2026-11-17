@@ -16,7 +16,7 @@ modifiers(
   contrast_sep = NULL,
   exponentiate = NULL,
   shrinkage = FALSE,
-  contribution
+  contribution = NULL
 )
 }
 \arguments{

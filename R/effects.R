@@ -119,7 +119,7 @@ modifiers <- function(fit,
                              contrast_sep = NULL,
                              exponentiate = NULL,
                              shrinkage = FALSE,
-                             contribution) {
+                             contribution = NULL) {
   at <- interactmeta_resolve_marginal_at(at = at, contribution = contribution)
   marg <- interactmeta_finalize_marginal_args(
     fit,
@@ -1037,6 +1037,32 @@ comparison_ifrac_coef_names <- function(fit) {
   sub("^b_", "", hits)
 }
 
+#' Column name for \eqn{\delta} / \eqn{\beta_m-\gamma} on `fit$support`
+#' @noRd
+comparison_ifrac_beta_column <- function(fit, post = NULL) {
+  if (is.null(post)) {
+    post <- comparison_support_df(fit)
+  }
+  nms <- comparison_ifrac_coef_names(fit)
+  if (length(nms)) {
+    col <- paste0("b_", nms[[1L]])
+    if (col %in% names(post)) {
+      return(col)
+    }
+  }
+  hits <- grep("^b_(ifrac|IF)_", names(post), value = TRUE)
+  hits <- hits[!grepl("ifrac2", hits, ignore.case = TRUE)]
+  if (length(hits) == 1L) {
+    return(hits[[1L]])
+  }
+  hits <- grep("^b_ifrac", names(post), value = TRUE)
+  hits <- hits[!grepl("ifrac2", hits)]
+  if (length(hits) == 1L) {
+    return(hits[[1L]])
+  }
+  NA_character_
+}
+
 #' @noRd
 comparison_subgroup_coef_terms <- function(fit, design) {
   vars <- comparison_fit_variables(fit)
@@ -1427,7 +1453,7 @@ interactions <- function(fit,
                                 contrast_sep = NULL,
                                 exponentiate = NULL,
                                 shrinkage = FALSE,
-                                contribution) {
+                                contribution = NULL) {
   at <- interactmeta_resolve_marginal_at(at = at, contribution = contribution)
   marg <- interactmeta_finalize_marginal_args(
     fit,

@@ -29,16 +29,10 @@ The default column remains \code{"subgroup"}.}
 
 \item{weights}{Weighting scheme. Currently \code{"interaction"} (recommended).}
 
-\item{method}{Estimator for the interaction RE-MA (\code{"REML"} default, or \code{"ML"}).}
+\item{method}{Estimator for the interaction RE-MA (\code{"REML"} default, or \code{"ML"}).
+SWADA is frequentist only (metafor).}
 
 \item{...}{Passed to \code{\link[=ad]{ad()}} / \code{\link[metafor:rma]{metafor::rma()}} for the interaction fit.}
-
-\item{engine}{Computational backend. Currently \code{"metafor"} only. Bayesian
-SWADA is not implemented; Bayesian inference does not add CAMS IF
-functionality.}
-
-\item{approach}{Inferential approach. SWADA is frequentist only; \code{"bayes"}
-is an error.}
 }
 \value{
 An object of class \code{"interactmeta_swada"}.
