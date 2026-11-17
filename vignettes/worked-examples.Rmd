@@ -42,10 +42,10 @@ index under **Data**.
 > **Incomplete subgroups.** Some COVID tables list only one stratum per trial
 > (`n = 0` means no patients in the other subgroup, not “zero events”). Drop
 > empty rows before `escalc()`; `ifrac()` can append a high-variance placeholder
-> for mixed tables (`?ifrac`, [cams](cams.html)).
+> for mixed tables ([`?ifrac`], [cams](cams.html)).
 
 For count-based tables (`steroids`, `il6`), build `yi` and `vi` with
-[metafor::escalc] before [ifrac()]; hazard-ratio and IRR sets already store log
+[`metafor::escalc`] before `ifrac()`; hazard-ratio and IRR sets already store log
 effects in `yi` with variances in `vi`. Remap columns with `trial` /
 `subgroup` (or `modifier`) when names differ from `study` / `level` or from the
 `subgroup` column noted below. [`?ifrac`] covers `big_var`, `contrast`, and
@@ -64,7 +64,7 @@ knitr::kable(
 )
 ```
 
-After [escalc], use `ifrac(..., reference = "Non-IMV")` as in
+After [`escalc`], use `ifrac(..., reference = "Non-IMV")` as in
 [`vignette("cams")`](cams.html).
 
 ## `il6`
@@ -77,8 +77,8 @@ data(il6, package = "interactmeta")
 knitr::kable(head(il6, 6), caption = "First six rows of `il6`.")
 ```
 
-Same two-row-per-trial layout as `steroids` (corticosteroid yes / no). [escalc]
-with `measure = "OR"` then [ifrac()] with your chosen reference subgroup.
+Same two-row-per-trial layout as `steroids` (corticosteroid yes / no). [`escalc`]
+with `measure = "OR"` then `ifrac()` with your chosen reference subgroup.
 
 ## `age`
 
@@ -93,7 +93,7 @@ data(age, package = "interactmeta")
 knitr::kable(head(age, 6), caption = "First six rows of `age`.")
 ```
 
-Long-format IRR table: `ifrac(age, reference = "Younger")` then [cams()] as in
+Long-format IRR table: `ifrac(age, reference = "Younger")` then `cams()` as in
 [`vignette("cams")`](cams.html); optional `contrast` and `include_interaction`
 per [`?ifrac`].
 
@@ -108,8 +108,8 @@ knitr::kable(head(edss, 6), caption = "First six rows of `edss`.")
 ```
 
 Same columns and endpoint as `age`, with Lower / Higher EDSS strata. Choose a
-reference (for example `reference = "Lower"`) before [cams()]; no extra
-preparation beyond [ifrac()].
+reference (for example `reference = "Lower"`) before `cams()`; no extra
+preparation beyond `ifrac()`.
 
 ## `respire_age`
 
@@ -125,7 +125,7 @@ knitr::kable(head(respire_age, 6), caption = "First six rows of `respire_age`.")
 ```
 
 Complete two-stratum layout: `ifrac(respire_age, reference = "<65",
-subgroup = "subgroup")` then [sensitivity()] or [cams()] as in
+subgroup = "subgroup")` then `sensitivity()` or `cams()` as in
 [`vignette("comparing-da-ad-swada")`](comparing-da-ad-swada.html).
 
 ## `respire_sex`
@@ -138,7 +138,7 @@ knitr::kable(head(respire_sex, 6), caption = "First six rows of `respire_sex`.")
 ```
 
 Mirrors `respire_age` with Female / Male strata; pass `subgroup = "subgroup"`
-to [ifrac()] and set `reference` to the comparator you report against.
+to `ifrac()` and set `reference` to the comparator you report against.
 
 ## Next steps
 

@@ -71,7 +71,7 @@ sens <- interactmeta::sensitivity(
 
 [`?sensitivity`] fits DA, AD, SWADA, and CAMS on one table by default. Trim
 with `constructions = c("da", "ad")`, remap columns via `trial` / `subgroup`,
-or pass an existing [`interactmeta`] from [cams()] instead of a data frame.
+or pass an existing [`interactmeta`] from `cams()` instead of a data frame.
 Arguments in `...` (for example `method`, `tau.prior`, `silent`) are forwarded
 to each construction fitter.
 
@@ -89,7 +89,7 @@ interactmeta::compare(
 )
 ```
 
-[compare()] on a sensitivity object accepts `estimand = "modifiers"` or
+`compare()` on a sensitivity object accepts `estimand = "modifiers"` or
 `"combined"` as well as `"interaction"`. Use `type = "Prediction"` for
 prediction rows where supported, `exponentiate = TRUE` on log-scale outcomes,
 and see [`?compare`] for interval formatting. Passing multiple fits directly
@@ -101,9 +101,9 @@ and see [`?compare`] for interval formatting. Passing multiple fits directly
 interactmeta::compare_weights(sens$fits$da, sens$fits$ad, sens$fits$swada)
 ```
 
-The table has class `interactmeta_compare_weights` and a [plot()] method
+The table has class `interactmeta_compare_weights` and a `plot()` method
 (`xlim` rescales the weight axis). For CAMS trial-level information fractions
-on the same studies, use [compare_ifrac()] instead of [compare_weights()].
+on the same studies, use `compare_ifrac()` instead of `compare_weights()`.
 
 IV-only trials can dominate DA weights for the IMV series while carrying little
 weight in AD, SWADA, and CAMS interaction pooling (see
@@ -111,7 +111,7 @@ weight in AD, SWADA, and CAMS interaction pooling (see
 
 ## What CAMS adds
 
-Contribution curves and grey shrinkage forests require a CAMS fit (`?cams`).
+Contribution curves and grey shrinkage forests require a CAMS fit ([`?cams`]).
 
 ```{r contribution, fig.height = 5, cache = TRUE}
 plot(sens$fits$cams, type = "contribution", ylim = c(0, 4), exponentiate = TRUE)
@@ -119,7 +119,7 @@ plot(sens$fits$cams, type = "contribution", ylim = c(0, 4), exponentiate = TRUE)
 
 Beyond `ylim`, the contribution view accepts `exponentiate`, `at` / `ifrac`
 (reporting fraction), and ggplot styling via [`?plot.interactmeta`]. Forest and
-heterogeneity views use the same [plot()] method with other `type` values (see
+heterogeneity views use the same `plot()` method with other `type` values (see
 [`vignette("cams")`](cams.html)).
 
 ## Complete-table illustration (`respire_age`)
@@ -145,7 +145,7 @@ interactmeta::compare(
 )
 ```
 
-`respire_age` uses `study` and `subgroup` rather than `level`; [sensitivity()]
+`respire_age` uses `study` and `subgroup` rather than `level`; `sensitivity()`
 remaps via `subgroup = "subgroup"`. The explicit `constructions` vector is
 optional when you want all four fits; priors and `method` in `...` behave as in
 the `steroids` run above.

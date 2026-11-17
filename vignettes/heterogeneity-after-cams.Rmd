@@ -51,7 +51,7 @@ fit_age <- cams(
 
 Half-normal `tau.prior` and `tau.interaction.prior` follow the immunotherapy
 example in [`vignette("cams")`](cams.html); use `method = "REML"` on the same
-[ifrac()] output when you only need frequentist heterogeneity panels.
+`ifrac()` output when you only need frequentist heterogeneity panels.
 
 ## Bayesian heterogeneity and traceplots (`age`)
 
@@ -60,16 +60,16 @@ heterogeneity(fit_age)
 summary(fit_age)$heterogeneity$summary
 ```
 
-[heterogeneity()] defaults to `component = "all"` with `summary = TRUE`.
+`heterogeneity()` defaults to `component = "all"` with `summary = TRUE`.
 Request `component = "intercept"` or `"slope"` for one CAMS block, set `prob`
 for interval coverage, or `summary = FALSE` to keep posterior `draws` only.
-[summary()] exposes the same rows in `$heterogeneity$summary`.
+`summary()` exposes the same rows in `$heterogeneity$summary`.
 
 ```{r het-plot, fig.width = 7, fig.height = 4}
 plot(fit_age, type = "heterogeneity")
 ```
 
-`plot(fit, type = "heterogeneity")` calls [plot_heterogeneity()] with `which =
+`plot(fit, type = "heterogeneity")` calls `plot_heterogeneity()` with `which =
 "both"` (τ and τ_γ side by side). On REML fits with τ̂ at the boundary, panels
 show **metafor** profiles rather than sharp posteriors. Use `which =
 "interaction"` or `"combined"` for a single panel; `prior = TRUE` overlays the
@@ -89,7 +89,7 @@ traceplot(fit_age, type = "combined")
 [`?traceplot`] documents `ylab`, `xlab`, and **bayesmeta** passthrough (`mulim`,
 `taulim`, `ci`, `prior`, colours). `type = "modifiers"` is intentionally
 unsupported: orthogonal CAMS stores interaction and combined native objects
-only. [traceplot()] requires `method = "Bayesian"` on [cams()].
+only. `traceplot()` requires `method = "Bayesian"` on `cams()`.
 
 ## Frequentist heterogeneity plot (`steroids`)
 
@@ -119,7 +119,7 @@ heterogeneity(fit_reml)
 plot(fit_reml, type = "heterogeneity")
 ```
 
-The REML table uses the same [heterogeneity()] API as the Bayesian `age` fit;
+The REML table uses the same `heterogeneity()` API as the Bayesian `age` fit;
 `plot(fit_reml, type = "heterogeneity", ...)` forwards `prob` and `which` to
-[plot_heterogeneity()]. Profile shading and cutoff labels follow the fitted
+`plot_heterogeneity()`. Profile shading and cutoff labels follow the fitted
 **metafor** `rma` blocks when τ is estimated at zero.
