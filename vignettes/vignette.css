@@ -1,11 +1,12 @@
 /* Loaded after rmarkdown's html_vignette.css. Match interactmeta plot chrome. */
 
 body {
-  max-width: 46rem;
+  margin: 1em auto;
+  max-width: 44rem;
   color: #222222;
   font-family: "Helvetica Neue", Helvetica, ui-sans-serif, system-ui, sans-serif;
-  font-size: 16px;
-  line-height: 1.55;
+  font-size: 14px;
+  line-height: 1.5;
   padding-left: 1.5rem;
   padding-right: 1.5rem;
   text-align: left;
@@ -26,13 +27,13 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 h1 {
-  font-size: 1.85rem;
+  font-size: 1.65rem;
   line-height: 1.2;
   margin: 0 0 1.25rem 0;
 }
 
 h2 {
-  font-size: 1.35rem;
+  font-size: 1.25rem;
   margin: 2rem 0 0.75rem 0;
   padding: 0 0 0.35rem 0;
   border-bottom: 1px solid #E8E8E8;

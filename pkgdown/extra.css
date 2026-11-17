@@ -1,82 +1,99 @@
 /* pkgdown home + article pages. */
 
-body.template-home .badges {
+.template-home .badges {
   margin: 0.75rem 0 1.25rem;
 }
 
-body.template-home .badges a {
+.template-home .badges a {
   margin-right: 0.35rem;
 }
 
-body.template-article main p,
-body.template-article main li,
-body.template-article main dd,
-body.template-article main blockquote,
-body.template-article #refs p,
-body.template-article .footnotes li {
+.template-article main {
+  max-width: 44rem;
+  margin-left: auto;
+  margin-right: auto;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.template-article main .page-header h1 {
+  font-size: 1.65rem;
+}
+
+.template-article main p,
+.template-article main li,
+.template-article main dd,
+.template-article main blockquote,
+.template-article #refs p,
+.template-article .footnotes li {
   text-align: left;
   hyphens: manual;
 }
 
-body.template-article .page-header small.dont-index {
+.template-article .page-header small.dont-index {
   display: none;
 }
 
-body.template-article main h1,
-body.template-article main h2,
-body.template-article main h3,
-body.template-article main h4,
-body.template-article main h5,
-body.template-article main h6,
-body.template-article main pre,
-body.template-article main pre code,
-body.template-article main .sourceCode,
-body.template-article main table,
-body.template-article main table th,
-body.template-article main table td,
-body.template-article main table caption,
-body.template-article main .figure,
-body.template-article main figcaption {
+.template-article main h1,
+.template-article main h2,
+.template-article main h3,
+.template-article main h4,
+.template-article main h5,
+.template-article main h6,
+.template-article main pre,
+.template-article main pre code,
+.template-article main .sourceCode,
+.template-article main table,
+.template-article main table th,
+.template-article main table td,
+.template-article main table caption,
+.template-article main .figure,
+.template-article main figcaption {
   text-align: left;
 }
 
-body.template-article main h2 {
+.template-article main h2 {
   margin-top: 2.25rem;
   padding-bottom: 0.35rem;
   border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+  font-size: 1.25rem;
 }
 
-body.template-article main table {
+.template-article main h3 {
+  font-size: 1.05rem;
+}
+
+.template-article main table {
   width: 100%;
   margin: 1.25rem 0 1.5rem;
   font-size: 0.92rem;
   border-collapse: collapse;
 }
 
-body.template-article main table thead th {
+.template-article main table thead th {
   border-bottom: 2px solid var(--bs-border-color, #adb5bd);
   font-weight: 600;
 }
 
-body.template-article main table th,
-body.template-article main table td {
+.template-article main table th,
+.template-article main table td {
   padding: 0.5rem 0.65rem;
   vertical-align: top;
   border-bottom: 1px solid var(--bs-border-color, #dee2e6);
 }
 
-body.template-article main table.table-striped > tbody > tr:nth-of-type(odd) > * {
+.template-article main table.table-striped > tbody > tr:nth-of-type(odd) > * {
   background-color: rgba(0, 0, 0, 0.02);
 }
 
-body.template-article main table caption {
+.template-article main table caption {
   caption-side: top;
   color: var(--bs-secondary-color, #6c757d);
   font-size: 0.9rem;
   padding-bottom: 0.35rem;
 }
 
-body.template-article main blockquote {
+.template-article main blockquote {
   margin: 1.25rem 0;
   padding: 0.85rem 1rem;
   border-left: 4px solid var(--bs-primary, #0d6efd);
@@ -84,11 +101,11 @@ body.template-article main blockquote {
   border-radius: 0 4px 4px 0;
 }
 
-body.template-article main blockquote p:last-child {
+.template-article main blockquote p:last-child {
   margin-bottom: 0;
 }
 
-body.template-article main .figure img {
+.template-article main .figure img {
   display: block;
   margin-left: auto;
   margin-right: auto;
