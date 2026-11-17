@@ -9,9 +9,17 @@ body {
   padding-left: 1.5rem;
   padding-right: 1.5rem;
   text-align: justify;
+  text-justify: inter-word;
   hyphens: auto;
   -webkit-hyphens: auto;
   hyphenate-limit-chars: 6 3 3;
+}
+
+body > p,
+body > div > p,
+.section p {
+  text-align: justify;
+  text-justify: inter-word;
 }
 
 h1, h2, h3, h4, h5, h6 {

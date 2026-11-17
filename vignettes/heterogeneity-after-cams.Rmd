@@ -33,7 +33,7 @@ This article follows [`vignette("cams")`](cams.html). CAMS treats combined-effec
 heterogeneity $\tau$ and interaction heterogeneity $\tau_\gamma$ as separate
 blocks. `heterogeneity()` tabulates them; `plot(fit, type = "heterogeneity")`
 draws Bayesian marginals or frequentist profile views. `traceplot()` applies only
-to Bayesian fits (bayesmeta shrinkage-vs-$\tau$ panels for the interaction and
+to Bayesian fits (`bayesmeta` shrinkage-vs-$\tau$ panels for the interaction and
 combined blocks).
 
 ```{r setup, cache = TRUE}

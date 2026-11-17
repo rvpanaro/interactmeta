@@ -2,8 +2,14 @@
 
 body.template-article main p,
 body.template-article main li,
-body.template-article main blockquote {
+body.template-article main dd,
+body.template-article main blockquote,
+body.template-article main .author,
+body.template-article main .abstract p,
+body.template-article #refs p,
+body.template-article .footnotes li {
   text-align: justify;
+  text-justify: inter-word;
   hyphens: auto;
   -webkit-hyphens: auto;
   hyphenate-limit-chars: 6 3 3;

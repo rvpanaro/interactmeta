@@ -30,16 +30,17 @@ knitr::opts_chunk$set(
 ```
 
 This vignette follows the software-paper illustrations [@panaro2025cams]:
-first **immunotherapy-by-age** on `age`, then **REACT corticosteroids** on
-`steroids`, including trial-level shrinkage and incomplete subgroup designs.
+immunotherapy-by-age on `age`, then REACT corticosteroids on `steroids`,
+including trial-level shrinkage and incomplete subgroup designs.
 
 ## Immunotherapy by age (`age`)
 
 The `age` table is from a review of disease-modifying immunotherapies in
 relapsing–remitting multiple sclerosis [@heesen2024]: do treatments reduce
-relapses equally in **Younger** and **Older** patients when only aggregate
-subgroup summaries are available? Published tables quote incidence rate ratios;
-values below one favour immunotherapy. Trial **ADVANCE** anchors the shrinkage figures in the paper (`?shrinkage`).
+relapses equally in Younger and Older patients when only aggregate subgroup
+summaries are available? Published tables quote incidence rate ratios; values
+below one favour immunotherapy. Trial ADVANCE anchors the shrinkage figures in
+the paper (`?shrinkage`).
 
 ```{r age-advance, warning=FALSE}
 library(interactmeta)
@@ -47,7 +48,7 @@ library(interactmeta)
 age[age$study == "ADVANCE", c("study", "subgroup", "yi", "vi")]
 ```
 
-With reference **Younger**, `ifrac()` adds `IF_Older` $=\pi_j$ on each row
+With reference Younger, `ifrac()` adds `IF_Older` $=\pi_j$ on each row
 [@panaro2025cams].
 
 ```{r age-ifrac}
@@ -77,8 +78,8 @@ print(fit_age)
 plot(fit_age, type = "contribution", exponentiate = TRUE)
 ```
 
-The horizontal axis is the IF assigned to **Older** patients (precision-based,
-not enrolment share). Pooled modifier and combined estimates use the
+The horizontal axis is the IF assigned to Older patients (precision-based, not
+enrolment share). Pooled modifier and combined estimates use the
 interaction-weighted reporting fraction by default (`ifrac(fit_age)`).
 
 ```{r age-forest, fig.width = 7, fig.height = 5, cache = TRUE}
@@ -99,9 +100,8 @@ $\pi_j$ (`shrinkage(fit_age, type = "modifiers")`).
 ## REACT corticosteroids (`steroids`)
 
 The `steroids` table is from the WHO REACT meta-analysis of systemic
-corticosteroids for COVID-19 mortality [@stern2020react]. Subgroups are **IMV**
-and **Non-IMV**; some trials report only one ventilation stratum (not missing
-data).
+corticosteroids for COVID-19 mortality [@stern2020react]. Subgroups are IMV and
+Non-IMV; some trials report only one ventilation stratum (not missing data).
 Values below one on the exponentiated scale favour corticosteroids.
 
 ```{r steroids-escalc, warning=FALSE, message=FALSE}
@@ -116,9 +116,9 @@ steroids_es <- escalc(
 des <- ifrac(steroids_es, reference = "Non-IMV")
 ```
 
-For IMV-only trials, `ifrac()` adds a high-variance placeholder
-(`big_var`, default $10^4$ on the log scale). For **RECOVERY**, the reported IMV
-row is retained and Non-IMV is filled with `yi = 0`, `vi = 10000`.
+For IMV-only trials, `ifrac()` adds a high-variance placeholder (`big_var`,
+default $10^4$ on the log scale). For RECOVERY, the reported IMV row is retained
+and Non-IMV is filled with `yi = 0`, `vi = 10000`.
 
 ```{r recovery-placeholder}
 des[des$study == "RECOVERY", c("study", "level", "yi", "vi")]
@@ -136,7 +136,7 @@ fit_reml <- cams(des, reference = "Non-IMV", method = "REML")
 print(fit_reml)
 ```
 
-At the default **interaction-weighted** reporting IF:
+At the default interaction-weighted reporting IF:
 
 ```{r estimands-reml-1}
 interactions(fit_reml, type = "Overall", exponentiate = TRUE)
@@ -167,8 +167,8 @@ forestplot(
 )
 ```
 
-Trial-level $\pi_j$ and the pooled interaction are unchanged when the **reporting
-IF** changes. Evaluating modifiers and forests at the **overall-effect-weighted**
+Trial-level $\pi_j$ and the pooled interaction are unchanged when the reporting
+IF changes. Evaluating modifiers and forests at the overall-effect-weighted
 fraction moves pooled summaries along the same fitted curves:
 
 ```{r ifrac-overall}
@@ -189,6 +189,6 @@ forestplot(
 
 ## Next steps
 
-**DA**, **AD**, and **SWADA** on the same `des` object are in
+DA, AD, and SWADA on the same `des` object are in
 [`vignette("comparing-da-ad-swada")`](comparing-da-ad-swada.html). More tables:
 [`vignette("worked-examples")`](worked-examples.html).

@@ -29,15 +29,15 @@ knitr::opts_chunk$set(
 )
 ```
 
-This article follows [`vignette("cams")`](cams.html). It contrasts **CAMS**
-with **DA**, **AD**, and **SWADA** on the same prepared REACT `des` object
-[@panaro2026subgroup; @stern2020react]. Those three are **different
-constructions**, not alternative CAMS likelihoods.
+This article follows [`vignette("cams")`](cams.html). It contrasts CAMS with
+DA, AD, and SWADA on the same prepared REACT `des` object
+[@panaro2026subgroup; @stern2020react]. Those three are different constructions,
+not alternative CAMS likelihoods.
 
-**DA** pools each subgroup then subtracts; **AD** pools within-trial contrasts;
-**SWADA** applies a common weighting principle so DA's subgroup series can align
-with AD's interaction [@panaro2026subgroup]. **CAMS** uses information fractions
-and orthogonal $(m_j, g_j)$ blocks [@panaro2025cams].
+DA pools each subgroup then subtracts; AD pools within-trial contrasts; SWADA
+applies a common weighting principle so DA's subgroup series can align with AD's
+interaction [@panaro2026subgroup]. CAMS uses information fractions and orthogonal
+$(m_j, g_j)$ blocks [@panaro2025cams].
 
 ## REACT `steroids` (mixed subgroup design)
 
@@ -66,9 +66,8 @@ sens <- interactmeta::sensitivity(
 
 ## Interaction $\gamma$
 
-Under default random-effects weights on this mixed table, **DA** need not match
-**AD**, **SWADA**, and **CAMS**, which pool the same within-trial contrasts for
-$\gamma$ here.
+Under default random-effects weights on this mixed table, DA need not match AD,
+SWADA, and CAMS, which pool the same within-trial contrasts for $\gamma$ here.
 
 ```{r compare-int}
 interactmeta::compare(
@@ -85,23 +84,23 @@ interactmeta::compare(
 interactmeta::compare_weights(sens$fits$da, sens$fits$ad, sens$fits$swada)
 ```
 
-IV-only trials can dominate **DA** weights for the IMV series while carrying
-little weight in **AD** / **SWADA** / **CAMS** interaction pooling (see
+IV-only trials can dominate DA weights for the IMV series while carrying little
+weight in AD, SWADA, and CAMS interaction pooling (see
 [`vignette("cams")`](cams.html) on mixed `steroids` designs).
 
 ## What CAMS adds
 
-Contribution curves and grey shrinkage forests require a **CAMS** fit (`?cams`).
+Contribution curves and grey shrinkage forests require a CAMS fit (`?cams`).
 
 ```{r contribution, fig.height = 5, cache = TRUE}
-plot(sens$fits$cams, type = "contribution", ylim = c(0,4), exponentiate = TRUE)
+plot(sens$fits$cams, type = "contribution", ylim = c(0, 4), exponentiate = TRUE)
 ```
 
 ## Complete-table illustration (`respire_age`)
 
-On a **complete** subgroup table (every trial reports both strata), **DA** and
-**AD** can still disagree when inverse-variance weights differ. RESPIRE age
-strata [@panaro2026subgroup]:
+On a complete subgroup table (every trial reports both strata), DA and AD can
+still disagree when inverse-variance weights differ. RESPIRE age strata
+[@panaro2026subgroup]:
 
 ```{r respire-sens, cache = TRUE}
 sens_respire <- interactmeta::sensitivity(

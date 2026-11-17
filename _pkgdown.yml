@@ -2,11 +2,11 @@ url: https://rvpanaro.github.io/interactmeta/
 
 articles:
 - title: Getting started with CAMS
-  desc: Estimands, assumptions, Bayesian and REML on the steroids example.
+  desc: Paper walk-through on age (Bayesian) and steroids (REML).
   contents:
   - cams
 - title: After CAMS
-  desc: Inspect a CAMS fit on the steroids example (after vignette("cams")).
+  desc: Heterogeneity, traceplots, and DA/AD/SWADA (after vignette("cams")).
   contents:
   - "heterogeneity-after-cams"
   - "comparing-da-ad-swada"
