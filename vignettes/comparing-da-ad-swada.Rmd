@@ -57,7 +57,7 @@ des <- ifrac(steroids_es, reference = "Non-IMV")
 ```
 
 ```{r fit-sensitivity, cache = TRUE}
-sens <- sensitivity(
+sens <- interactmeta::sensitivity(
   des,
   reference = "Non-IMV",
   method = "REML"
@@ -71,7 +71,7 @@ Under default random-effects weights on this mixed table, **DA** need not match
 $\gamma$ here.
 
 ```{r compare-int}
-compare(
+interactmeta::compare(
   sens,
   estimand = "interaction",
   exponentiate = TRUE,
@@ -82,7 +82,7 @@ compare(
 ## Study weights (SWADA principle)
 
 ```{r weights}
-compare_weights(sens$fits$da, sens$fits$ad, sens$fits$swada)
+interactmeta::compare_weights(sens$fits$da, sens$fits$ad, sens$fits$swada)
 ```
 
 IV-only trials can dominate **DA** weights for the IMV series while carrying
@@ -104,7 +104,7 @@ On a **complete** subgroup table (every trial reports both strata), **DA** and
 strata [@panaro2026subgroup]:
 
 ```{r respire-sens, cache = TRUE}
-sens_respire <- sensitivity(
+sens_respire <- interactmeta::sensitivity(
   respire_age,
   reference = "<65",
   subgroup = "subgroup",
@@ -112,7 +112,7 @@ sens_respire <- sensitivity(
   constructions = c("da", "ad", "swada", "cams")
 )
 
-compare(
+interactmeta::compare(
   sens_respire,
   estimand = "interaction",
   exponentiate = TRUE,
