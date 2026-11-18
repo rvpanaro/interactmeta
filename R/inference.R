@@ -1368,9 +1368,9 @@ interactmeta_summarize_effects <- function(draws,
 #'   \item{`beta_m`}{Ecological slope \eqn{\beta} in
 #'     \eqn{\mathrm{E}[m_j]=\alpha+\beta\pi_j} (`bmr` / `rma` `ifrac` coefficient);
 #'     `fixed.prior` targets \eqn{(\alpha,\beta_m)}.}
-#'   \item{`delta`}{Explicit (global) slope \eqn{\delta_k=\beta_k-\gamma_k} in
+#'   \item{`delta`}{Explicit (global) slope \eqn{\delta=\beta_m-\gamma} in
 #'     \eqn{\mu_A(\pi)=\alpha+\delta\pi}, \eqn{\mu_B(\pi)=\alpha+\delta\pi+\gamma};
-#'     derived from ecological `b_ifrac_*` and `b_subgroup*` (not stored on support).}
+#'     stored as `b_ifrac_*`.}
 #'   \item{`gamma`}{Interaction \eqn{\gamma} on contrasts \eqn{g_j}; `b_subgroup*`.}
 #'   \item{`tau_m`}{Combined-block heterogeneity SD (`sd_trial__Intercept`).}
 #'   \item{`tau_g`}{Interaction-block heterogeneity SD (`sd_trial__ifrac2_*`).}
@@ -1579,7 +1579,7 @@ interactmeta_priors_engine_representation <- function(priors, engine, design) {
       note = paste(
         "bmr prior on (alpha, beta_m), paper slope on m_j ~ pi_j;",
         "mu.prior for gamma only.",
-        "b_ifrac stores ecological beta from the overall marginal; delta is derived."
+        "b_ifrac stores delta = beta_m - gamma, not the prior target."
       ),
       tau = if (is.character(tau_bm)) tau_bm else format(priors$tau),
       tau_interaction = if (is.character(tau_g_bm)) tau_g_bm else format(priors$tau_interaction),

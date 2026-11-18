@@ -7,9 +7,8 @@
 #' 2. interaction RE meta-analysis of within-trial contrasts (`bayesmeta`)
 #'
 #' Fixed effects are recovered as \eqn{\alpha} (intercept),
-#' \eqn{\gamma} (interaction), and \eqn{\beta_m} (slope on \eqn{\pi_j} in \eqn{m_j})
-#' on the support table as `b_ifrac_*`. Explicit slopes \eqn{\delta_k=\beta_k-\gamma_k}
-#' are derived in effect extractors, not stored on support (Eq. 3.10).
+#' \eqn{\gamma} (interaction), \eqn{\beta_m} (slope on \eqn{\pi_j} in \eqn{m_j}),
+#' and \eqn{\delta=\beta_m-\gamma} stored as `b_ifrac` for the support grid (Eq. 3.10).
 #'
 #' Each block's τ-grid and weights are **bayesmeta** DIRECT (`$support` on the
 #' stored `bmr` / `bayesmeta` fits). CAMS `$support` is the **product** of those
@@ -224,7 +223,7 @@ interactmeta_bayesmeta_draws_from_support <- function(overall_fit,
   alpha <- ov$intercept[i_ov]
   theta <- ov$ifrac[i_ov]
   gamma <- int$mu[i_int]
-  beta_m <- theta
+  beta <- theta - gamma
   tau_m <- pmax(as.numeric(ov$tau[i_ov]), 0)
   tau_g <- pmax(as.numeric(int$tau[i_int]), 0)
   w <- as.numeric(ov$weight[i_ov]) * as.numeric(int$weight[i_int])
@@ -255,7 +254,7 @@ interactmeta_bayesmeta_draws_from_support <- function(overall_fit,
     .cond_cov_alpha_theta = cov_at,
     .cond_sd_gamma = sd_gamma,
     b_Intercept = as.numeric(alpha),
-    b_ifrac_1 = as.numeric(beta_m),
+    b_ifrac_1 = as.numeric(beta),
     sd_trial__Intercept = tau_m,
     check.names = FALSE,
     stringsAsFactors = FALSE
@@ -723,7 +722,7 @@ interactmeta_bayesmeta_mu_matrix <- function(draws, data_fit, design) {
   ifrac_std <- design$coef_map$ifrac_std[[1L]]
   b_sg <- paste0("b_subgroup", nonref_fit)
   alpha <- draws$b_Intercept
-  beta_m <- draws$b_ifrac_1
+  beta <- draws$b_ifrac_1
   gamma <- draws[[b_sg]]
   pi <- as.numeric(data_fit[[ifrac_std]])
   sg <- as.character(data_fit[[design$subgroup_var]])
@@ -733,9 +732,7 @@ interactmeta_bayesmeta_mu_matrix <- function(draws, data_fit, design) {
   n_support <- length(alpha)
   mu <- matrix(NA_real_, nrow = n_support, ncol = n_obs)
   for (j in seq_len(n_obs)) {
-    mu[, j] <- alpha +
-      (beta_m - gamma) * pi[[j]] +
-      gamma * as.numeric(is_nonref[[j]])
+    mu[, j] <- alpha + beta * pi[[j]] + gamma * as.numeric(is_nonref[[j]])
   }
   mu
 }

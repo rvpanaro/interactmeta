@@ -39,7 +39,7 @@
 #' \eqn{\mu_A(\pi)=\alpha+\delta\pi}, \eqn{\mu_B(\pi)=\alpha+\delta\pi+\gamma},
 #' \eqn{m(\pi)=\alpha+(\delta+\gamma)\pi=\alpha+\beta_m\pi} with ecological
 #' slope \eqn{\beta_m} in \eqn{\mathrm{E}[m_j]=\alpha+\beta_m\pi_j} and
-#' \eqn{\delta=\beta_m-\gamma}. Stored `b_ifrac_*` is ecological \eqn{\beta_k}.
+#' \eqn{\delta=\beta_m-\gamma}. Stored `b_ifrac_*` is \eqn{\delta}.
 #'
 #' @section Inference:
 #' CAMS can be fitted using Bayesian or frequentist inference. These are not
@@ -98,7 +98,7 @@
 #' \describe{
 #'   \item{fixed effects}{independent \eqn{\mathrm{Normal}(0, 10)} on
 #'     overall-block \eqn{(\alpha,\beta_m)} (paper \eqn{\beta} on \eqn{m_j}) and on
-#'     interaction mean \eqn{\gamma}. Stored `b_ifrac` is overall-block \eqn{\beta_m};
+#'     interaction mean \eqn{\gamma}. Stored `b_ifrac` is \eqn{\delta=\beta_m-\gamma};
 #'     the prior is **not** on \eqn{\delta}. (bayesmeta's
 #'     improper flat \eqn{\mu} is not the CAMS default: the overall block is
 #'     fit with `bmr`, where a proper normal is the reliable companion to

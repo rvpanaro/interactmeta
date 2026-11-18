@@ -1030,15 +1030,22 @@ comparison_fit_param_summary_matrix <- function(x, prob = 0.95) {
     ifrac_b <- grep("^b_IF_", names(post), value = TRUE)
     ifrac_b <- ifrac_b[!grepl("ifrac2", ifrac_b, ignore.case = TRUE)]
   }
+  sg_b <- grep("^b_subgroup", names(post), value = TRUE)
+  if (length(ifrac_b) && length(sg_b)) {
+    series$Beta_m <- post[[ifrac_b[[1L]]]] + post[[sg_b[[1L]]]]
+  }
   st <- attr(x, "interactmeta", exact = TRUE)
   nonrefs <- st$non_ref_labels %||% character()
   for (i in seq_along(ifrac_b)) {
     bc <- ifrac_b[[i]]
     nref <- if (i <= length(nonrefs)) nonrefs[[i]] else NULL
     lab <- comparison_ecological_fe_print_name(bc, nonref_label = nref)
-    series[[lab]] <- post[[bc]]
+    ecological <- post[[bc]]
+    if (i <= length(sg_b)) {
+      ecological <- ecological + post[[sg_b[[i]]]]
+    }
+    series[[lab]] <- ecological
   }
-  sg_b <- grep("^b_subgroup", names(post), value = TRUE)
   for (bc in sg_b) {
     lab <- comparison_subgroup_fe_print_name(bc)
     series[[lab]] <- post[[bc]]
