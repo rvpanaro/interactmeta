@@ -669,15 +669,24 @@ comparison_interaction_print_name <- function(ifrac2_name) {
   sub("^ifrac2_", "Interaction_", as.character(ifrac2_name))
 }
 
-#' Print-facing name for a fixed-effect `b_ifrac_*` coefficient
+#' Print-facing name for ecological `b_ifrac_*` / `IF_*` coefficients
 #'
-#' Maps `b_ifrac_Older` / `ifrac_Older` to `Delta_Older` (paper \eqn{\delta}).
-#' Internal draw columns stay `b_ifrac_*`.
+#' Maps `b_IF_Older` to `Ecological_Older`. Standardised `ifrac_*` names are
+#' labelled via `non_ref_labels` when a fit is available.
 #' @noRd
-comparison_ifrac_fe_print_name <- function(ifrac_coef) {
+comparison_ecological_fe_print_name <- function(ifrac_coef, nonref_label = NULL) {
+  if (!is.null(nonref_label) && nzchar(as.character(nonref_label)[[1L]])) {
+    return(paste0("Ecological_", as.character(nonref_label)[[1L]]))
+  }
   nm <- as.character(ifrac_coef)[[1L]]
   nm <- sub("^b_", "", nm)
-  sub(ifrac_design_col_pattern(), "Delta_", nm)
+  sub(ifrac_design_col_pattern(), "Ecological_", nm)
+}
+
+#' @rdname comparison_ecological_fe_print_name
+#' @noRd
+comparison_ifrac_fe_print_name <- function(ifrac_coef, nonref_label = NULL) {
+  comparison_ecological_fe_print_name(ifrac_coef, nonref_label = nonref_label)
 }
 
 #' Print-facing name for a subgroup fixed-effect coefficient
@@ -816,8 +825,7 @@ interactmeta_cams_param_column_labels <- function(fit) {
     (st$ifrac_vars[[1L]] %||% "Older")
   nonref <- ifrac_design_col_strip(as.character(nonref)[[1L]])
   list(
-    beta_m = "Beta_m",
-    delta = paste0("Delta_", nonref),
+    ecological = paste0("Ecological_", nonref),
     interaction = paste0("Interaction_", nonref)
   )
 }
@@ -883,11 +891,10 @@ interactmeta_metafor_param_summary <- function(fit, prob = 0.95) {
     tau = interactmeta_metafor_df_stat_vec(df, "overall", "tau"),
     tau_gamma = interactmeta_metafor_df_stat_vec(df, "interaction", "tau"),
     Intercept = interactmeta_metafor_df_stat_vec(df, "overall", "intrcpt"),
-    Beta_m = interactmeta_metafor_df_stat_vec(df, "overall", ifrac_term),
-    Delta = interactmeta_metafor_ecological_stat_vec(fit, prob = prob),
+    Ecological = interactmeta_metafor_df_stat_vec(df, "overall", ifrac_term),
     Interaction = interactmeta_metafor_df_stat_vec(df, "interaction", "intrcpt")
   )
-  colnames(mat)[4:6] <- c(labs$beta_m, labs$delta, labs$interaction)
+  colnames(mat)[4:5] <- c(labs$ecological, labs$interaction)
   rownames(mat) <- stat_rows
   attr(mat, "interval.type") <- "central"
   mat
@@ -1023,24 +1030,15 @@ comparison_fit_param_summary_matrix <- function(x, prob = 0.95) {
     ifrac_b <- grep("^b_IF_", names(post), value = TRUE)
     ifrac_b <- ifrac_b[!grepl("ifrac2", ifrac_b, ignore.case = TRUE)]
   }
-  sg_b <- grep("^b_subgroup", names(post), value = TRUE)
-  if (length(ifrac_b)) {
-    series$Beta_m <- if (length(ifrac_b) == 1L) {
-      post[[ifrac_b[[1L]]]]
-    } else {
-      Reduce(`+`, lapply(ifrac_b, function(nm) post[[nm]]))
-    }
-  }
+  st <- attr(x, "interactmeta", exact = TRUE)
+  nonrefs <- st$non_ref_labels %||% character()
   for (i in seq_along(ifrac_b)) {
     bc <- ifrac_b[[i]]
-    lab <- comparison_ifrac_fe_print_name(bc)
-    gamma_col <- if (length(sg_b) >= i) sg_b[[i]] else NA_character_
-    if (!is.na(gamma_col) && nzchar(gamma_col)) {
-      series[[lab]] <- post[[bc]] - post[[gamma_col]]
-    } else {
-      series[[lab]] <- post[[bc]]
-    }
+    nref <- if (i <= length(nonrefs)) nonrefs[[i]] else NULL
+    lab <- comparison_ecological_fe_print_name(bc, nonref_label = nref)
+    series[[lab]] <- post[[bc]]
   }
+  sg_b <- grep("^b_subgroup", names(post), value = TRUE)
   for (bc in sg_b) {
     lab <- comparison_subgroup_fe_print_name(bc)
     series[[lab]] <- post[[bc]]

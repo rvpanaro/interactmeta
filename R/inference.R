@@ -1361,7 +1361,7 @@ interactmeta_summarize_effects <- function(draws,
 #' CAMS internal parameter names
 #'
 #' Developer glossary. Public summaries use paper-aligned labels
-#' (`Beta_m`, `Delta_*`, `Interaction_*`, `tau`, …).
+#' (`Ecological_*`, `Interaction_*`, `tau`, …).
 #'
 #' \describe{
 #'   \item{`alpha`}{Intercept \eqn{\alpha} in Panaro et al. (2025); `b_Intercept`.}

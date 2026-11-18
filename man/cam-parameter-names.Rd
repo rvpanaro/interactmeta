@@ -5,7 +5,7 @@
 \title{CAMS internal parameter names}
 \description{
 Developer glossary. Public summaries use paper-aligned labels
-(\code{Beta_m}, \verb{Delta_*}, \verb{Interaction_*}, \code{tau}, …).
+(\verb{Ecological_*}, \verb{Interaction_*}, \code{tau}, …).
 }
 \details{
 \describe{

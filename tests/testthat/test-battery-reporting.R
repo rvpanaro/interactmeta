@@ -7,14 +7,14 @@ test_that("print and summary for Bayesian CAMS use current labels", {
   out <- paste(capture.output(print(fit, digits = 2)), collapse = "\n")
   expect_match(out, "'interactmeta' object", fixed = TRUE)
   expect_match(out, "Bayesian model results", fixed = TRUE)
-  expect_match(out, "Delta_", fixed = TRUE)
+  expect_match(out, "Ecological_", fixed = TRUE)
   expect_match(out, "method: Bayesian", fixed = TRUE)
   expect_false(grepl("approach:", out, fixed = TRUE))
 
   s <- summary(fit, digits = 2)
   expect_s3_class(s, "summary.interactmeta")
   expect_true(is.matrix(s$parameters))
-  expect_true("Beta_m" %in% colnames(s$parameters))
+  expect_true(any(grepl("^Ecological_", colnames(s$parameters))))
 
   sout <- paste(capture.output(print(s)), collapse = "\n")
   expect_match(sout, "Summary of 'interactmeta' object", fixed = TRUE)

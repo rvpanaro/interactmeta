@@ -744,8 +744,7 @@ interactmeta_bayesmeta_mu_matrix <- function(draws, data_fit, design) {
 #'
 #' Mean, sd, and mode of a one-fit margin come from that object's `$summary`
 #' (those rows are not the probability interval). Bounds are `$post.interval`
-#' at `prob`, not the copied 95% rows. The ecological column is the shortest
-#' or central interval on `convolve(theta, -gamma)`.
+#' at `prob`, not the copied 95% rows (ecological slope from the overall block).
 #' @noRd
 interactmeta_bayesmeta_param_summary <- function(fit, prob = 0.95) {
   interactmeta_ensure_bayesmeta_latent(fit, full_trials = FALSE)
@@ -763,12 +762,6 @@ interactmeta_bayesmeta_param_summary <- function(fit, prob = 0.95) {
   int_sum <- bm$interaction$summary
   if (is.null(ov_sum) || is.null(int_sum)) {
     return(NULL)
-  }
-  if (is.null(fit$latent$delta) || is.null(fit$latent$delta$convolve)) {
-    stop(
-      "Bayesian delta interval requires latent$delta from bayesmeta::convolve(beta_m, -gamma).",
-      call. = FALSE
-    )
   }
   interval.type <- interactmeta_match_interval_type(
     fit$interval.type %||% fit$latent$interval.type %||% bm$overall$interval.type
@@ -798,20 +791,6 @@ interactmeta_bayesmeta_param_summary <- function(fit, prob = 0.95) {
     )
   }
 
-  delta_sm <- interactmeta_posterior_1d_summary(
-    fit$latent$delta,
-    prob = prob,
-    interval.type = interval.type
-  )
-  delta_row <- c(
-    mode = NA_real_,
-    median = delta_sm$median,
-    mean = delta_sm$mean,
-    sd = delta_sm$sd,
-    lower = delta_sm$lower,
-    upper = delta_sm$upper
-  )
-
   alpha_row <- native_col(ov_sum, bm$overall, intercept_nm, "effect", intercept_nm)
   gamma_row <- native_col(int_sum, bm$interaction, "mu", "effect")
   tau_m <- native_col(ov_sum, bm$overall, "tau", "tau")
@@ -820,12 +799,7 @@ interactmeta_bayesmeta_param_summary <- function(fit, prob = 0.95) {
   slope_nm <- interactmeta_bmr_coef_name(bm$overall, "slope")
   beta_m_row <- native_col(ov_sum, bm$overall, slope_nm, "effect", slope_nm)
 
-  st <- attr(fit, "interactmeta", exact = TRUE)
-  nonref <- st$coef_map$ifrac_orig[[1L]] %||%
-    (st$ifrac_vars[[1L]] %||% "Older")
-  nonref <- ifrac_design_col_strip(as.character(nonref)[[1L]])
-  delta_nm <- paste0("Delta_", nonref)
-  int_nm <- paste0("Interaction_", nonref)
+  labs <- interactmeta_cams_param_column_labels(fit)
 
   lower_lab <- if (isTRUE(all.equal(prob, 0.95))) {
     "95% lower"
@@ -841,11 +815,10 @@ interactmeta_bayesmeta_param_summary <- function(fit, prob = 0.95) {
     tau = tau_m,
     tau_gamma = tau_g,
     Intercept = alpha_row,
-    Beta_m = beta_m_row,
-    Delta = delta_row,
+    Ecological = beta_m_row,
     Interaction = gamma_row
   )
-  colnames(mat)[5:6] <- c(delta_nm, int_nm)
+  colnames(mat)[4:5] <- c(labs$ecological, labs$interaction)
   rownames(mat) <- c("mode", "median", "mean", "sd", lower_lab, upper_lab)
   attr(mat, "interval.type") <- interval.type
   if (isTRUE(all.equal(prob, 0.95))) {
