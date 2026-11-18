@@ -87,5 +87,6 @@ test_that("heterogeneity_footnote and HR helpers run on REML CAMS", {
 
   x <- log_hr_from_ci(1.0, 0.8, 1.2, ci_level = 0.95)
   back <- hr_ci_from_log(x$yi, x$sei, ci_level = 0.95)
-  expect_true(is.finite(back$estimate))
+  expect_equal(back$hr, 1.0, tolerance = 1e-12)
+  expect_true(all(is.finite(c(back$hr, back$ci_lower, back$ci_upper))))
 })
