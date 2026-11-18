@@ -352,7 +352,7 @@ interactmeta_plot_constants <- function() {
     line_hair = 0.35,
     line_mid = 0.7,
     line_strong = 1,
-    overall_line_colour = "#8A8A8A",
+    overall_line_colour = "#000000",
     na_colour = "#B0B0B0",
     text_muted = "#4A4A4A",
     text_caption = "#7A7A7A",
