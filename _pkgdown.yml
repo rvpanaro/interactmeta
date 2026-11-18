@@ -1,10 +1,14 @@
 url: https://rvpanaro.github.io/interactmeta/
 
 authors:
+  Renato Valladares Panaro:
+    href: https://orcid.org/0000-0002-1903-2091
   Christian Röver:
     href: https://orcid.org/0000-0002-6911-698X
   Tim Friede:
     href: https://orcid.org/0000-0001-5347-7441
+  sidebar:
+    roles: [aut, cre, ctb, rev, ths]
 
 repo:
   url:
