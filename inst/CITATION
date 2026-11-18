@@ -3,7 +3,7 @@ bibentry(
   author = c(
     person(given = c("Renato", "Valladares"), family = "Panaro", comment = c(ORCID = "0000-0002-1903-2091")),
     person(given = "Christian", family = "Röver", comment = c(ORCID = "0000-0002-6911-698X")),
-    person(given = "Tim", family = "Friede")
+    person(given = "Tim", family = "Friede", comment = c(ORCID = "0000-0001-5347-7441"))
   ),
   title = "Contribution-adjusted meta-analysis for treatment effect modification",
   journal = "arXiv",

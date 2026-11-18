@@ -1,5 +1,11 @@
 url: https://rvpanaro.github.io/interactmeta/
 
+authors:
+  Christian Röver:
+    href: https://orcid.org/0000-0002-6911-698X
+  Tim Friede:
+    href: https://orcid.org/0000-0001-5347-7441
+
 repo:
   url:
     home: https://github.com/rvpanaro/interactmeta/

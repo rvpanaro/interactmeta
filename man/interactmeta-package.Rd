@@ -155,7 +155,8 @@ Authors:
 
 Other contributors:
 \itemize{
-  \item Christian Röver (\href{https://orcid.org/0000-0002-6911-698X}{ORCID}) [thesis advisor]
+  \item Christian Röver (\href{https://orcid.org/0000-0002-6911-698X}{ORCID}) [contributor, reviewer, thesis advisor]
+  \item Tim Friede (\href{https://orcid.org/0000-0001-5347-7441}{ORCID}) [thesis advisor]
 }
 
 }
