@@ -13,9 +13,9 @@ Developer glossary. Public summaries use paper-aligned labels
 \item{\code{beta_m}}{Ecological slope \eqn{\beta} in
 \eqn{\mathrm{E}[m_j]=\alpha+\beta\pi_j} (\code{bmr} / \code{rma} \code{ifrac} coefficient);
 \code{fixed.prior} targets \eqn{(\alpha,\beta_m)}.}
-\item{\code{delta}}{Explicit (global) slope \eqn{\delta=\beta_m-\gamma} in
+\item{\code{delta}}{Explicit (global) slope \eqn{\delta_k=\beta_k-\gamma_k} in
 \eqn{\mu_A(\pi)=\alpha+\delta\pi}, \eqn{\mu_B(\pi)=\alpha+\delta\pi+\gamma};
-stored as \verb{b_ifrac_*}.}
+derived from ecological \verb{b_ifrac_*} and \verb{b_subgroup*} (not stored on support).}
 \item{\code{gamma}}{Interaction \eqn{\gamma} on contrasts \eqn{g_j}; \verb{b_subgroup*}.}
 \item{\code{tau_m}}{Combined-block heterogeneity SD (\code{sd_trial__Intercept}).}
 \item{\code{tau_g}}{Interaction-block heterogeneity SD (\verb{sd_trial__ifrac2_*}).}

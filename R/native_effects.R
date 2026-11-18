@@ -262,9 +262,8 @@ interactmeta_try_native_combined_metafor <- function(fit, at, ifrac, prob, contr
   alpha <- as.numeric(ov$beta[[1L]])
   theta <- as.numeric(ov$beta[[2L]])
   gamma <- as.numeric(int$beta[[1L]])
-  beta <- theta - gamma
   omega <- interactmeta_native_marginal_omega(fit, at, ifrac)
-  est <- alpha + omega * (beta + gamma)
+  est <- alpha + omega * theta
   se <- sqrt(max(as.numeric(ov$se[[1L]])^2 + (omega^2) * (
     as.numeric(ov$se[[2L]])^2 + as.numeric(int$se[[1L]])^2
   ), 0))

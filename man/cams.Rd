@@ -151,7 +151,7 @@ variances are redefined with the covariance (not implemented here).
 \eqn{\mu_A(\pi)=\alpha+\delta\pi}, \eqn{\mu_B(\pi)=\alpha+\delta\pi+\gamma},
 \eqn{m(\pi)=\alpha+(\delta+\gamma)\pi=\alpha+\beta_m\pi} with ecological
 slope \eqn{\beta_m} in \eqn{\mathrm{E}[m_j]=\alpha+\beta_m\pi_j} and
-\eqn{\delta=\beta_m-\gamma}. Stored \verb{b_ifrac_*} is \eqn{\delta}.
+\eqn{\delta=\beta_m-\gamma}. Stored \verb{b_ifrac_*} is ecological \eqn{\beta_k}.
 }
 
 \section{Inference}{
@@ -218,7 +218,7 @@ Bayesian CAMS passes priors through to bayesmeta. They are stored on
 \describe{
 \item{fixed effects}{independent \eqn{\mathrm{Normal}(0, 10)} on
 overall-block \eqn{(\alpha,\beta_m)} (paper \eqn{\beta} on \eqn{m_j}) and on
-interaction mean \eqn{\gamma}. Stored \code{b_ifrac} is \eqn{\delta=\beta_m-\gamma};
+interaction mean \eqn{\gamma}. Stored \code{b_ifrac} is overall-block \eqn{\beta_m};
 the prior is \strong{not} on \eqn{\delta}. (bayesmeta's
 improper flat \eqn{\mu} is not the CAMS default: the overall block is
 fit with \code{bmr}, where a proper normal is the reliable companion to

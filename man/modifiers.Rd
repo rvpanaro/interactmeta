@@ -82,7 +82,7 @@ combined-population information fraction with the appropriate subgroup
 fixed effect:
 \deqn{\mu_A(\pi^\star)=\alpha+\pi^\star\delta,}
 \deqn{\mu_B(\pi^\star)=\alpha+\pi^\star\delta+\gamma,}
-with \eqn{\delta=\beta_m-\gamma} on each support row (\code{b_ifrac}). This is \strong{not} the
+with \eqn{\delta_k=\beta_k-\gamma_k} from ecological \verb{b_ifrac_*} and \verb{b_subgroup*}. This is \strong{not} the
 trial-specific convolution on \code{fit$latent$mu_A[[j]]} /
 \code{fit$latent$mu_B[[j]]} (\eqn{\mu_{Aj}=m_j-\pi_j g_j} at that trial's
 \eqn{\pi_j}). A scalar \code{at} is a plug-in \eqn{\pi^\star};

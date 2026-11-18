@@ -59,7 +59,7 @@ interactmeta_resolve_marginal_at <- function(at = NULL, contribution = NULL) {
 #' fixed effect:
 #' \deqn{\mu_A(\pi^\star)=\alpha+\pi^\star\delta,}
 #' \deqn{\mu_B(\pi^\star)=\alpha+\pi^\star\delta+\gamma,}
-#' with \eqn{\delta=\beta_m-\gamma} on each support row (`b_ifrac`). This is **not** the
+#' with \eqn{\delta_k=\beta_k-\gamma_k} from ecological `b_ifrac_*` and `b_subgroup*`. This is **not** the
 #' trial-specific convolution on `fit$latent$mu_A[[j]]` /
 #' `fit$latent$mu_B[[j]]` (\eqn{\mu_{Aj}=m_j-\pi_j g_j} at that trial's
 #' \eqn{\pi_j}). A scalar `at` is a plug-in \eqn{\pi^\star};
@@ -1149,9 +1149,9 @@ interactmeta_has_direct_weights <- function(weight, n) {
   any(is.finite(w) & w > 0)
 }
 
-#' Ecological slope \eqn{\beta_m = \delta + \gamma} for \eqn{m(\pi)=\alpha+\beta_m\pi}.
+#' Ecological slope(s) \eqn{\beta_k} on the overall block for \eqn{m(\pi)=\alpha+\sum_k \beta_k\pi_k}.
 #'
-#' Stored `b_ifrac_*` is \eqn{\delta}; summing with \eqn{\gamma} gives \eqn{\beta_m}.
+#' Stored `b_ifrac_*` holds \eqn{\beta_k} from the overall marginal, not \eqn{\delta_k}.
 #' @noRd
 comparison_marginal_overall_composite <- function(post, design, fit) {
   composite <- rep(0, nrow(post))
@@ -1162,24 +1162,10 @@ comparison_marginal_overall_composite <- function(post, design, fit) {
     }
     composite <- composite + post[[col]]
   }
-  sg_coef <- comparison_subgroup_coef_terms(fit, design)
-  for (lbl in design$subgroup_levels) {
-    if (identical(lbl, design$reference)) {
-      next
-    }
-    coef <- sg_coef[[lbl]]
-    if (!is.na(coef) && nzchar(coef)) {
-      col <- paste0("b_", coef)
-      if (!col %in% names(post)) {
-        stop(sprintf("Missing posterior column `%s`.", col), call. = FALSE)
-      }
-      composite <- composite + post[[col]]
-    }
-  }
   composite
 }
 
-#' Posterior draws of \eqn{m(\pi)=\alpha+\beta_m\pi} with \eqn{\beta_m=b_{\mathrm{ifrac}}+\gamma}
+#' Posterior draws of \eqn{m(\pi)=\alpha+\beta_m\pi} from ecological \eqn{\beta_k} on support
 #' @noRd
 comparison_marginal_overall_effect_draws <- function(post,
                                                omega,
@@ -1232,7 +1218,8 @@ comparison_effect_linpred_draws <- function(post,
     post = post,
     evaluation_if = evaluation_if,
     design = design,
-    subgroup_coef = subgroup_coef
+    subgroup_coef = subgroup_coef,
+    fit = fit
   )
   ref <- as.character(design$reference)[[1L]]
   x <- as.numeric(!identical(as.character(subgroup_label)[[1L]], ref))
@@ -1290,19 +1277,61 @@ comparison_marginal_effect_draws <- function(post,
 #'
 #' Reference: \eqn{\alpha + \pi^\star\delta}.
 #' Non-reference: \eqn{\alpha + \pi^\star\delta+\gamma}.
-#' Uses \eqn{(\alpha,\delta)} stored as `b_Intercept` and `b_ifrac`
-#' (\eqn{\delta=\beta_m-\gamma}).
+#' Uses \eqn{\alpha} and explicit slopes \eqn{\delta_k=\beta_k-\gamma_k} derived from
+#' ecological `b_ifrac_*` and `b_subgroup*`.
 #' Not a convolution of the `alpha` and `theta` mixture marginals, and not
 #' `fit$latent$mu_A[[j]]`.
 #' @noRd
-comparison_marginal_fe_draws <- function(post, evaluation_if, design, subgroup_coef) {
-  lp <- post[["b_Intercept"]]
-  for (v in design$ifrac_vars_std) {
-    col <- paste0("b_", v)
-    if (!col %in% names(post)) {
-      stop(sprintf("Missing posterior column `%s`.", col), call. = FALSE)
+comparison_subgroup_coef_terms_from_post <- function(post, design) {
+  sub_coefs <- names(post)[grepl("^b_subgroup", names(post))]
+  out <- stats::setNames(
+    rep(NA_character_, length(design$subgroup_levels)),
+    design$subgroup_levels
+  )
+  if (!length(sub_coefs)) {
+    return(out)
+  }
+  ref <- design$reference
+  for (lbl in design$subgroup_levels) {
+    if (identical(lbl, ref)) {
+      next
     }
-    lp <- lp + evaluation_if * post[[col]]
+    pat <- paste0("^b_subgroup", lbl, "$")
+    hit <- sub_coefs[grepl(pat, sub_coefs)]
+    if (length(hit) == 1L) {
+      out[[lbl]] <- sub("^b_", "", hit[[1]])
+    }
+  }
+  out
+}
+
+comparison_marginal_fe_draws <- function(post, evaluation_if, design, subgroup_coef, fit = NULL) {
+  lp <- post[["b_Intercept"]]
+  sg_coef <- if (!is.null(fit)) {
+    comparison_subgroup_coef_terms(fit, design)
+  } else {
+    comparison_subgroup_coef_terms_from_post(post, design)
+  }
+  n_ifrac <- length(design$ifrac_vars_std)
+  nonref_labels <- design$non_ref_labels %||% character()
+  for (i in seq_len(n_ifrac)) {
+    v <- design$ifrac_vars_std[[i]]
+    col_beta <- paste0("b_", v)
+    if (!col_beta %in% names(post)) {
+      stop(sprintf("Missing posterior column `%s`.", col_beta), call. = FALSE)
+    }
+    slope <- post[[col_beta]]
+    if (i <= length(nonref_labels)) {
+      lbl <- nonref_labels[[i]]
+      sc <- sg_coef[[lbl]]
+      if (!is.na(sc) && nzchar(sc)) {
+        col_gamma <- paste0("b_", sc)
+        if (col_gamma %in% names(post)) {
+          slope <- slope - post[[col_gamma]]
+        }
+      }
+    }
+    lp <- lp + evaluation_if * slope
   }
   if (!is.na(subgroup_coef) && nzchar(subgroup_coef)) {
     col <- paste0("b_", subgroup_coef)

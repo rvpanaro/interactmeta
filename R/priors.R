@@ -354,7 +354,7 @@ prior_to_bayesmeta_fixed <- function(prior) {
   note <- paste(
     "bmr prior on (alpha, beta_m), paper slope on m_j ~ pi_j;",
     "bayesmeta receives mu.prior for gamma separately.",
-    "b_ifrac stores delta = beta_m - gamma, not the prior target."
+    "b_ifrac stores ecological beta_m from the overall block, not delta."
   )
   if (identical(prior$family, "uniform") || cam_prior_is_improper_uniform(prior)) {
     return(list(

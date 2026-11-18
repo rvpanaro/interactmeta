@@ -110,7 +110,8 @@ predict_cams_by_if <- function(fit,
         post = post,
         evaluation_if = pi,
         design = design,
-        subgroup_coef = sg_coef[[lbl]]
+        subgroup_coef = sg_coef[[lbl]],
+        fit = fit
       )
       x_nonref <- as.numeric(!identical(as.character(lbl), ref))
       a_gamma <- ifelse(x_nonref == 0, -pi, 1 - pi)

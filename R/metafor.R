@@ -68,7 +68,7 @@
   alpha <- as.numeric(overall_fit$beta[[1L]])
   theta <- as.numeric(overall_fit$beta[[2L]])
   gamma <- as.numeric(interaction_fit$beta[[1L]])
-  beta <- theta - gamma
+  beta_m <- theta
   tau_m <- sqrt(max(as.numeric(overall_fit$tau2), 0))
   tau_g <- sqrt(max(as.numeric(interaction_fit$tau2), 0))
 
@@ -77,7 +77,7 @@
     .iteration = 1L,
     .draw = 1L,
     b_Intercept = alpha,
-    b_ifrac_1 = beta,
+    b_ifrac_1 = beta_m,
     sd_trial__Intercept = tau_m,
     check.names = FALSE,
     stringsAsFactors = FALSE

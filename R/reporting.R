@@ -1024,12 +1024,22 @@ comparison_fit_param_summary_matrix <- function(x, prob = 0.95) {
     ifrac_b <- ifrac_b[!grepl("ifrac2", ifrac_b, ignore.case = TRUE)]
   }
   sg_b <- grep("^b_subgroup", names(post), value = TRUE)
-  if (length(ifrac_b) && length(sg_b)) {
-    series$Beta_m <- post[[ifrac_b[[1L]]]] + post[[sg_b[[1L]]]]
+  if (length(ifrac_b)) {
+    series$Beta_m <- if (length(ifrac_b) == 1L) {
+      post[[ifrac_b[[1L]]]]
+    } else {
+      Reduce(`+`, lapply(ifrac_b, function(nm) post[[nm]]))
+    }
   }
-  for (bc in ifrac_b) {
+  for (i in seq_along(ifrac_b)) {
+    bc <- ifrac_b[[i]]
     lab <- comparison_ifrac_fe_print_name(bc)
-    series[[lab]] <- post[[bc]]
+    gamma_col <- if (length(sg_b) >= i) sg_b[[i]] else NA_character_
+    if (!is.na(gamma_col) && nzchar(gamma_col)) {
+      series[[lab]] <- post[[bc]] - post[[gamma_col]]
+    } else {
+      series[[lab]] <- post[[bc]]
+    }
   }
   for (bc in sg_b) {
     lab <- comparison_subgroup_fe_print_name(bc)
